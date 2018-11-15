@@ -12,6 +12,6 @@ public class TaskBuilderService {
     }
 
     public void startup(){
-        redisSubscribe.run();
+        redisSubscribe.start();
     }
 }

@@ -28,11 +28,9 @@ public class TaskMonitor {
 
     }
 
-    public void startup() throws IOException, InterruptedException{
-        while (true) {
-            check();
-            Thread.sleep(1000 * 60);
-        }
+    public void startup() throws IOException, InterruptedException {
+        DoWork doWork = new DoWork();
+        doWork.start();
     }
 
     private void createProc(String id) throws IOException {
@@ -40,64 +38,83 @@ public class TaskMonitor {
         Runtime.getRuntime().exec("java -jar C:\\Users\\lihan\\Desktop\\ykxt\\bin\\TSS-CORE\\core-1.0-SNAPSHOT.jar " + id);
     }
 
-    private void check() throws IOException {
-        MongoClient mongoClient = new MongoClient("localhost", 27017);
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("TSS");
-
-        MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
-
-        FindIterable<Document> main_task = tasks.find();
-
-        for (Document document : main_task) {
-            if (document.getString("status").equals("NEW")) {
-                if (document.getString("type").equals("REALTIME")) {
-
-                    System.out.println("Found a new REALTIME TASK, Task Info:");
-                    System.out.println(document.toString());
-                    tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("status", "RUNNING")));
-
-                } else if (document.getString("type").equals("CRONTAB")) {
-
-                    JsonParser parse = new JsonParser();  //创建json解析器
-                    JsonObject json = (JsonObject) parse.parse(document.toJson());
-
-                    String ft = json.get("cron_core").getAsJsonObject().get("first_time").getAsString();
-                    Instant instant_ft = Instant.parse(ft);
-                    long nt = instant_ft.toEpochMilli() + 1000 * Integer.parseInt(json.get("cron_core").getAsJsonObject().get("cycle").getAsString());
-                    String nt_str = Instant.ofEpochMilli(nt).toString();
-                    if (Instant.now().isAfter(instant_ft)) {
-                        System.out.println("Found a new CRONTAB TASK, Task Info:");
-                        System.out.println(document.toString());
-                        tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("status", "RUNNING")));
-                        tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("cron_core.first_time", nt_str)));
-
-                        Run.Exec(document.getString("_id"));
-                    }
-                } else {
-                    System.out.println("Found a new PERMANENT TASK, Task Info:");
-                    System.out.println(document.toString());
+    class DoWork extends Thread{
+        public void run(){
+            while (true) {
+//                try {
+//                    check();
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+                test();
+                try {
+                    Thread.sleep(1000 * 60);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-            } else if (document.getString("status").equals("SUSPEND")) {
-                if (document.getString("type").equals("CRONTAB")) {
-                    JsonParser parse = new JsonParser();  //创建json解析器
-                    JsonObject json = (JsonObject) parse.parse(document.toJson());
-
-                    String ft = json.get("cron_core").getAsJsonObject().get("first_time").getAsString();
-                    Instant instant_ft = Instant.parse(ft);
-                    long nt = instant_ft.toEpochMilli() + 1000 * Integer.parseInt(json.get("cron_core").getAsJsonObject().get("cycle").getAsString());
-                    String nt_str = Instant.ofEpochMilli(nt).toString();
-                    if (Instant.now().isAfter(instant_ft)) {
-                        System.out.println("Found a SUSPEND CRONTAB TASK, Task Info:");
-                        System.out.println(document.toString());
-                        tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("status", "RUNNING")));
-                        tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("cron_core.first_time", nt_str)));
-
-                        createProc(document.getString("_id"));
-                    }
-                }
-            } else {
             }
         }
-        mongoClient.close();
+        private void test(){}
+        private void check() throws IOException {
+            MongoClient mongoClient = new MongoClient("localhost", 27017);
+            MongoDatabase mongoDatabase = mongoClient.getDatabase("TSS");
+
+            MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
+
+            FindIterable<Document> main_task = tasks.find();
+
+            for (Document document : main_task) {
+                if (document.getString("status").equals("NEW")) {
+                    if (document.getString("type").equals("REALTIME")) {
+
+                        System.out.println("Found a new REALTIME TASK, Task Info:");
+                        System.out.println(document.toString());
+                        tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("status", "RUNNING")));
+
+                    } else if (document.getString("type").equals("CRONTAB")) {
+
+                        JsonParser parse = new JsonParser();  //创建json解析器
+                        JsonObject json = (JsonObject) parse.parse(document.toJson());
+
+                        String ft = json.get("cron_core").getAsJsonObject().get("first_time").getAsString();
+                        Instant instant_ft = Instant.parse(ft);
+                        long nt = instant_ft.toEpochMilli() + 1000 * Integer.parseInt(json.get("cron_core").getAsJsonObject().get("cycle").getAsString());
+                        String nt_str = Instant.ofEpochMilli(nt).toString();
+                        if (Instant.now().isAfter(instant_ft)) {
+                            System.out.println("Found a new CRONTAB TASK, Task Info:");
+                            System.out.println(document.toString());
+                            tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("status", "RUNNING")));
+                            tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("cron_core.first_time", nt_str)));
+
+                            Run.Exec(document.getString("_id"));
+                        }
+                    } else {
+                        System.out.println("Found a new PERMANENT TASK, Task Info:");
+                        System.out.println(document.toString());
+                    }
+                } else if (document.getString("status").equals("SUSPEND")) {
+                    if (document.getString("type").equals("CRONTAB")) {
+                        JsonParser parse = new JsonParser();  //创建json解析器
+                        JsonObject json = (JsonObject) parse.parse(document.toJson());
+
+                        String ft = json.get("cron_core").getAsJsonObject().get("first_time").getAsString();
+                        Instant instant_ft = Instant.parse(ft);
+                        long nt = instant_ft.toEpochMilli() + 1000 * Integer.parseInt(json.get("cron_core").getAsJsonObject().get("cycle").getAsString());
+                        String nt_str = Instant.ofEpochMilli(nt).toString();
+                        if (Instant.now().isAfter(instant_ft)) {
+                            System.out.println("Found a SUSPEND CRONTAB TASK, Task Info:");
+                            System.out.println(document.toString());
+                            tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("status", "RUNNING")));
+                            tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("cron_core.first_time", nt_str)));
+
+                            createProc(document.getString("_id"));
+                        }
+                    }
+                } else {
+                }
+            }
+            mongoClient.close();
+        }
     }
+
 }

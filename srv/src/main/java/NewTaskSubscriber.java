@@ -15,9 +15,10 @@ public class NewTaskSubscriber extends JedisPubSub {
 
         JsonParser parse = new JsonParser();  //创建json解析器
         JsonObject msg = (JsonObject) parse.parse(message);
+        System.out.println(msg.toString());
         JsonObject json = msg.getAsJsonObject("data");
         try {
-            TaskInit.initCronTaskForTaskPlan(json.get("name").toString(),json.get("firsttime").toString(),json.get("cycle").toString(),json.get("count").toString());
+            TaskInit.initCronTaskForTaskPlan(json.get("name").getAsString(),json.get("firsttime").getAsString(),json.get("cycle").getAsString(),json.get("count").getAsString());
         } catch (IOException e) {
             e.printStackTrace();
         }

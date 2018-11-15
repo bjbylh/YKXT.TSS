@@ -19,6 +19,7 @@ import java.util.List;
  * Created by lihan on 2018/10/24.
  */
 public class TaskInit {
+    private static String[] subtaskname = new String[]{"订单统筹与规划","多星任务规划","单星任务规划"};
     public static void initCronTaskForTaskPlan(String taskname, String first, String cycle, String count) throws IOException {
         InputStream in = TaskInit.class.getResourceAsStream("maintask.json");
         BufferedReader br = new BufferedReader(new InputStreamReader(in));
@@ -76,15 +77,15 @@ public class TaskInit {
 
         MongoCollection<Document> sub_task = mongoDatabase.getCollection("sub_task");
 
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 3; i++) {
             JsonObject p = json.deepCopy();
             String pId = new ObjectId().toString();
             ids.add(pId);
             p.addProperty("_id", pId);
+            p.addProperty("name",subtaskname[i]);
             JsonArray history = p.get("history").getAsJsonArray();
             history.get(0).getAsJsonObject().addProperty("update_time", Instant.now().toString());
             sub_task.insertOne(Document.parse(p.toString()));
-            System.out.println(p);
         }
         mongoClient.close();
         return ids;
