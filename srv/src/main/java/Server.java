@@ -5,7 +5,12 @@ import java.io.IOException;
  */
 public class Server {
     public static void main(String[] args) throws InterruptedException, IOException {
-        //启动任务监视进程
-        TaskMonitor.getInstance().startup();
+        //启动任务监视线程
+        //TaskMonitor.getInstance().startup();
+
+        //启动新任务监听线程
+        NewTaskSubscriber newTaskSubscriber = new NewTaskSubscriber();
+        TaskBuilderService taskBuilderService = new TaskBuilderService(newTaskSubscriber);
+        taskBuilderService.startup();
     }
 }

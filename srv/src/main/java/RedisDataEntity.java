@@ -14,6 +14,18 @@ public class RedisDataEntity {
         return jsonObject.toString();
     }
 
+    public static String GenNewTask() {
+        JsonObject jsonObject = GenHead(Topic.NEW_TASK, "MAG", "TSS");
+        JsonObject data = new JsonObject();
+        data.addProperty("name", "task12345");
+        data.addProperty("tasktype", TaskType.CRONTAB.name());
+        data.addProperty("templet", TempletType.TASK_PLAN.name());
+        data.addProperty("firsttime", Instant.now().toString());
+        data.addProperty("cycle","60000");
+        data.addProperty("count","0");
+        jsonObject.add("data", data);
+        return jsonObject.toString();
+    }
 
     private static JsonObject GenHead(Topic type, String from, String extra) {
         Instant now = Instant.now();

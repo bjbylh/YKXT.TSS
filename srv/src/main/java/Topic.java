@@ -3,4 +3,5 @@
  */
 public enum Topic {
     DB_REFRESH,
+    NEW_TASK
 }
