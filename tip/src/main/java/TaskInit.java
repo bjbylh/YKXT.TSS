@@ -19,7 +19,7 @@ import java.util.List;
  * Created by lihan on 2018/10/24.
  */
 public class TaskInit {
-    public static void initCronTask(String taskname, TempletType templetType, Instant first, int cycle, int count) throws IOException {
+    public static void initCronTaskForTaskPlan(String taskname, Instant first, int cycle, int count) throws IOException {
         InputStream in = TaskInit.class.getResourceAsStream("maintask.json");
         BufferedReader br = new BufferedReader(new InputStreamReader(in));
         String str;
@@ -33,9 +33,9 @@ public class TaskInit {
 
         json.addProperty("name", taskname);
         json.addProperty("type", TaskType.CRONTAB.name());
-        json.addProperty("templet", templetType.name());
+        json.addProperty("templet", TempletType.TASK_PLAN.name());
 
-        if (templetType.name().equals("TASK_PLAN")) {
+        if (TempletType.TASK_PLAN.name().equals("TASK_PLAN")) {
             List<String> list = initTaskPlanSubTask();
             for (int i = 0; i < 2; i++) {
                 json.get("tp_core").getAsJsonObject().get("sub_tasks").getAsJsonArray().get(i).getAsJsonObject().addProperty("sub_taskid", list.get(i));
@@ -91,6 +91,6 @@ public class TaskInit {
     }
 
     public static void main(String[] args) throws IOException {
-        initCronTask("task_" + Instant.now().toEpochMilli(), TempletType.TASK_PLAN, Instant.now(), 60 * 1000, 0);
+        initCronTaskForTaskPlan("task_" + Instant.now().toEpochMilli(), Instant.now(), 60 * 1000, 0);
     }
 }

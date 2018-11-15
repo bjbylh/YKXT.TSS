@@ -2,6 +2,7 @@
   "_id": "0",
   "name": "task001",
   "status": "NEW",
+  //NEW,SUSPEND,RUNNING,DELETE,ERROR
   "type": "CRONTAB",
   "templet": "TASK_PLAN",
   "cron_core": {
@@ -22,7 +23,12 @@
       },
       {
         "sub_task_ser": 1,
-        "sub_taskid": " ",
+        "sub_taskid": "1",
+        "delay": 0
+      },
+      {
+        "sub_task_ser": 2,
+        "sub_taskid": "2",
         "delay": 0
       }
     ]

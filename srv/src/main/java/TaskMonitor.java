@@ -11,22 +11,36 @@ import java.io.IOException;
 import java.time.Instant;
 
 /**
- * Created by lihan on 2018/10/24.
+ * Created by lihan on 2018/11/13.
  */
-public class CheckNewTask {
-    public static void main(String[] args) throws InterruptedException, IOException {
+public class TaskMonitor {
+    private static TaskMonitor ourInstance;
+
+    static {
+        ourInstance = new TaskMonitor();
+    }
+
+    public static TaskMonitor getInstance() {
+        return ourInstance;
+    }
+
+    private TaskMonitor() {
+
+    }
+
+    public void startup() throws IOException, InterruptedException{
         while (true) {
             check();
             Thread.sleep(1000 * 60);
         }
     }
 
-    private static void createProc(String id) throws IOException {
+    private void createProc(String id) throws IOException {
 //        String[] args = new String[]{"C:\\Users\\lihan\\Desktop\\ykxt\\bin\\TSS-CORE\\startup.bat", id};
         Runtime.getRuntime().exec("java -jar C:\\Users\\lihan\\Desktop\\ykxt\\bin\\TSS-CORE\\core-1.0-SNAPSHOT.jar " + id);
     }
 
-    private static void check() throws IOException {
+    private void check() throws IOException {
         MongoClient mongoClient = new MongoClient("localhost", 27017);
         MongoDatabase mongoDatabase = mongoClient.getDatabase("TSS");
 
@@ -63,7 +77,7 @@ public class CheckNewTask {
                     System.out.println("Found a new PERMANENT TASK, Task Info:");
                     System.out.println(document.toString());
                 }
-            } else if (document.getString("status").equals("PENDING")) {
+            } else if (document.getString("status").equals("SUSPEND")) {
                 if (document.getString("type").equals("CRONTAB")) {
                     JsonParser parse = new JsonParser();  //创建json解析器
                     JsonObject json = (JsonObject) parse.parse(document.toJson());
@@ -73,7 +87,7 @@ public class CheckNewTask {
                     long nt = instant_ft.toEpochMilli() + 1000 * Integer.parseInt(json.get("cron_core").getAsJsonObject().get("cycle").getAsString());
                     String nt_str = Instant.ofEpochMilli(nt).toString();
                     if (Instant.now().isAfter(instant_ft)) {
-                        System.out.println("Found a PENDIND CRONTAB TASK, Task Info:");
+                        System.out.println("Found a SUSPEND CRONTAB TASK, Task Info:");
                         System.out.println(document.toString());
                         tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("status", "RUNNING")));
                         tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("cron_core.first_time", nt_str)));
