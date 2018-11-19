@@ -5,7 +5,6 @@
       <module fileurl="file://$PROJECT_DIR$/basic/basic.iml" filepath="$PROJECT_DIR$/basic/basic.iml" />
       <module fileurl="file://$PROJECT_DIR$/core/core.iml" filepath="$PROJECT_DIR$/core/core.iml" />
       <module fileurl="file://$PROJECT_DIR$/srv/srv.iml" filepath="$PROJECT_DIR$/srv/srv.iml" />
-      <module fileurl="file://$PROJECT_DIR$/tip/tip.iml" filepath="$PROJECT_DIR$/tip/tip.iml" />
       <module fileurl="file://$PROJECT_DIR$/tss.iml" filepath="$PROJECT_DIR$/tss.iml" />
     </modules>
   </component>

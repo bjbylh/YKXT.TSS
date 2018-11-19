@@ -1,14 +1,9 @@
+package task;
+
+import java.io.*;
+
 /**
- * Copyright2017Wang. All rights reserved.
- *
- * @Title: Run.java
- * @Prject: demo.nuaa.launcher
- * @Package: demo.nuaa.launcher.run
- * @Description: TODO
- * @author: wang
- * @date: 20174:36:28
- * @version: V1.0
- */
+
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -17,7 +12,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 
 /**
- * @ClassName: Run
+ * @ClassName: task.Run
  * @Description: TODO
  * @author: wang
  */

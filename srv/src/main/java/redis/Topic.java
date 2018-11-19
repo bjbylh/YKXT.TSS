@@ -1,3 +1,5 @@
+package redis;
+
 /**
  * Created by lihan on 2018/11/15.
  */

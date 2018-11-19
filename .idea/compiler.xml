@@ -9,7 +9,6 @@
         <module name="basic" />
         <module name="core" />
         <module name="srv" />
-        <module name="tip" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="1.8">

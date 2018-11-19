@@ -1,5 +1,8 @@
+package redis;
+
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPubSub;
+import redis.subscribe.NewTaskSubscriber;
 
 /**
  * Created by lihan on 2018/11/15.

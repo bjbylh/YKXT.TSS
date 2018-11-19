@@ -1,3 +1,5 @@
+package redis;
+
 import com.google.gson.JsonObject;
 
 import java.time.Instant;
@@ -29,7 +31,6 @@ public class RedisDataEntity {
 
     private static JsonObject GenHead(Topic type, String from, String extra) {
         Instant now = Instant.now();
-        //Gson json = new Gson();
         JsonObject json = new JsonObject();
         json.addProperty("id", from + "@" + now.toEpochMilli());
         json.addProperty("time", now.toString().substring(0, now.toString().length() - 1));

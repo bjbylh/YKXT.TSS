@@ -11,7 +11,6 @@
     </content>
     <orderEntry type="jdk" jdkName="1.8" jdkType="JavaSDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="basic" />
     <orderEntry type="library" name="Maven: com.google.code.gson:gson:2.8.5" level="project" />
     <orderEntry type="library" name="Maven: org.mongodb:mongo-java-driver:3.8.2" level="project" />
     <orderEntry type="library" name="Maven: com.google.guava:guava:23.0" level="project" />
@@ -21,6 +20,7 @@
     <orderEntry type="library" name="Maven: org.codehaus.mojo:animal-sniffer-annotations:1.14" level="project" />
     <orderEntry type="library" name="Maven: redis.clients:jedis:2.9.0" level="project" />
     <orderEntry type="library" name="Maven: org.apache.commons:commons-pool2:2.4.2" level="project" />
-    <orderEntry type="module" module-name="tip" />
+    <orderEntry type="library" name="Maven: casc.cast:tip:1.0-SNAPSHOT" level="project" />
+    <orderEntry type="module" module-name="basic" />
   </component>
 </module>

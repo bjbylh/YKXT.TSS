@@ -1,6 +1,9 @@
+package redis.subscribe;
+
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import redis.clients.jedis.JedisPubSub;
+import task.TaskInit;
 
 import java.io.IOException;
 
