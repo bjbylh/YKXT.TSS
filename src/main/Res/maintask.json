@@ -1,0 +1,35 @@
+{
+  "_id": "0",
+  "name": "task001",
+  "status": "NEW",
+  "type": "CRONTAB",
+  "templet": "TASK_PLAN",
+  "cron_core": {
+    "first_time": "2018-01-01 17:00:00",
+    "cycle": "0",
+    "count": "0"
+  },
+  "rt_core": {
+  },
+  "per_core": {
+  },
+  "tp_core": {
+    "sub_tasks": [
+      {
+        "sub_task_ser": "0",
+        "sub_taskid": "0",
+        "delay": "0"
+      },
+      {
+        "sub_task_ser": "1",
+        "sub_taskid": "1",
+        "delay": "0"
+      },
+      {
+        "sub_task_ser": "2",
+        "sub_taskid": "2",
+        "delay": "0"
+      }
+    ]
+  }
+}

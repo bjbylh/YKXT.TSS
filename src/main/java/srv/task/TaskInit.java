@@ -12,10 +12,7 @@ import common.def.TempletType;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.time.Instant;
 import java.util.List;
 
@@ -23,10 +20,23 @@ import java.util.List;
  * Created by lihan on 2018/10/24.
  */
 public class TaskInit {
-    private static String[] subtaskname = new String[]{"订单统筹与规划","多星任务规划","单星任务规划"};
+    private static String[] subtaskname = new String[]{
+            "订单统筹与规划",
+            "多星任务规划",
+            "单星任务规划"
+    };
+    private static String[] paths = new String[]{
+            "C:\\Users\\lihan\\Desktop\\ykxt\\bin\\ReqAgg.exe",
+            "C:\\Users\\lihan\\Desktop\\ykxt\\bin\\ReqAlloc.exe",
+            "C:\\Users\\lihan\\Desktop\\ykxt\\bin\\MisPlan.exe"
+    };
+
     public static void initCronTaskForTaskPlan(String taskname, String first, String cycle, String count) throws IOException {
-        InputStream in = TaskInit.class.getResourceAsStream("maintask.json");
-        BufferedReader br = new BufferedReader(new InputStreamReader(in));
+
+        String path = TaskInit.class.getClassLoader().getResource("maintask.json").getPath();
+        File file = new File(path);
+        FileInputStream inputStream = new FileInputStream(file);
+        BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
         String str;
         String data = "";
         while ((str = br.readLine()) != null) {
@@ -42,7 +52,7 @@ public class TaskInit {
 
         if (TempletType.TASK_PLAN.name().equals("TASK_PLAN")) {
             List<String> list = initTaskPlanSubTask();
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < 3; i++) {
                 json.get("tp_core").getAsJsonObject().get("sub_tasks").getAsJsonArray().get(i).getAsJsonObject().addProperty("sub_taskid", list.get(i));
             }
         }
@@ -65,8 +75,10 @@ public class TaskInit {
 
     private static List<String> initTaskPlanSubTask() throws IOException {
         List<String> ids = Lists.newLinkedList();
-        InputStream in = TaskInit.class.getResourceAsStream("subtask.json");
-        BufferedReader br = new BufferedReader(new InputStreamReader(in));
+        String path = TaskInit.class.getClassLoader().getResource("subtask.json").getPath();
+        File file = new File(path);
+        FileInputStream inputStream = new FileInputStream(file);
+        BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
         String str;
         String data = "";
         while ((str = br.readLine()) != null) {
@@ -87,6 +99,7 @@ public class TaskInit {
             ids.add(pId);
             p.addProperty("_id", pId);
             p.addProperty("name",subtaskname[i]);
+            p.getAsJsonObject("method").getAsJsonObject("param").addProperty("path",paths[i]);
             JsonArray history = p.get("history").getAsJsonArray();
             history.get(0).getAsJsonObject().addProperty("update_time", Instant.now().toString());
             sub_task.insertOne(Document.parse(p.toString()));

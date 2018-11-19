@@ -7,6 +7,8 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
+import common.def.MainTaskStatus;
+import common.def.TaskType;
 import org.bson.Document;
 
 import java.io.IOException;
@@ -40,23 +42,18 @@ public class TaskMonitor {
         Runtime.getRuntime().exec("java -jar C:\\Users\\lihan\\Desktop\\ykxt\\bin\\TSS-CORE\\core-1.0-SNAPSHOT.jar " + id);
     }
 
-    class DoWork extends Thread{
-        public void run(){
+    class DoWork extends Thread {
+        public void run() {
             while (true) {
-//                try {
-//                    check();
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-                test();
                 try {
+                    check();
                     Thread.sleep(1000 * 60);
-                } catch (InterruptedException e) {
+                } catch (IOException | InterruptedException e) {
                     e.printStackTrace();
                 }
             }
         }
-        private void test(){}
+
         private void check() throws IOException {
             MongoClient mongoClient = new MongoClient("localhost", 27017);
             MongoDatabase mongoDatabase = mongoClient.getDatabase("TSS");
@@ -66,14 +63,14 @@ public class TaskMonitor {
             FindIterable<Document> main_task = tasks.find();
 
             for (Document document : main_task) {
-                if (document.getString("status").equals("NEW")) {
-                    if (document.getString("type").equals("REALTIME")) {
+                if (document.getString("status").equals(MainTaskStatus.NEW.name())) {
+                    if (document.getString("type").equals(TaskType.REALTIME.name())) {
 
                         System.out.println("Found a new REALTIME TASK, Task Info:");
                         System.out.println(document.toString());
-                        tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("status", "RUNNING")));
+                        tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("status", MainTaskStatus.RUNNING.name())));
 
-                    } else if (document.getString("type").equals("CRONTAB")) {
+                    } else if (document.getString("type").equals(TaskType.CRONTAB.name())) {
 
                         JsonParser parse = new JsonParser();  //创建json解析器
                         JsonObject json = (JsonObject) parse.parse(document.toJson());
@@ -85,7 +82,7 @@ public class TaskMonitor {
                         if (Instant.now().isAfter(instant_ft)) {
                             System.out.println("Found a new CRONTAB TASK, Task Info:");
                             System.out.println(document.toString());
-                            tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("status", "RUNNING")));
+                            tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("status", MainTaskStatus.RUNNING.name())));
                             tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("cron_core.first_time", nt_str)));
 
                             Run.Exec(document.getString("_id"));
@@ -94,8 +91,8 @@ public class TaskMonitor {
                         System.out.println("Found a new PERMANENT TASK, Task Info:");
                         System.out.println(document.toString());
                     }
-                } else if (document.getString("status").equals("SUSPEND")) {
-                    if (document.getString("type").equals("CRONTAB")) {
+                } else if (document.getString("status").equals(MainTaskStatus.SUSPEND.name())) {
+                    if (document.getString("type").equals(TaskType.CRONTAB.name())) {
                         JsonParser parse = new JsonParser();  //创建json解析器
                         JsonObject json = (JsonObject) parse.parse(document.toJson());
 
@@ -106,7 +103,7 @@ public class TaskMonitor {
                         if (Instant.now().isAfter(instant_ft)) {
                             System.out.println("Found a SUSPEND CRONTAB TASK, Task Info:");
                             System.out.println(document.toString());
-                            tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("status", "RUNNING")));
+                            tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("status", MainTaskStatus.RUNNING.name())));
                             tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("cron_core.first_time", nt_str)));
 
                             createProc(document.getString("_id"));
