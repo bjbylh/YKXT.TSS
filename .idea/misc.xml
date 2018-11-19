@@ -8,6 +8,9 @@
     </option>
     <option name="ignoredFiles">
       <set>
+        <option value="$PROJECT_DIR$/basic/pom.xml" />
+        <option value="$PROJECT_DIR$/core/pom.xml" />
+        <option value="$PROJECT_DIR$/srv/pom.xml" />
         <option value="$PROJECT_DIR$/tip/pom.xml" />
       </set>
     </option>
