@@ -13,10 +13,10 @@ import java.io.IOException;
 public class NewTaskSubscriber extends JedisPubSub {
     public NewTaskSubscriber(){}
     @Override
-    public void onMessage(String channel, String message) {       //æ”¶åˆ°æ¶ˆæ¯ä¼šè°ƒç”¨
+    public void onMessage(String channel, String message) {       //ÊÕµ½ÏûÏ¢??ÓÃ
         System.out.println(String.format("receive redis published message, channel %s, message %s", channel, message));
 
-        JsonParser parse = new JsonParser();  //åˆ›å»ºjsonè§£æå™¨
+        JsonParser parse = new JsonParser();  //?½¨json½âÎöÆ÷
         JsonObject msg = (JsonObject) parse.parse(message);
         JsonObject json = msg.getAsJsonObject("data");
         try {
@@ -26,12 +26,12 @@ public class NewTaskSubscriber extends JedisPubSub {
         }
     }
     @Override
-    public void onSubscribe(String channel, int subscribedChannels) {    //è®¢é˜…äº†é¢‘é“ä¼šè°ƒç”¨
+    public void onSubscribe(String channel, int subscribedChannels) {    //??ÁË?µÀ??ÓÃ
         System.out.println(String.format("subscribe redis channel success, channel %s, subscribedChannels %d",
                 channel, subscribedChannels));
     }
     @Override
-    public void onUnsubscribe(String channel, int subscribedChannels) {   //å–æ¶ˆè®¢é˜… ä¼šè°ƒç”¨
+    public void onUnsubscribe(String channel, int subscribedChannels) {   //È¡Ïû?? ??ÓÃ
         System.out.println(String.format("unsubscribe redis channel, channel %s, subscribedChannels %d",
                 channel, subscribedChannels));
 

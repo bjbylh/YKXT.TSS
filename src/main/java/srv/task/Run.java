@@ -9,14 +9,14 @@ import java.io.*;
  */
 public class Run {
 
-    public static Boolean Exec(String id) {
+    public static Boolean Exec(String path, String exeName, String param) {
         new Thread(() -> {
             Process p;
             try {
 //                ProcessBuilder builder = new ProcessBuilder("cmd", "/c", "java", "-jar", "core-1.0-SNAPSHOT.jar", id);
-                ProcessBuilder builder = new ProcessBuilder("C:\\Users\\lihan\\Desktop\\ykxt\\bin\\TSS-CORE\\CORE.exe",id);
+                ProcessBuilder builder = new ProcessBuilder(path + exeName, param);
 
-                builder.directory(new File("C:\\Users\\lihan\\Desktop\\ykxt\\bin\\TSS-CORE\\"));
+                builder.directory(new File(path));
                 builder.redirectErrorStream(true);
                 p = builder.start();
                 //

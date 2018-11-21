@@ -86,7 +86,7 @@ public class TaskMonitor {
                             tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("cron_core.first_time", nt_str)));
 
 
-                            Run.Exec(document.getString("_id"));
+                            //Run.Exec(document.getString("_id"));
                         }
                     } else {
                         System.out.println("Found a new PERMANENT TASK, Task Info:");

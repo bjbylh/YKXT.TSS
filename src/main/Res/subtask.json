@@ -1,10 +1,11 @@
 {
   "_id": "0",
   "name": "",
+  "exename":"",
   "method": {
     "type": "process",
     "param": {
-      "path": "C://exe//xxx.exe"
+      "path": "C://exe//"
     }
   },
   "param": [],

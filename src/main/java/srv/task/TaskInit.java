@@ -21,14 +21,20 @@ import java.util.List;
  */
 public class TaskInit {
     private static String[] subtaskname = new String[]{
-            "è®¢å•ç»Ÿç­¹ä¸è§„åˆ’",
-            "å¤šæ˜Ÿä»»åŠ¡è§„åˆ’",
-            "å•æ˜Ÿä»»åŠ¡è§„åˆ’"
+            "¶©µ¥Í³³ïÓë¹æ»®",
+            "¶àĞÇÈÎÎñ¹æ»®",
+            "µ¥ĞÇÈÎÎñ¹æ»®"
     };
     private static String[] paths = new String[]{
-            "C:\\Users\\lihan\\Desktop\\ykxt\\bin\\ReqAgg.exe",
-            "C:\\Users\\lihan\\Desktop\\ykxt\\bin\\ReqAlloc.exe",
-            "C:\\Users\\lihan\\Desktop\\ykxt\\bin\\MisPlan.exe"
+            "C:\\Users\\lihan\\Desktop\\ykxt\\bin\\",
+            "C:\\Users\\lihan\\Desktop\\ykxt\\bin\\",
+            "C:\\Users\\lihan\\Desktop\\ykxt\\bin\\"
+    };
+
+    private static String[] exenames = new String[]{
+            "ReqAgg.exe",
+            "ReqAlloc.exe",
+            "MisPlan.exe"
     };
 
     public static void initCronTaskForTaskPlan(String taskname, String first, String cycle, String count) throws IOException {
@@ -43,7 +49,7 @@ public class TaskInit {
             data = data + str + "\n";
         }
 
-        JsonParser parse = new JsonParser();  //åˆ›å»ºjsonè§£æå™¨
+        JsonParser parse = new JsonParser();  //´´½¨json½âÎöÆ÷
         JsonObject json = (JsonObject) parse.parse(data);
 
         json.addProperty("name", taskname);
@@ -85,7 +91,7 @@ public class TaskInit {
             data = data + str + "\n";
         }
 
-        JsonParser parse = new JsonParser();  //åˆ›å»ºjsonè§£æå™¨
+        JsonParser parse = new JsonParser();  //´´½¨json½âÎöÆ÷
         JsonObject json = (JsonObject) parse.parse(data);
 
         MongoClient mongoClient = new MongoClient("localhost", 27017);
@@ -99,6 +105,7 @@ public class TaskInit {
             ids.add(pId);
             p.addProperty("_id", pId);
             p.addProperty("name",subtaskname[i]);
+            p.addProperty("exename",exenames[i]);
             p.getAsJsonObject("method").getAsJsonObject("param").addProperty("path",paths[i]);
             JsonArray history = p.get("history").getAsJsonArray();
             history.get(0).getAsJsonObject().addProperty("update_time", Instant.now().toString());
