@@ -1,8 +1,7 @@
 package srv;
 
-import common.redis.subscribe.NewTaskSubscriber;
 import common.redis.TaskBuilderService;
-import srv.task.TaskMonitor;
+import common.redis.subscribe.NewTaskSubscriber;
 
 import java.io.IOException;
 
@@ -12,7 +11,7 @@ import java.io.IOException;
 public class Server {
     public static void main(String[] args) throws InterruptedException, IOException {
         //启动任务监视线程
-        TaskMonitor.getInstance().startup();
+        //TaskMonitor.getInstance().startup();
         //启动新任务监听线程
         NewTaskSubscriber newTaskSubscriber = new NewTaskSubscriber();
         TaskBuilderService taskBuilderService = new TaskBuilderService(newTaskSubscriber);
