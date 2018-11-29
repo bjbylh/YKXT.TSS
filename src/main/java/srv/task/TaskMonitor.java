@@ -9,6 +9,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import common.def.MainTaskStatus;
 import common.def.TaskType;
+import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
 import java.io.IOException;
@@ -55,8 +56,8 @@ public class TaskMonitor {
         }
 
         private void check() throws IOException {
-            MongoClient mongoClient = new MongoClient("localhost", 27017);
-            MongoDatabase mongoDatabase = mongoClient.getDatabase("TSS");
+            MongoClient mongoClient = MangoDBConnector.getClient();
+            MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
 
             MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
 
@@ -86,7 +87,7 @@ public class TaskMonitor {
                             tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("cron_core.first_time", nt_str)));
 
 
-                            //Run.Exec(document.getString("_id"));
+                            Run.ExecJar("C:\\Users\\lihan\\Desktop\\ykxt\\bin\\",document.getString("_id"));
                         }
                     } else {
                         System.out.println("Found a new PERMANENT TASK, Task Info:");
@@ -107,7 +108,7 @@ public class TaskMonitor {
                             tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("status", MainTaskStatus.RUNNING.name())));
                             tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("cron_core.first_time", nt_str)));
 
-                            createProc(document.getString("_id"));
+                            Run.ExecJar("C:\\Users\\lihan\\Desktop\\ykxt\\bin\\",document.getString("_id"));
                         }
                     }
                 } else {

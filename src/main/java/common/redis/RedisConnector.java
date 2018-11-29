@@ -9,7 +9,7 @@ import redis.clients.jedis.JedisPoolConfig;
  */
 public class RedisConnector {
     //Redis服务器IP
-    private static String RSIP = "127.0.0.1";
+    private static String RSIP = "192.168.2.80";
     //Redis的端口
     private final static int RSPORT = 6379;
     //访问密码

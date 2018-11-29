@@ -9,6 +9,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import common.def.MainTaskStatus;
 import common.def.SubTaskStatus;
+import common.mongo.MangoDBConnector;
 import common.redis.RedisPublish;
 import org.bson.Document;
 
@@ -20,7 +21,7 @@ import java.time.Instant;
  */
 public class TaskPlanCore {
     public static void main(String[] args) throws InterruptedException {
-        String id = "5bf4ff600e35684dbc875716";//args[0];
+        String id = args[0];
 
         String[] subList = getSubList(id);
 
@@ -92,8 +93,8 @@ public class TaskPlanCore {
     }
 
     private static String getPath(String subid) {
-        MongoClient mongoClient = new MongoClient("localhost", 27017);
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("TSS");
+        MongoClient mongoClient = MangoDBConnector.getClient();
+        MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
 
         MongoCollection<Document> subtasks = mongoDatabase.getCollection("sub_task");
         Document iddoc = subtasks.find(new Document("_id", subid)).first();
@@ -104,8 +105,8 @@ public class TaskPlanCore {
     }
 
     private static String getExename(String subid) {
-        MongoClient mongoClient = new MongoClient("localhost", 27017);
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("TSS");
+        MongoClient mongoClient = MangoDBConnector.getClient();
+        MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
 
         MongoCollection<Document> subtasks = mongoDatabase.getCollection("sub_task");
         Document iddoc = subtasks.find(new Document("_id", subid)).first();
@@ -116,8 +117,8 @@ public class TaskPlanCore {
     }
 
     private static String[] getSubList(String id) {
-        MongoClient mongoClient = new MongoClient("localhost", 27017);
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("TSS");
+        MongoClient mongoClient = MangoDBConnector.getClient();
+        MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
 
         MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
 
@@ -139,8 +140,8 @@ public class TaskPlanCore {
     }
 
     private static void updateStatus(String id, SubTaskStatus subTaskStatus) {
-        MongoClient mongoClient = new MongoClient("localhost", 27017);
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("TSS");
+        MongoClient mongoClient = MangoDBConnector.getClient();
+        MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
 
         MongoCollection<Document> subtasks = mongoDatabase.getCollection("sub_task");
 
@@ -160,8 +161,8 @@ public class TaskPlanCore {
     }
 
     private static void updateMainStatus(String id, MainTaskStatus mainTaskStatus){
-        MongoClient mongoClient = new MongoClient("localhost", 27017);
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("TSS");
+        MongoClient mongoClient = MangoDBConnector.getClient();
+        MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
 
         MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
 

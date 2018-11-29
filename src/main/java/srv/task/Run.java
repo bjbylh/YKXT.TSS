@@ -36,4 +36,32 @@ public class Run {
         }).start();
         return true;
     }
+
+    public static Boolean ExecJar(String path, String param) {
+        new Thread(() -> {
+            Process p;
+            try {
+                ProcessBuilder builder = new ProcessBuilder("cmd", "/c", "java", "-jar", path + "core.jar", param);
+//                ProcessBuilder builder = new ProcessBuilder(path + exeName, param);
+
+                builder.directory(new File(path));
+                builder.redirectErrorStream(true);
+                p = builder.start();
+
+                InputStream fis = p.getInputStream();
+
+                InputStreamReader isr = new InputStreamReader(fis);
+
+                BufferedReader br = new BufferedReader(isr);
+                String line;
+
+                while ((line = br.readLine()) != null) {
+                    System.out.println(line);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }).start();
+        return true;
+    }
 }

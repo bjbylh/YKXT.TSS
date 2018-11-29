@@ -9,6 +9,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import common.def.TaskType;
 import common.def.TempletType;
+import common.mongo.MangoDBConnector;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
@@ -67,8 +68,8 @@ public class TaskInit {
         json.get("cron_core").getAsJsonObject().addProperty("count", count);
         json.addProperty("_id", new ObjectId().toString());
 
-        MongoClient mongoClient = new MongoClient("localhost", 27017);
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("TSS");
+        MongoClient mongoClient = MangoDBConnector.getClient();
+        MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
 
         MongoCollection<Document> main_task = mongoDatabase.getCollection("main_task");
 
@@ -94,8 +95,8 @@ public class TaskInit {
         JsonParser parse = new JsonParser();  //´´½¨json½âÎöÆ÷
         JsonObject json = (JsonObject) parse.parse(data);
 
-        MongoClient mongoClient = new MongoClient("localhost", 27017);
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("TSS");
+        MongoClient mongoClient = MangoDBConnector.getClient();
+        MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
 
         MongoCollection<Document> sub_task = mongoDatabase.getCollection("sub_task");
 
