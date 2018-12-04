@@ -1,6 +1,7 @@
 package common.redis;
 
 import com.google.gson.JsonObject;
+import common.def.InsType;
 import common.def.TaskType;
 import common.def.TempletType;
 
@@ -25,9 +26,17 @@ public class RedisDataEntity {
         data.addProperty("tasktype", TaskType.CRONTAB.name());
         data.addProperty("templet", TempletType.TASK_PLAN.name());
         data.addProperty("firsttime", Instant.now().toString());
-        data.addProperty("cycle","60000");
-        data.addProperty("count","0");
+        data.addProperty("cycle", "60000");
+        data.addProperty("count", "0");
         jsonObject.add("data", data);
+        return jsonObject.toString();
+    }
+
+    public static String GenTaskStatusChange(String taskID,Topic topic, InsType insType) {
+        JsonObject jsonObject = GenHead(topic, "MAG", "TSS");
+        JsonObject data = new JsonObject();
+        data.addProperty("taskID", taskID);
+        data.addProperty("status", insType.name());
         return jsonObject.toString();
     }
 

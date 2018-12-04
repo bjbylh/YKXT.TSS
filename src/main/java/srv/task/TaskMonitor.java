@@ -10,6 +10,7 @@ import com.mongodb.client.model.Filters;
 import common.def.MainTaskStatus;
 import common.def.TaskType;
 import common.mongo.MangoDBConnector;
+import common.process.Run;
 import org.bson.Document;
 
 import java.io.IOException;
@@ -38,10 +39,6 @@ public class TaskMonitor {
         doWork.start();
     }
 
-    private void createProc(String id) throws IOException {
-//        String[] args = new String[]{"C:\\Users\\lihan\\Desktop\\ykxt\\bin\\TSS-CORE\\startup.bat", id};
-        Runtime.getRuntime().exec("java -jar C:\\Users\\lihan\\Desktop\\ykxt\\bin\\TSS-CORE\\core-1.0-SNAPSHOT.jar " + id);
-    }
 
     class DoWork extends Thread {
         public void run() {

@@ -5,5 +5,6 @@ package common.redis;
  */
 public enum Topic {
     DB_REFRESH,
-    NEW_TASK
+    NEW_TASK,
+    TASK_STATUS_CHANGE
 }

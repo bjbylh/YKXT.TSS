@@ -2,6 +2,7 @@ package srv;
 
 import common.redis.TaskBuilderService;
 import common.redis.subscribe.NewTaskSubscriber;
+import common.redis.subscribe.TaskStatusSubscriber;
 import srv.task.TaskMonitor;
 
 import java.io.IOException;
@@ -15,7 +16,11 @@ public class Server {
         TaskMonitor.getInstance().startup();
         //启动新任务监听线程
         NewTaskSubscriber newTaskSubscriber = new NewTaskSubscriber();
-        TaskBuilderService taskBuilderService = new TaskBuilderService(newTaskSubscriber);
-        taskBuilderService.startup();
+        TaskBuilderService newTaskBuilderService = new TaskBuilderService(newTaskSubscriber);
+        newTaskBuilderService.startup();
+        //启动控制监视线程
+        TaskStatusSubscriber taskStatusSubscriber = new TaskStatusSubscriber();
+        TaskBuilderService taskStatusBuilderService = new TaskBuilderService(taskStatusSubscriber);
+        taskStatusBuilderService.startup();
     }
 }
