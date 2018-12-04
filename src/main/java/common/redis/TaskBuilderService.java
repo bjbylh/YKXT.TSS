@@ -9,11 +9,11 @@ public class TaskBuilderService {
 
     private RedisSubscribe redisSubscribe;
 
-    public TaskBuilderService(JedisPubSub jedisPubSub) {
-        redisSubscribe = new RedisSubscribe(jedisPubSub,Topic.NEW_TASK.name());
+    public TaskBuilderService(JedisPubSub jedisPubSub, Topic topic) {
+        redisSubscribe = new RedisSubscribe(jedisPubSub, topic.name());
     }
 
-    public void startup(){
+    public void startup() {
         redisSubscribe.start();
     }
 }

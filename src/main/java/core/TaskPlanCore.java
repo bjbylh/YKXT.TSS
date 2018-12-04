@@ -40,24 +40,58 @@ public class TaskPlanCore {
         String path = getPath(subid);
         String exename = getExename(subid);
 
-        Run(id, subid, path, exename);
+        String subid1 = subList[1];
+        String path1 = getPath(subid1);
+        String exename1 = getExename(subid1);
 
-        subid = subList[1];
-        path = getPath(subid);
-        exename = getExename(subid);
-
-        Run(id, subid, path, exename);
-
-        subid = subList[2];
-        path = getPath(subid);
-        exename = getExename(subid);
+        String subid2 = subList[2];
+        String path2 = getPath(subid2);
+        String exename2 = getExename(subid2);
 
         Run(id, subid, path, exename);
 
-        updateMainStatus(id,MainTaskStatus.SUSPEND);
+        MainTaskStatus mainTaskStatus = checkMainTaskStatus(id);
+        if (mainTaskStatus.name().equals("DELETE"))
+            return;
+        else if (mainTaskStatus.name().equals("SUSPEND")) {
+            updateStatus(subid1,SubTaskStatus.SUSPEND);
+            updateStatus(subid2,SubTaskStatus.SUSPEND);
+            RedisPublish.dbRefresh(id);
+        } else {
+        }
+
+
+        Run(id, subid1, path1, exename1);
+
+        if (mainTaskStatus.name().equals("DELETE"))
+            return;
+        else if (mainTaskStatus.name().equals("SUSPEND")) {
+            updateStatus(subid2,SubTaskStatus.SUSPEND);
+            RedisPublish.dbRefresh(id);
+        } else {
+        }
+
+        Run(id, subid2, path2, exename2);
+
+        updateMainStatus(id, MainTaskStatus.SUSPEND);
         RedisPublish.dbRefresh(id);
     }
 
+
+    private static MainTaskStatus checkMainTaskStatus(String id) {
+        MongoClient mongoClient = MangoDBConnector.getClient();
+        MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
+
+        MongoCollection<Document> maintasks = mongoDatabase.getCollection("main_task");
+
+        Document cond = new Document();
+        cond.put("_id", id);
+        Document first = maintasks.find(cond).first();
+
+        String status = first.getString("status");
+
+        return MainTaskStatus.valueOf(status);
+    }
 
 
     private static void Run(String id, String subid, String path, String exename) {
@@ -160,7 +194,7 @@ public class TaskPlanCore {
         mongoClient.close();
     }
 
-    private static void updateMainStatus(String id, MainTaskStatus mainTaskStatus){
+    private static void updateMainStatus(String id, MainTaskStatus mainTaskStatus) {
         MongoClient mongoClient = MangoDBConnector.getClient();
         MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
 
