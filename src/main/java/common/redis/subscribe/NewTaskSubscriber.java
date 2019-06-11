@@ -2,6 +2,7 @@ package common.redis.subscribe;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import common.redis.MsgType;
 import redis.clients.jedis.JedisPubSub;
 import srv.task.TaskInit;
 
@@ -15,12 +16,18 @@ public class NewTaskSubscriber extends JedisPubSub {
     }
 
     @Override
-    public void onMessage(String channel, String message) {       //收到消息??用
+    public void onMessage(String channel, String message) {
         System.out.println(String.format("receive redis published message, channel %s, message %s", channel, message));
 
         JsonParser parse = new JsonParser();  //?建json解析器
         JsonObject msg = (JsonObject) parse.parse(message);
-        JsonObject json = msg.getAsJsonObject("data");
+
+        String asString = msg.getAsJsonObject("Head").get("type").getAsString();
+
+        if (!asString.equals(MsgType.NEW_TASK.name()))
+            return;
+
+        JsonObject json = msg.getAsJsonObject("Data");
         try {
             TaskInit.initCronTaskForTaskPlan(json.get("name").getAsString(), json.get("firsttime").getAsString(), json.get("cycle").getAsString(), json.get("count").getAsString());
         } catch (IOException e) {

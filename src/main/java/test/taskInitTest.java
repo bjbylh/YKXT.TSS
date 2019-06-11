@@ -1,8 +1,8 @@
 package test;
 
+import common.def.Topic;
 import common.redis.RedisConnector;
 import common.redis.RedisDataEntity;
-import common.redis.Topic;
 import redis.clients.jedis.Jedis;
 
 /**
@@ -11,6 +11,6 @@ import redis.clients.jedis.Jedis;
 public class taskInitTest {
     public static void main(String[] args) {
         Jedis jedis = RedisConnector.getJedis();
-        jedis.publish(Topic.NEW_TASK.name(), RedisDataEntity.GenNewTask());
+        jedis.publish(Topic.CMD, RedisDataEntity.GenNewTask());
     }
 }

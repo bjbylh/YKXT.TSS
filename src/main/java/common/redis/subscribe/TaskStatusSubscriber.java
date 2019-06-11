@@ -7,8 +7,10 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import common.mongo.MangoDBConnector;
+import common.redis.MsgType;
 import common.redis.RedisPublish;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 import redis.clients.jedis.JedisPubSub;
 
 /**
@@ -23,7 +25,13 @@ public class TaskStatusSubscriber extends JedisPubSub {
         System.out.println(String.format("receive redis published message, channel %s, message %s", channel, message));
         JsonParser parse = new JsonParser();  //?建json解析器
         JsonObject msg = (JsonObject) parse.parse(message);
-        JsonObject json = msg.getAsJsonObject("data");
+
+        String asString = msg.getAsJsonObject("Head").get("type").getAsString();
+
+        if(!asString.equals(MsgType.TASK_STATUS_CHANGE.name()))
+            return;
+
+        JsonObject json = msg.getAsJsonObject("Data");
         String taskID = json.get("taskID").getAsString();
         String status = json.get("status").getAsString();
 
@@ -33,7 +41,7 @@ public class TaskStatusSubscriber extends JedisPubSub {
 
             MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
 
-            tasks.updateOne(Filters.eq("_id", taskID), new Document("$set", new Document("status", status)));
+            tasks.updateOne(Filters.eq("_id", new ObjectId(taskID)), new Document("$set", new Document("status", status)));
 
             RedisPublish.dbRefresh(taskID);
         }

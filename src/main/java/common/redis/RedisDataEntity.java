@@ -11,16 +11,30 @@ import java.time.Instant;
  * Created by lihan on 2018/11/15.
  */
 public class RedisDataEntity {
+    private static long num = 0;
+
     public static String GenDbRefreshData(String taskId) {
-        JsonObject jsonObject = GenHead(Topic.DB_REFRESH, "TSS", "MAG");
+        JsonObject ret = new JsonObject();
+        JsonObject head = GenHead(MsgType.DB_REFRESH, "TSS", "MAG","");
         JsonObject data = new JsonObject();
         data.addProperty("taskID", taskId);
-        jsonObject.add("data", data);
-        return jsonObject.toString();
+        ret.add("Head",head);
+        ret.add("Data", data);
+        return ret.toString();
+    }
+
+    public static String GenHeartBeatData() {
+        JsonObject ret = new JsonObject();
+        JsonObject head = GenHead(MsgType.KEEP_ALIVE, "TSS", "MAG","");
+        JsonObject data = new JsonObject();
+        data.addProperty("status", num++);
+        ret.add("Head",head);
+        ret.add("Data", data);
+        return ret.toString();
     }
 
     public static String GenNewTask() {
-        JsonObject jsonObject = GenHead(Topic.NEW_TASK, "MAG", "TSS");
+        JsonObject jsonObject = GenHead(MsgType.NEW_TASK, "MAG", "TSS","");
         JsonObject data = new JsonObject();
         data.addProperty("name", "task12345");
         data.addProperty("tasktype", TaskType.CRONTAB.name());
@@ -32,22 +46,22 @@ public class RedisDataEntity {
         return jsonObject.toString();
     }
 
-    public static String GenTaskStatusChange(String taskID,Topic topic, InsType insType) {
-        JsonObject jsonObject = GenHead(topic, "MAG", "TSS");
+    public static String GenTaskStatusChange(String taskID, MsgType topic, InsType insType) {
+        JsonObject jsonObject = GenHead(topic, "MAG", "TSS","");
         JsonObject data = new JsonObject();
         data.addProperty("taskID", taskID);
         data.addProperty("status", insType.name());
         return jsonObject.toString();
     }
 
-    private static JsonObject GenHead(Topic type, String from, String extra) {
+    private static JsonObject GenHead(MsgType type, String from, String to, String extra) {
         Instant now = Instant.now();
         JsonObject json = new JsonObject();
         json.addProperty("id", from + "@" + now.toEpochMilli());
         json.addProperty("time", now.toString().substring(0, now.toString().length() - 1));
         json.addProperty("type", type.name());
         json.addProperty("from", from);
-        json.addProperty("extra", extra);
+        json.addProperty("to", to);
         return json;
     }
 

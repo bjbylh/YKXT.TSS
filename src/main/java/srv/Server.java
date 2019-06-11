@@ -1,9 +1,9 @@
 package srv;
 
+import common.def.Topic;
 import common.redis.TaskBuilderService;
-import common.redis.Topic;
 import common.redis.subscribe.NewTaskSubscriber;
-import common.redis.subscribe.TaskStatusSubscriber;
+import srv.task.HeartBeatService;
 import srv.task.TaskMonitor;
 
 import java.io.IOException;
@@ -18,12 +18,15 @@ public class Server {
 
         //启动新任务监听线程
         NewTaskSubscriber newTaskSubscriber = new NewTaskSubscriber();
-        TaskBuilderService newTaskBuilderService = new TaskBuilderService(newTaskSubscriber, Topic.NEW_TASK);
+        TaskBuilderService newTaskBuilderService = new TaskBuilderService(newTaskSubscriber, Topic.CMD);
         newTaskBuilderService.startup();
 
         //启动控制监视线程
-        TaskStatusSubscriber taskStatusSubscriber = new TaskStatusSubscriber();
-        TaskBuilderService taskStatusBuilderService = new TaskBuilderService(taskStatusSubscriber, Topic.TASK_STATUS_CHANGE);
-        taskStatusBuilderService.startup();
+//        TaskStatusSubscriber taskStatusSubscriber = new TaskStatusSubscriber();
+//        TaskBuilderService taskStatusBuilderService = new TaskBuilderService(taskStatusSubscriber, Topic.CMD);
+        //taskStatusBuilderService.startup();
+
+        //心跳服务
+        HeartBeatService.getInstance().startup();
     }
 }

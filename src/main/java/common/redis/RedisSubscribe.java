@@ -36,7 +36,7 @@ public class RedisSubscribe extends Thread {
 
     public static void main(String[] args) {
         NewTaskSubscriber subscriber = new NewTaskSubscriber();
-        RedisSubscribe redisSubscribe = new RedisSubscribe(subscriber,Topic.NEW_TASK.name());
+        RedisSubscribe redisSubscribe = new RedisSubscribe(subscriber, MsgType.NEW_TASK.name());
         redisSubscribe.run();
     }
 }

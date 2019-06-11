@@ -12,6 +12,7 @@ import common.def.SubTaskStatus;
 import common.mongo.MangoDBConnector;
 import common.redis.RedisPublish;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 
 import java.io.*;
 import java.time.Instant;
@@ -85,7 +86,7 @@ public class TaskPlanCore {
         MongoCollection<Document> maintasks = mongoDatabase.getCollection("main_task");
 
         Document cond = new Document();
-        cond.put("_id", id);
+        cond.put("_id", new ObjectId(id));
         Document first = maintasks.find(cond).first();
 
         String status = first.getString("status");
@@ -131,7 +132,7 @@ public class TaskPlanCore {
         MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
 
         MongoCollection<Document> subtasks = mongoDatabase.getCollection("sub_task");
-        Document iddoc = subtasks.find(new Document("_id", subid)).first();
+        Document iddoc = subtasks.find(new Document("_id", new ObjectId(subid))).first();
         JsonParser parse = new JsonParser();  //??json???
         JsonObject json = (JsonObject) parse.parse(iddoc.toJson());
         mongoClient.close();
@@ -143,7 +144,7 @@ public class TaskPlanCore {
         MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
 
         MongoCollection<Document> subtasks = mongoDatabase.getCollection("sub_task");
-        Document iddoc = subtasks.find(new Document("_id", subid)).first();
+        Document iddoc = subtasks.find(new Document("_id", new ObjectId(subid))).first();
         JsonParser parse = new JsonParser();  //??json???
         JsonObject json = (JsonObject) parse.parse(iddoc.toJson());
         mongoClient.close();
@@ -156,7 +157,7 @@ public class TaskPlanCore {
 
         MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
 
-        Document document = tasks.find(new Document("_id", id)).first();
+        Document document = tasks.find(new Document("_id", new ObjectId(id))).first();
 
         JsonParser parse = new JsonParser();  //??json???
         JsonObject json = (JsonObject) parse.parse(document.toJson());
@@ -180,7 +181,7 @@ public class TaskPlanCore {
         MongoCollection<Document> subtasks = mongoDatabase.getCollection("sub_task");
 
         Document doc = new Document();
-        doc.append("_id", id);
+        doc.append("_id", new ObjectId(id));
         subtasks.updateOne(doc,
                 new Document("$push",
                         new Document("history",
@@ -200,7 +201,7 @@ public class TaskPlanCore {
 
         MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
 
-        tasks.updateOne(Filters.eq("_id", id), new Document("$set", new Document("status", mainTaskStatus.name())));
+        tasks.updateOne(Filters.eq("_id", new ObjectId(id)), new Document("$set", new Document("status", mainTaskStatus.name())));
         mongoClient.close();
     }
 

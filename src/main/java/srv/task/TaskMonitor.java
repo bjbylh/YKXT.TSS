@@ -66,7 +66,7 @@ public class TaskMonitor {
 
                         System.out.println("Found a new REALTIME TASK, Task Info:");
                         System.out.println(document.toString());
-                        tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("status", MainTaskStatus.RUNNING.name())));
+                        tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("status", MainTaskStatus.RUNNING.name())));
 
                     } else if (document.getString("type").equals(TaskType.CRONTAB.name())) {
 
@@ -80,8 +80,8 @@ public class TaskMonitor {
                         if (Instant.now().isAfter(instant_ft)) {
                             System.out.println("Found a new CRONTAB TASK, Task Info:");
                             System.out.println(document.toString());
-                            tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("status", MainTaskStatus.RUNNING.name())));
-                            tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("cron_core.first_time", nt_str)));
+                            tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("status", MainTaskStatus.RUNNING.name())));
+                            tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("cron_core.first_time", nt_str)));
 
 
                             Run.ExecJar("C:\\Users\\lihan\\Desktop\\ykxt\\bin\\",document.getString("_id"));
@@ -102,10 +102,10 @@ public class TaskMonitor {
                         if (Instant.now().isAfter(instant_ft)) {
                             System.out.println("Found a SUSPEND CRONTAB TASK, Task Info:");
                             System.out.println(document.toString());
-                            tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("status", MainTaskStatus.RUNNING.name())));
-                            tasks.updateOne(Filters.eq("_id", document.get("_id").toString()), new Document("$set", new Document("cron_core.first_time", nt_str)));
+                            tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("status", MainTaskStatus.RUNNING.name())));
+                            tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("cron_core.first_time", nt_str)));
 
-                            Run.ExecJar("C:\\Users\\lihan\\Desktop\\ykxt\\bin\\",document.getString("_id"));
+                            Run.ExecJar("C:\\Users\\lihan\\Desktop\\ykxt\\bin\\",document.getObjectId("_id").toString());
                         }
                     }
                 } else {

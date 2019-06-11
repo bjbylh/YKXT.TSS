@@ -66,7 +66,7 @@ public class TaskInit {
         json.get("cron_core").getAsJsonObject().addProperty("first_time", first);
         json.get("cron_core").getAsJsonObject().addProperty("cycle", cycle);
         json.get("cron_core").getAsJsonObject().addProperty("count", count);
-        json.addProperty("_id", new ObjectId().toString());
+        json.remove("_id");
 
         MongoClient mongoClient = MangoDBConnector.getClient();
         MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
@@ -102,15 +102,16 @@ public class TaskInit {
 
         for (int i = 0; i < 3; i++) {
             JsonObject p = json.deepCopy();
-            String pId = new ObjectId().toString();
-            ids.add(pId);
-            p.addProperty("_id", pId);
-            p.addProperty("name",subtaskname[i]);
-            p.addProperty("exename",exenames[i]);
-            p.getAsJsonObject("method").getAsJsonObject("param").addProperty("path",paths[i]);
+            ObjectId pId = new ObjectId();
+            ids.add(pId.toString());
+            p.addProperty("name", subtaskname[i]);
+            p.addProperty("exename", exenames[i]);
+            p.getAsJsonObject("method").getAsJsonObject("param").addProperty("path", paths[i]);
             JsonArray history = p.get("history").getAsJsonArray();
             history.get(0).getAsJsonObject().addProperty("update_time", Instant.now().toString());
-            sub_task.insertOne(Document.parse(p.toString()));
+            Document parse1 = Document.parse(p.toString());
+            parse1.put("_id", pId);
+            sub_task.insertOne(parse1);
         }
         mongoClient.close();
         return ids;

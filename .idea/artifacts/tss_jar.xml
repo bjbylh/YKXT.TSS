@@ -1,0 +1,24 @@
+<component name="ArtifactManager">
+  <artifact name="tss:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/tss_jar</output-path>
+    <root id="root">
+      <element id="archive" name="tss.jar">
+        <element id="directory" name="META-INF">
+          <element id="file-copy" path="$PROJECT_DIR$/META-INF/MANIFEST.MF" />
+        </element>
+        <element id="module-output" name="tss" />
+      </element>
+      <element id="directory" name="lib">
+        <element id="library" level="project" name="Maven: com.google.errorprone:error_prone_annotations:2.0.18" />
+        <element id="library" level="project" name="Maven: com.google.guava:guava:23.0" />
+        <element id="library" level="project" name="Maven: com.google.j2objc:j2objc-annotations:1.1" />
+        <element id="library" level="project" name="Maven: com.google.code.gson:gson:2.8.5" />
+        <element id="library" level="project" name="Maven: org.apache.commons:commons-pool2:2.4.2" />
+        <element id="library" level="project" name="Maven: org.codehaus.mojo:animal-sniffer-annotations:1.14" />
+        <element id="library" level="project" name="Maven: com.google.code.findbugs:jsr305:1.3.9" />
+        <element id="library" level="project" name="Maven: redis.clients:jedis:2.9.0" />
+        <element id="library" level="project" name="Maven: org.mongodb:mongo-java-driver:3.8.2" />
+      </element>
+    </root>
+  </artifact>
+</component>

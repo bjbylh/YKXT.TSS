@@ -1,5 +1,6 @@
 package common.redis;
 
+import common.def.Topic;
 import redis.clients.jedis.Jedis;
 
 /**
@@ -8,6 +9,14 @@ import redis.clients.jedis.Jedis;
 public class RedisPublish {
     public static void dbRefresh(String taskid) {
         Jedis jedis = RedisConnector.getJedis();
-        jedis.publish(Topic.DB_REFRESH.name(), RedisDataEntity.GenDbRefreshData(taskid));
+        jedis.publish(Topic.CMD, RedisDataEntity.GenDbRefreshData(taskid));
+        jedis.close();
     }
+
+    public static void heartbeat(){
+        Jedis jedis = RedisConnector.getJedis();
+        jedis.publish(Topic.CMD, RedisDataEntity.GenHeartBeatData());
+        jedis.close();
+    }
+
 }
