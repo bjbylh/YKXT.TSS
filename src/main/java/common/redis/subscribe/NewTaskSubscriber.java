@@ -2,6 +2,8 @@ package common.redis.subscribe;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import common.def.TaskType;
+import common.def.TempletType;
 import common.redis.MsgType;
 import redis.clients.jedis.JedisPubSub;
 import srv.task.TaskInit;
@@ -19,7 +21,7 @@ public class NewTaskSubscriber extends JedisPubSub {
     public void onMessage(String channel, String message) {
         System.out.println(String.format("receive redis published message, channel %s, message %s", channel, message));
 
-        JsonParser parse = new JsonParser();  //?建json解析器
+        JsonParser parse = new JsonParser();  //创建json解析器
         JsonObject msg = (JsonObject) parse.parse(message);
 
         String asString = msg.getAsJsonObject("Head").get("type").getAsString();
@@ -27,9 +29,22 @@ public class NewTaskSubscriber extends JedisPubSub {
         if (!asString.equals(MsgType.NEW_TASK.name()))
             return;
 
-        JsonObject json = msg.getAsJsonObject("Data");
+        JsonObject json = msg.getAsJsonObject("data");
         try {
-            TaskInit.initCronTaskForTaskPlan(json.get("name").getAsString(), json.get("firsttime").getAsString(), json.get("cycle").getAsString(), json.get("count").getAsString());
+
+            if (json.get("tasktype").getAsString().equals(TaskType.CRONTAB.name()) && json.get("templet").getAsString().equals(TempletType.TASK_PLAN.name()))
+                TaskInit.initCronTaskForTaskPlan(json.get("name").getAsString(), json.get("firsttime").getAsString(), json.get("cycle").getAsString(), json.get("count").getAsString());
+
+            else if (json.get("tasktype").getAsString().equals(TaskType.REALTIME.name()) && json.get("templet").getAsString().equals(TempletType.TASK_PLAN.name()))
+                TaskInit.initRTTaskForTaskPlan(json.get("name").getAsString());
+
+            else if (json.get("tasktype").getAsString().equals(TaskType.CRONTAB.name()) && json.get("templet").getAsString().equals(TempletType.ORBIT_FORECAST.name()))
+                TaskInit.initCronTaskForOrbitForecast(json.get("name").getAsString(), json.get("firsttime").getAsString(), json.get("cycle").getAsString(), json.get("count").getAsString());
+
+            else if (json.get("tasktype").getAsString().equals(TaskType.REALTIME.name()) && json.get("templet").getAsString().equals(TempletType.ORBIT_FORECAST.name()))
+                TaskInit.initRTTaskForOrbitForecast(json.get("name").getAsString());
+            else {
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }

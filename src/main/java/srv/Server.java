@@ -3,7 +3,6 @@ package srv;
 import common.def.Topic;
 import common.redis.TaskBuilderService;
 import common.redis.subscribe.NewTaskSubscriber;
-import srv.task.HeartBeatService;
 import srv.task.TaskMonitor;
 
 import java.io.IOException;
@@ -24,9 +23,10 @@ public class Server {
         //启动控制监视线程
 //        TaskStatusSubscriber taskStatusSubscriber = new TaskStatusSubscriber();
 //        TaskBuilderService taskStatusBuilderService = new TaskBuilderService(taskStatusSubscriber, Topic.CMD);
-        //taskStatusBuilderService.startup();
+//        taskStatusBuilderService.startup();
 
         //心跳服务
-        HeartBeatService.getInstance().startup();
+        //HeartBeatService.getInstance().startup();
+
     }
 }

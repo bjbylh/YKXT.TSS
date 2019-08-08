@@ -7,6 +7,6 @@ import com.mongodb.MongoClient;
  */
 public class MangoDBConnector {
     public static MongoClient getClient() {
-        return new MongoClient("192.168.2.80", 27017);
+        return new MongoClient("39.98.93.230", 27017);
     }
 }

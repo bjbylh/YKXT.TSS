@@ -37,7 +37,7 @@ public class Run {
         return true;
     }
 
-    public static Boolean ExecJar(String path, String param) {
+    public static Boolean ExecJar(String path, String param, String taskType) {
         new Thread(() -> {
             Process p;
             try {

@@ -7,5 +7,6 @@ public enum MainTaskStatus {
     NEW,
     SUSPEND,
     RUNNING,
-    ERROR
+    ERROR,
+    FINISHED
 }

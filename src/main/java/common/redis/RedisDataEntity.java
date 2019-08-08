@@ -15,39 +15,41 @@ public class RedisDataEntity {
 
     public static String GenDbRefreshData(String taskId) {
         JsonObject ret = new JsonObject();
-        JsonObject head = GenHead(MsgType.DB_REFRESH, "TSS", "MAG","");
+        JsonObject head = GenHead(MsgType.DB_REFRESH, "TSS", "MAG", "");
         JsonObject data = new JsonObject();
         data.addProperty("taskID", taskId);
-        ret.add("Head",head);
+        ret.add("Head", head);
         ret.add("Data", data);
         return ret.toString();
     }
 
     public static String GenHeartBeatData() {
         JsonObject ret = new JsonObject();
-        JsonObject head = GenHead(MsgType.KEEP_ALIVE, "TSS", "MAG","");
+        JsonObject head = GenHead(MsgType.KEEP_ALIVE, "TSS", "MAG", "");
         JsonObject data = new JsonObject();
         data.addProperty("status", num++);
-        ret.add("Head",head);
+        ret.add("Head", head);
         ret.add("Data", data);
         return ret.toString();
     }
 
     public static String GenNewTask() {
-        JsonObject jsonObject = GenHead(MsgType.NEW_TASK, "MAG", "TSS","");
+        JsonObject ret = new JsonObject();
+        JsonObject head = GenHead(MsgType.NEW_TASK, "MAG", "TSS", "");
         JsonObject data = new JsonObject();
         data.addProperty("name", "task12345");
         data.addProperty("tasktype", TaskType.CRONTAB.name());
-        data.addProperty("templet", TempletType.TASK_PLAN.name());
+        data.addProperty("templet", TempletType.ORBIT_FORECAST.name());
         data.addProperty("firsttime", Instant.now().toString());
         data.addProperty("cycle", "60000");
         data.addProperty("count", "0");
-        jsonObject.add("data", data);
-        return jsonObject.toString();
+        ret.add("Head", head);
+        ret.add("data", data);
+        return ret.toString();
     }
 
     public static String GenTaskStatusChange(String taskID, MsgType topic, InsType insType) {
-        JsonObject jsonObject = GenHead(topic, "MAG", "TSS","");
+        JsonObject jsonObject = GenHead(topic, "MAG", "TSS", "");
         JsonObject data = new JsonObject();
         data.addProperty("taskID", taskID);
         data.addProperty("status", insType.name());
@@ -67,6 +69,5 @@ public class RedisDataEntity {
 
     public static void main(String[] args) {
         System.out.println(GenDbRefreshData("33131"));
-
     }
 }

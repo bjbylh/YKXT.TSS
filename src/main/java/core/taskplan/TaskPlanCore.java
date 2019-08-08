@@ -1,4 +1,4 @@
-package core;
+package core.taskplan;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -55,8 +55,8 @@ public class TaskPlanCore {
         if (mainTaskStatus.name().equals("DELETE"))
             return;
         else if (mainTaskStatus.name().equals("SUSPEND")) {
-            updateStatus(subid1,SubTaskStatus.SUSPEND);
-            updateStatus(subid2,SubTaskStatus.SUSPEND);
+            updateStatus(subid1, SubTaskStatus.SUSPEND);
+            updateStatus(subid2, SubTaskStatus.SUSPEND);
             RedisPublish.dbRefresh(id);
         } else {
         }
@@ -67,7 +67,7 @@ public class TaskPlanCore {
         if (mainTaskStatus.name().equals("DELETE"))
             return;
         else if (mainTaskStatus.name().equals("SUSPEND")) {
-            updateStatus(subid2,SubTaskStatus.SUSPEND);
+            updateStatus(subid2, SubTaskStatus.SUSPEND);
             RedisPublish.dbRefresh(id);
         } else {
         }
@@ -162,7 +162,7 @@ public class TaskPlanCore {
         JsonParser parse = new JsonParser();  //??json???
         JsonObject json = (JsonObject) parse.parse(document.toJson());
 
-        JsonArray asJsonArray = json.getAsJsonObject("tp_core").getAsJsonArray("sub_tasks");
+        JsonArray asJsonArray = json.getAsJsonObject("tp_info").getAsJsonArray("sub_tasks");
 
         String[] ret = new String[3];
         for (int i = 0; i < 3; i++) {

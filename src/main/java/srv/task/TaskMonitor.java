@@ -9,12 +9,13 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import common.def.MainTaskStatus;
 import common.def.TaskType;
+import common.def.TempletType;
 import common.mongo.MangoDBConnector;
-import common.process.Run;
 import org.bson.Document;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Date;
 
 /**
  * Created by lihan on 2018/11/13.
@@ -54,7 +55,7 @@ public class TaskMonitor {
 
         private void check() throws IOException {
             MongoClient mongoClient = MangoDBConnector.getClient();
-            MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
+            MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
 
             MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
 
@@ -65,26 +66,52 @@ public class TaskMonitor {
                     if (document.getString("type").equals(TaskType.REALTIME.name())) {
 
                         System.out.println("Found a new REALTIME TASK, Task Info:");
-                        System.out.println(document.toString());
+
+                        Instant instant_ft = Instant.now();
+                        Date nt_str = Date.from(instant_ft);
+
                         tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("status", MainTaskStatus.RUNNING.name())));
+                        tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("rt_core.start_time", nt_str)));
+
+                        String templet = document.getString("templet");
+
+                        if(templet.equals(TempletType.ORBIT_FORECAST.name())){
+
+                        }else if(templet.equals(TempletType.TASK_PLAN.name())){
+
+                        }else{
+                            tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("status", MainTaskStatus.ERROR.name())));
+                        }
+
+                        instant_ft = Instant.now();
+                        nt_str = Date.from(instant_ft);
+                        tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("rt_core.end_time", nt_str)));
+                        tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("status", MainTaskStatus.FINISHED.name())));
 
                     } else if (document.getString("type").equals(TaskType.CRONTAB.name())) {
 
                         JsonParser parse = new JsonParser();  //创建json解析器
                         JsonObject json = (JsonObject) parse.parse(document.toJson());
+                        Date date = ((Document) document.get("cron_core")).getDate("first_time");
 
-                        String ft = json.get("cron_core").getAsJsonObject().get("first_time").getAsString();
-                        Instant instant_ft = Instant.parse(ft);
+                        Instant instant_ft = date.toInstant();
                         long nt = instant_ft.toEpochMilli() + 1000 * Integer.parseInt(json.get("cron_core").getAsJsonObject().get("cycle").getAsString());
-                        String nt_str = Instant.ofEpochMilli(nt).toString();
+
                         if (Instant.now().isAfter(instant_ft)) {
                             System.out.println("Found a new CRONTAB TASK, Task Info:");
                             System.out.println(document.toString());
                             tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("status", MainTaskStatus.RUNNING.name())));
-                            tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("cron_core.first_time", nt_str)));
+                            tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("cron_core.first_time", Date.from(Instant.ofEpochMilli(nt)))));
 
+                            String templet = document.getString("templet");
 
-                            Run.ExecJar("C:\\Users\\lihan\\Desktop\\ykxt\\bin\\",document.getString("_id"));
+                            if(templet.equals(TempletType.ORBIT_FORECAST.name())){
+
+                            }else if(templet.equals(TempletType.TASK_PLAN.name())){
+
+                            }else{
+                                tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("status", MainTaskStatus.ERROR.name())));
+                            }
                         }
                     } else {
                         System.out.println("Found a new PERMANENT TASK, Task Info:");
@@ -94,18 +121,25 @@ public class TaskMonitor {
                     if (document.getString("type").equals(TaskType.CRONTAB.name())) {
                         JsonParser parse = new JsonParser();  //创建json解析器
                         JsonObject json = (JsonObject) parse.parse(document.toJson());
+                        Date date = ((Document) document.get("cron_core")).getDate("first_time");
 
-                        String ft = json.get("cron_core").getAsJsonObject().get("first_time").getAsString();
-                        Instant instant_ft = Instant.parse(ft);
+                        Instant instant_ft = date.toInstant();
                         long nt = instant_ft.toEpochMilli() + 1000 * Integer.parseInt(json.get("cron_core").getAsJsonObject().get("cycle").getAsString());
-                        String nt_str = Instant.ofEpochMilli(nt).toString();
                         if (Instant.now().isAfter(instant_ft)) {
                             System.out.println("Found a SUSPEND CRONTAB TASK, Task Info:");
                             System.out.println(document.toString());
                             tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("status", MainTaskStatus.RUNNING.name())));
-                            tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("cron_core.first_time", nt_str)));
+                            tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("cron_core.first_time", Date.from(Instant.ofEpochMilli(nt)))));
 
-                            Run.ExecJar("C:\\Users\\lihan\\Desktop\\ykxt\\bin\\",document.getObjectId("_id").toString());
+                            String templet = document.getString("templet");
+
+                            if(templet.equals(TempletType.ORBIT_FORECAST.name())){
+
+                            }else if(templet.equals(TempletType.TASK_PLAN.name())){
+
+                            }else{
+                                tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("status", MainTaskStatus.ERROR.name())));
+                            }
                         }
                     }
                 } else {
@@ -114,5 +148,4 @@ public class TaskMonitor {
             mongoClient.close();
         }
     }
-
 }
