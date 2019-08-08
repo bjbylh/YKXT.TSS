@@ -10,7 +10,9 @@ import com.mongodb.client.model.Filters;
 import common.def.MainTaskStatus;
 import common.def.TaskType;
 import common.def.TempletType;
+import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
+import core.orbit.OrbitCore;
 import org.bson.Document;
 
 import java.io.IOException;
@@ -55,7 +57,7 @@ public class TaskMonitor {
 
         private void check() throws IOException {
             MongoClient mongoClient = MangoDBConnector.getClient();
-            MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
+            MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
             MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
 
@@ -75,18 +77,15 @@ public class TaskMonitor {
 
                         String templet = document.getString("templet");
 
-                        if(templet.equals(TempletType.ORBIT_FORECAST.name())){
+                        if (templet.equals(TempletType.ORBIT_FORECAST.name())) {
+                            OrbitCore orbitCore = new OrbitCore(document.get("_id").toString());
+                            orbitCore.startup();
+                        } else if (templet.equals(TempletType.TASK_PLAN.name())) {
 
-                        }else if(templet.equals(TempletType.TASK_PLAN.name())){
-
-                        }else{
+                        } else {
                             tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("status", MainTaskStatus.ERROR.name())));
                         }
 
-                        instant_ft = Instant.now();
-                        nt_str = Date.from(instant_ft);
-                        tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("rt_core.end_time", nt_str)));
-                        tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("status", MainTaskStatus.FINISHED.name())));
 
                     } else if (document.getString("type").equals(TaskType.CRONTAB.name())) {
 
@@ -105,11 +104,12 @@ public class TaskMonitor {
 
                             String templet = document.getString("templet");
 
-                            if(templet.equals(TempletType.ORBIT_FORECAST.name())){
+                            if (templet.equals(TempletType.ORBIT_FORECAST.name())) {
+                                OrbitCore orbitCore = new OrbitCore(document.get("_id").toString());
+                                orbitCore.startup();
+                            } else if (templet.equals(TempletType.TASK_PLAN.name())) {
 
-                            }else if(templet.equals(TempletType.TASK_PLAN.name())){
-
-                            }else{
+                            } else {
                                 tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("status", MainTaskStatus.ERROR.name())));
                             }
                         }
@@ -133,11 +133,12 @@ public class TaskMonitor {
 
                             String templet = document.getString("templet");
 
-                            if(templet.equals(TempletType.ORBIT_FORECAST.name())){
+                            if (templet.equals(TempletType.ORBIT_FORECAST.name())) {
+                                OrbitCore orbitCore = new OrbitCore(document.get("_id").toString());
+                                orbitCore.startup();
+                            } else if (templet.equals(TempletType.TASK_PLAN.name())) {
 
-                            }else if(templet.equals(TempletType.TASK_PLAN.name())){
-
-                            }else{
+                            } else {
                                 tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("status", MainTaskStatus.ERROR.name())));
                             }
                         }

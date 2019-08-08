@@ -628,7 +628,7 @@ class OrbitPrediction {
 
     }
 
-    public JsonArray OrbitPredictorII(Instant start, Instant end, int step, double[] orbit0, JsonObject json) {
+    public static JsonArray OrbitPredictorII(Instant start, Instant end, int step, double[] orbit0, JsonObject json) {
         return null;
     }
 

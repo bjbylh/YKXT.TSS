@@ -9,6 +9,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import common.def.TaskType;
 import common.def.TempletType;
+import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 import org.bson.types.ObjectId;
@@ -62,7 +63,7 @@ public class TaskInit {
         json.remove("_id");
 
         MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
         MongoCollection<Document> main_task = mongoDatabase.getCollection("main_task");
 
@@ -105,7 +106,7 @@ public class TaskInit {
         doc.append("cron_core",cron_core);
 
         MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
         MongoCollection<Document> main_task = mongoDatabase.getCollection("main_task");
 
@@ -153,7 +154,7 @@ public class TaskInit {
 
 
         MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
         MongoCollection<Document> main_task = mongoDatabase.getCollection("main_task");
 
@@ -180,7 +181,7 @@ public class TaskInit {
         JsonObject json = (JsonObject) parse.parse(data);
 
         MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
         MongoCollection<Document> sub_task = mongoDatabase.getCollection("sub_task");
 
@@ -234,7 +235,7 @@ public class TaskInit {
         json.remove("_id");
 
         MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
         MongoCollection<Document> main_task = mongoDatabase.getCollection("main_task");
 

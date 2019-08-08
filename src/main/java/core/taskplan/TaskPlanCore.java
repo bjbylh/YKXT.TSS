@@ -9,6 +9,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import common.def.MainTaskStatus;
 import common.def.SubTaskStatus;
+import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import common.redis.RedisPublish;
 import org.bson.Document;
@@ -81,7 +82,7 @@ public class TaskPlanCore {
 
     private static MainTaskStatus checkMainTaskStatus(String id) {
         MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
         MongoCollection<Document> maintasks = mongoDatabase.getCollection("main_task");
 
@@ -129,7 +130,7 @@ public class TaskPlanCore {
 
     private static String getPath(String subid) {
         MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
         MongoCollection<Document> subtasks = mongoDatabase.getCollection("sub_task");
         Document iddoc = subtasks.find(new Document("_id", new ObjectId(subid))).first();
@@ -141,7 +142,7 @@ public class TaskPlanCore {
 
     private static String getExename(String subid) {
         MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
         MongoCollection<Document> subtasks = mongoDatabase.getCollection("sub_task");
         Document iddoc = subtasks.find(new Document("_id", new ObjectId(subid))).first();
@@ -153,7 +154,7 @@ public class TaskPlanCore {
 
     private static String[] getSubList(String id) {
         MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
         MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
 
@@ -176,7 +177,7 @@ public class TaskPlanCore {
 
     private static void updateStatus(String id, SubTaskStatus subTaskStatus) {
         MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
         MongoCollection<Document> subtasks = mongoDatabase.getCollection("sub_task");
 
@@ -197,7 +198,7 @@ public class TaskPlanCore {
 
     private static void updateMainStatus(String id, MainTaskStatus mainTaskStatus) {
         MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
         MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
 
