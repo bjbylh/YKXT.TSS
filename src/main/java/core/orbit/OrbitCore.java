@@ -15,6 +15,7 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Date;
 
 /**
@@ -46,26 +47,27 @@ public class OrbitCore {
 
             MongoCollection<Document> sate_res = mongoDatabase.getCollection("satellite_resource");
             Document first = sate_res.find().first();
-            Document[] properties = (Document[]) first.get("properties");
+            ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
 
             Instant start = Instant.now();
 
             double[] orbits = new double[6];
             for (Document document : properties) {
-                if (document.getString("group").equals("轨道参数") && document.getString("key").equals("update_time")) {
+
+                if (document.getString("key").equals("update_time")) {
                     start = document.getDate("value").toInstant();
-                } else if (document.getString("group").equals("轨道参数") && document.getString("key").equals("a")) {
-                    orbits[0] = document.getDouble("value");
-                } else if (document.getString("group").equals("轨道参数") && document.getString("key").equals("e")) {
-                    orbits[1] = document.getDouble("value");
-                } else if (document.getString("group").equals("轨道参数") && document.getString("key").equals("i")) {
-                    orbits[2] = document.getDouble("value");
-                } else if (document.getString("group").equals("轨道参数") && document.getString("key").equals("RAAN")) {
-                    orbits[3] = document.getDouble("value");
-                } else if (document.getString("group").equals("轨道参数") && document.getString("key").equals("perigee_angle")) {
-                    orbits[4] = document.getDouble("value");
-                } else if (document.getString("group").equals("轨道参数") && document.getString("key").equals("true_anomaly")) {
-                    orbits[5] = document.getDouble("value");
+                } else if (document.getString("key").equals("a")) {
+                    orbits[0] = Double.parseDouble(document.getString("value"));
+                } else if (document.getString("key").equals("e")) {
+                    orbits[1] = Double.parseDouble(document.getString("value"));
+                } else if (document.getString("key").equals("i")) {
+                    orbits[2] = Double.parseDouble(document.getString("value"));
+                } else if (document.getString("key").equals("RAAN")) {
+                    orbits[3] = Double.parseDouble(document.getString("value"));
+                } else if (document.getString("key").equals("perigee_angle")) {
+                    orbits[4] = Double.parseDouble(document.getString("value"));
+                } else if (document.getString("key").equals("true_anomaly")) {
+                    orbits[5] = Double.parseDouble(document.getString("value"));
                 } else {
                 }
             }
@@ -75,11 +77,15 @@ public class OrbitCore {
             JsonParser parse = new JsonParser();  //创建json解析器
             JsonObject json = (JsonObject) parse.parse(first.toJson());
 
-            JsonArray jsonElements = OrbitPrediction.OrbitPredictorII(start, end, 1, orbits, json);
-
-            for(JsonElement jsonElement : jsonElements){
-
-
+            JsonArray jsonElements = OrbitPrediction.OrbitPredictorII(OrbitPrediction.dateConvertToLocalDateTime(Date.from(start)), OrbitPrediction.dateConvertToLocalDateTime(Date.from(end)), 1, orbits, json);
+            MongoCollection<Document> orbit = mongoDatabase.getCollection("orbit_attitude");
+            int i = 0;
+            for (JsonElement d : jsonElements) {
+                JsonObject jsonObject = (JsonObject) d;
+                Document doc = Document.parse(jsonObject.toString());
+                doc.append("time_point", Date.from(start.plusMillis(1000 * i)));
+                orbit.insertOne(doc);
+                i++;
             }
 
             MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
@@ -89,6 +95,11 @@ public class OrbitCore {
             tasks.updateOne(Filters.eq("_id", new ObjectId(taskId)), new Document("$set", new Document("status", MainTaskStatus.FINISHED.name())));
             mongoClient.close();
         }
+    }
+
+    public static void main(String[] args) {
+        OrbitCore orbitCore = new OrbitCore("5d4bd356de590f3744f9c708");
+        orbitCore.startup();
     }
 
 }

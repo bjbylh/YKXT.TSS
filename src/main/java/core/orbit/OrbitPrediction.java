@@ -3,7 +3,12 @@ package core.orbit;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
+
+import static java.lang.Math.sqrt;
 
 class OrbitPrediction {
     public static double GRAVP = 1;
@@ -113,42 +118,8 @@ class OrbitPrediction {
         return (Math.pow(10.0, dsr));
     }
 
-    public static void OrbitPredictor(double[] Y, double x, int year, int month, int day, double h, double xmax) {
-        double[] err = new double[6];
-        double[] y = new double[6];
-        int j = 0;
-        //表示向txt写入文本
-        //StreamWriter sw = new StreamWriter("..\\1.txt");
-        //sw.Write(x + "  ");
-        //for (int i = 0; i < 6;i++ )
-        //{
-        //    sw.Write(Y[i] + "  ");
-        //}
-        //sw.Write("\r\n");
-        while (x < xmax) {
-            if (h > (xmax - x)) {
-                h = xmax - x;
-            }
-            //Runge_Kutta78(Y,err,y,year, month,day, x, h);
-            RK4(Y, y, x, year, month, day, h);
-            x += h;
-            //sw.Write(x + "  ");
-            System.out.print("Orbit: ");
-            for (int i = 0; i < 6; i++) {
-                Y[i] = y[i];
-                System.out.printf(" %16.7f", y[i]);
-                //sw.Write(y[i] + "  ");
-            }
-            System.out.print("\n");
-
-            j++;
-            //sw.Write("\r\n");
-        }
-
-        //sw.Close();
-    }
-
-    public static void RK4(double[] X, double[] xout, double t, int year, int month, int day, double h) {
+    //四阶龙格库塔
+    public static void RK4(double[] X, double[] xout, double t, int year, int month, int day, double h, double[] sa) {
         int i;
         double hh = h * 0.5, th = t + hh;
         //double y[6], k1[6], k2[6], k3[6], k4[6];
@@ -157,6 +128,9 @@ class OrbitPrediction {
         double[] k2 = new double[6];
         double[] k3 = new double[6];
         double[] k4 = new double[6];
+        double JD;
+        double[] r_sat = new double[3];
+        //double[] sa = new double[3];
 
         DXDT(t, X, k1, year, month, day);    //first step
         for (i = 0; i < 6; i++) {
@@ -174,8 +148,16 @@ class OrbitPrediction {
         for (i = 0; i < 6; i++) {
             xout[i] = X[i] + h * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]) / 6;
         }
+        JD = JulianDate(year, month, day, t);
+        //compute longitude, latitude and altitude
+        r_sat[0] = xout[0];
+        r_sat[1] = xout[1];
+        r_sat[2] = xout[2];
+        ECI_ECEF(JD, r_sat, sa);
+
     }
 
+    //带摄动的动力学
     public static void DXDT(double t, double[] X, double[] DX, int year, int month, int day)   // 轨道动力学
     {
         int im;
@@ -420,6 +402,19 @@ class OrbitPrediction {
         }
     }
 
+    //地心赤道坐标系星下点位置
+    public static void P2subsatP(double[] P, double[] subsat) {
+        double omega = 1.0027 * 180 / 43200;
+        double x = P[0];
+        double y = P[1];
+        double z = P[2];
+
+        //地心赤道坐标系星下点位置
+        subsat[0] = R_earth * (P[0] / sqrt(P[0] * P[0] + P[1] * P[1] + P[2] * P[2]));
+        subsat[1] = R_earth * (P[1] / sqrt(P[0] * P[0] + P[1] * P[1] + P[2] * P[2]));
+        subsat[2] = R_earth * (P[2] / sqrt(P[0] * P[0] + P[1] * P[1] + P[2] * P[2]));
+    }
+
     public static void trigfunc(int mm, double lat, double lon, double[] CN, double[] SN, double[] TN) {
         //if(mm ==0)
         CN[0] = 1;
@@ -437,6 +432,7 @@ class OrbitPrediction {
         return;
     }
 
+    //惯性系转地心地固
     public static void ECI_ECEF(double JD, double[] R, double[] sa) {
         double gast, Range, Radius, sphi, x, y, z;
         double[] R_ECEF = new double[3];
@@ -462,6 +458,7 @@ class OrbitPrediction {
         return;
     }
 
+    //儒略日
     public static double JulianDate(int year, int month, int day, double UT) {
         double JD, C1, C2, C3;
         C1 = 367.0 * year;
@@ -495,6 +492,7 @@ class OrbitPrediction {
         return;
     }
 
+    //月球矢量
     public static double Moon(double JD, double[] r_moon) {
         double rad_moon;
         double T_TDB, M_moon, lambda_moon, uM_moon, D_sun,
@@ -551,6 +549,7 @@ class OrbitPrediction {
         return rad_moon;
     }
 
+    //太阳矢量
     public static double Sun(double JD, double[] r_sun, double[] su) {
         double rad_sun;
         double T_TDB, L_sun, M_sun, C, lambda_sun, e, ecc, v;
@@ -608,28 +607,111 @@ class OrbitPrediction {
                 - 1.722222 * 0.000000001 * Math.pow(T_TDB, 3) + 1.002737791737697 * hour, 24) * 15;
     }
 
+    //求余
     public static double mod(double x, double y) {
         int n;
         n = (int) (x / y);
         return x - n * y;
     }
 
+    //更改输入输出
+    public static JsonArray OrbitPredictorII(LocalDateTime start, LocalDateTime end, double step, double[] orbit0, JsonObject json) {
 
-    public static void main(String[] arr) {
-        System.out.print(" Start: \n");
-        int year = 2019;
-        int month = 7;
-        int day = 10;
-        double[] Y = new double[]{6678140, 0, -1.438, 0, 7725.76, -0.000410};
-        double x = 14400;
-        double h = 2.0;
-        double xmax = 15000;
-        OrbitPredictor(Y, x, year, month, day, h, xmax);
+        int year = start.getYear();
+        int month = start.getMonthValue();
+        int day = start.getDayOfMonth();
+        double x = start.toEpochSecond(ZoneOffset.of("+8"));//获取秒数
+        double xmax = end.toEpochSecond(ZoneOffset.of("+8"));
+        DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime current = start;
+//        double[] err = new double[6];
+        double[] y = new double[6];
+        int j = 0;
+        double[] sa = new double[3];
+        double[] subsat = new double[3];
 
+        double[] Y = new double[]{orbit0[0], orbit0[1], orbit0[2], orbit0[3], orbit0[4], orbit0[5]};
+        double h = step;
+        JsonArray orbit_attitud = new JsonArray();
+        long step2 = (long) h;
+        while (x < xmax) {
+
+            JsonObject jsonObject = new JsonObject();
+            if (h > (xmax - x)) {
+                h = xmax - x;
+            }
+            RK4(Y, y, x, year, month, day, h, sa);
+            P2subsatP(y, subsat);
+            x += h;
+//            current = current.plusSeconds(step2);
+//            String time_point = df.format(current);
+//
+//            jsonObject.addProperty("time_point", time_point);
+            jsonObject.addProperty("P_x", y[0]);
+            jsonObject.addProperty("P_y", y[1]);
+            jsonObject.addProperty("P_z", y[2]);
+            jsonObject.addProperty("lon", sa[0]);
+            jsonObject.addProperty("lat", sa[1]);
+            jsonObject.addProperty("H", sa[2]);
+            jsonObject.addProperty("Vx", y[3]);
+            jsonObject.addProperty("Vy", y[4]);
+            jsonObject.addProperty("Vz", y[5]);
+            jsonObject.addProperty("satellite_point_x", subsat[0]);
+            jsonObject.addProperty("satellite_point_y", subsat[1]);
+            jsonObject.addProperty("satellite_point_z", subsat[2]);
+
+            jsonObject.addProperty("visible_left_lon", 0);
+            jsonObject.addProperty("visible_left_lat", 0);
+            jsonObject.addProperty("visible_right_lon", 0);
+
+            JsonArray orbit_attitud_lp = new JsonArray();
+            JsonObject jsonObject1 = new JsonObject();
+            jsonObject1.addProperty("load_amount", 2);
+            jsonObject1.addProperty("load_number", 1);
+            jsonObject1.addProperty("width_along_track", 1);
+            jsonObject1.addProperty("width_vertical_track", 1);
+            jsonObject1.addProperty("width_along_track_true", 1);
+            jsonObject1.addProperty("width_vertical_track_true", 1);
+            orbit_attitud_lp.add(jsonObject1);
+            JsonObject jsonObject2 = new JsonObject();
+            jsonObject2.addProperty("load_amount", 2);
+            jsonObject2.addProperty("load_number", 2);
+            jsonObject2.addProperty("width_along_track", 2);
+            jsonObject2.addProperty("width_vertical_track", 2);
+            jsonObject2.addProperty("width_along_track_true", 2);
+            jsonObject2.addProperty("width_vertical_track_true", 2);
+            orbit_attitud_lp.add(jsonObject2);
+            jsonObject.add("load_properties", orbit_attitud_lp);
+
+            jsonObject.addProperty("yaw_angle", 0);
+            jsonObject.addProperty("roll_angle", 0);
+            jsonObject.addProperty("pitch_angle", 0);
+            jsonObject.addProperty("V_yaw_angle", 0);
+            jsonObject.addProperty("V_roll_angle", 0);
+            jsonObject.addProperty("V_pitch_angle", 0);
+            orbit_attitud.add(jsonObject);
+
+            j++;
+        }
+//        System.out.println(orbit_attitud);
+        //System.out.print("/n");
+        return orbit_attitud;
     }
 
-    public static JsonArray OrbitPredictorII(Instant start, Instant end, int step, double[] orbit0, JsonObject json) {
-        return null;
+    public static LocalDateTime dateConvertToLocalDateTime(Date date) {
+        return date.toInstant().atOffset(ZoneOffset.of("+8")).toLocalDateTime();
+    }
+
+    public static void main(String[] arr) {
+        JsonObject json = new JsonObject();
+        String start0 = "2018-08-01 21:22:22";
+        String end0 = "2018-08-01 22:22:22";
+        DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime start = LocalDateTime.parse(start0, df);
+        LocalDateTime end = LocalDateTime.parse(end0, df);
+        double[] Y = new double[]{6678140, 0, -1.438, 0, 7725.76, -0.000410};
+        double h = 2.0;//步长
+        OrbitPredictorII(start, end, h, Y, json);
     }
 
 }
