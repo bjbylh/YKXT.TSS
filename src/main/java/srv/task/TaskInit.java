@@ -24,9 +24,9 @@ import java.util.List;
  */
 public class TaskInit {
     private static String[] subtaskname = new String[]{
-            "¶©µ¥Í³³ïÓë¹æ»®",
-            "¶àĞÇÈÎÎñ¹æ»®",
-            "µ¥ĞÇÈÎÎñ¹æ»®"
+            "è®¢å•ç»Ÿç­¹ä¸è§„åˆ’",
+            "å¤šæ˜Ÿä»»åŠ¡è§„åˆ’",
+            "å•æ˜Ÿä»»åŠ¡è§„åˆ’"
     };
     private static String[] paths = new String[]{
             "C:\\Users\\lihan\\Desktop\\ykxt\\bin\\",
@@ -52,7 +52,7 @@ public class TaskInit {
             data = data + str + "\n";
         }
 
-        JsonParser parse = new JsonParser();  //´´½¨json½âÎöÆ÷
+        JsonParser parse = new JsonParser();  //åˆ›å»ºjsonè§£æå™¨
         JsonObject json = (JsonObject) parse.parse(data);
 
         json.addProperty("name", taskname);
@@ -86,7 +86,7 @@ public class TaskInit {
             data = data + str + "\n";
         }
 
-        JsonParser parse = new JsonParser();  //´´½¨json½âÎöÆ÷
+        JsonParser parse = new JsonParser();  //åˆ›å»ºjsonè§£æå™¨
         JsonObject json = (JsonObject) parse.parse(data);
 
         json.addProperty("name", taskname);
@@ -129,7 +129,7 @@ public class TaskInit {
             data = data + str + "\n";
         }
 
-        JsonParser parse = new JsonParser();  //´´½¨json½âÎöÆ÷
+        JsonParser parse = new JsonParser();  //åˆ›å»ºjsonè§£æå™¨
         JsonObject json = (JsonObject) parse.parse(data);
 
         json.addProperty("name", taskname);
@@ -177,7 +177,7 @@ public class TaskInit {
             data = data + str + "\n";
         }
 
-        JsonParser parse = new JsonParser();  //´´½¨json½âÎöÆ÷
+        JsonParser parse = new JsonParser();  //åˆ›å»ºjsonè§£æå™¨
         JsonObject json = (JsonObject) parse.parse(data);
 
         MongoClient mongoClient = MangoDBConnector.getClient();
@@ -218,7 +218,7 @@ public class TaskInit {
             data = data + str + "\n";
         }
 
-        JsonParser parse = new JsonParser();  //´´½¨json½âÎöÆ÷
+        JsonParser parse = new JsonParser();  //åˆ›å»ºjsonè§£æå™¨
         JsonObject json = (JsonObject) parse.parse(data);
 
         json.addProperty("name", taskname);
