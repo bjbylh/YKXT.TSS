@@ -3,6 +3,8 @@ package common.redis;
 import common.def.Topic;
 import redis.clients.jedis.Jedis;
 
+import java.util.Map;
+
 /**
  * Created by lihan on 2018/11/13.
  */
@@ -33,8 +35,14 @@ public class RedisPublish {
         jedis.close();
     }
 
+    public static void checkResult(Map<String,Boolean> trueorfasle){
+        Jedis jedis = RedisConnector.getJedis();
+        jedis.publish(Topic.CMD, RedisDataEntity.GenCheckResult(trueorfasle));
+        jedis.close();
+    }
+
     public static void main(String[] args) {
-        RedisPublish.newCronOrbitGorecastTask();
+        RedisPublish.newRTOrbitGorecastTask();
     }
 
 }

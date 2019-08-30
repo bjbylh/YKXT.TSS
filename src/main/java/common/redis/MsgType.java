@@ -7,5 +7,6 @@ public enum MsgType {
     DB_REFRESH,
     NEW_TASK,
     TASK_STATUS_CHANGE,
-    KEEP_ALIVE
+    KEEP_ALIVE,
+    CHECK_QUERY
 }

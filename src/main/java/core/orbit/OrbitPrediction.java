@@ -2,12 +2,21 @@ package core.orbit;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.UpdateOptions;
+import common.mongo.DbDefine;
+import common.mongo.MangoDBConnector;
+import org.bson.Document;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
+import static java.lang.Math.acos;
 import static java.lang.Math.sqrt;
 
 class OrbitPrediction {
@@ -59,6 +68,7 @@ class OrbitPrediction {
 
     public static double R_earth = 6378136.3;
     public static double eccent = 0.08182;
+    private static Object JsonToStringUtil;
 
     public static double GetDensity(double height) {
         double dsr;
@@ -602,7 +612,8 @@ class OrbitPrediction {
 
     public static double app_sidereal_time(double JD) {
         double T_TDB = (JD - 2451545.0) / 36525.0;
-        double hour = (JD - (int) JD) * 24;
+        //double hour = (JD - (int) JD) * 24;
+        double hour = (JD - (int) JD - 0.5) * 24;
         return mod(6.697374558 + 2400.05133691 * T_TDB + 2.586222 * 0.00001 * Math.pow(T_TDB, 2)
                 - 1.722222 * 0.000000001 * Math.pow(T_TDB, 3) + 1.002737791737697 * hour, 24) * 15;
     }
@@ -614,45 +625,207 @@ class OrbitPrediction {
         return x - n * y;
     }
 
-    //更改输入输出
-    public static JsonArray OrbitPredictorII(LocalDateTime start, LocalDateTime end, double step, double[] orbit0, JsonObject json) {
+
+    //轨道外推
+    public static void OrbitPredictorII(Instant timeRaw, LocalDateTime start, LocalDateTime end, double step, double[] orbit0, JsonObject json) {
+        MongoClient mongoClient = MangoDBConnector.getClient();
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+        MongoCollection<Document> orbitDB = mongoDatabase.getCollection("orbit_attitude");
+        JsonArray properties = json.getAsJsonArray("properties");
+        //载荷参数初始话
+        int ViewNum = 4;
+        double[][] ViewInstall = {{90 * PI / 180.0, 86.3 * PI / 180.0, 3.7 * PI / 180.0}, {90 * PI / 180.0, 93.7 * PI / 180.0, 3.7 * PI / 180.0}, {90 * PI / 180.0, 85.6 * PI / 180.0, 4.4 * PI / 180.0}, {90 * PI / 180.0, 94.4 * PI / 180.0, 4.4 * PI / 180.0}};
+        double[][] ViewAng = {{3 * PI / 180.0, 3 * PI / 180.0, 3 * PI / 180.0, 3 * PI / 180.0}, {3 * PI / 180.0, 3 * PI / 180.0, 3 * PI / 180.0, 3 * PI / 180.0}, {3 * PI / 180.0, 3 * PI / 180.0, 3 * PI / 180.0, 3 * PI / 180.0}, {90 * PI / 180.0, 90 * PI / 180.0, 0 * PI / 180.0, 3 * PI / 180.0}};
+        double RollMax = 5 * PI / 180.0;
+        //double[][] ViewInstall=new double[ViewNum][3];
+        //double[][] ViewAng=new double[ViewNum][4];
+
+        for (int i = 0; i < properties.size(); i++) {
+            JsonObject sub_properties = properties.get(i).getAsJsonObject();
+            //载荷总数
+            if (sub_properties.get("key").getAsString().equals("amount_load")) {
+                ViewNum = Integer.parseInt(sub_properties.get("value").getAsString());
+            }
+            //载荷1
+            else if (sub_properties.get("key").getAsString().equals("in_side_sight") && sub_properties.get("group").getAsString().equals("payload1")) {
+                ViewAng[0][0] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("out_side_sight") && sub_properties.get("group").getAsString().equals("payload1")) {
+                ViewAng[0][1] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("up_side_sight") && sub_properties.get("group").getAsString().equals("payload1")) {
+                ViewAng[0][2] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("down_side_sight") && sub_properties.get("group").getAsString().equals("payload1")) {
+                ViewAng[0][3] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            }
+            //载荷2
+            else if (sub_properties.get("key").getAsString().equals("in_side_sight") && sub_properties.get("group").getAsString().equals("payload2")) {
+                ViewAng[1][0] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("out_side_sight") && sub_properties.get("group").getAsString().equals("payload2")) {
+                ViewAng[1][1] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("up_side_sight") && sub_properties.get("group").getAsString().equals("payload2")) {
+                ViewAng[1][2] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("down_side_sight") && sub_properties.get("group").getAsString().equals("payload2")) {
+                ViewAng[1][3] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            }
+            //载荷3
+            else if (sub_properties.get("key").getAsString().equals("in_side_sight") && sub_properties.get("group").getAsString().equals("payload3")) {
+                ViewAng[2][0] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("out_side_sight") && sub_properties.get("group").getAsString().equals("payload3")) {
+                ViewAng[2][1] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("up_side_sight") && sub_properties.get("group").getAsString().equals("payload3")) {
+                ViewAng[2][2] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("down_side_sight") && sub_properties.get("group").getAsString().equals("payload3")) {
+                ViewAng[2][3] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            }
+            //载荷4
+            else if (sub_properties.get("key").getAsString().equals("in_side_sight") && sub_properties.get("group").getAsString().equals("payload4")) {
+                ViewAng[3][0] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("out_side_sight") && sub_properties.get("group").getAsString().equals("payload4")) {
+                ViewAng[3][1] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("up_side_sight") && sub_properties.get("group").getAsString().equals("payload4")) {
+                ViewAng[3][2] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("down_side_sight") && sub_properties.get("group").getAsString().equals("payload4")) {
+                ViewAng[3][3] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            }
+            //安装矩阵，4个为一样的
+            //第一个
+            else if (sub_properties.get("key").getAsString().equals("angle_sight_Xaxis") && sub_properties.get("group").getAsString().equals("payload1")) {
+                ViewInstall[0][0] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("angle_sight_Yaxis") && sub_properties.get("group").getAsString().equals("payload1")) {
+                ViewInstall[0][1] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("angle_sight_Zaxis") && sub_properties.get("group").getAsString().equals("payload1")) {
+                ViewInstall[0][2] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            }
+            //第二个
+            else if (sub_properties.get("key").getAsString().equals("angle_sight_Xaxis") && sub_properties.get("group").getAsString().equals("payload2")) {
+                ViewInstall[1][0] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("angle_sight_Yaxis") && sub_properties.get("group").getAsString().equals("payload2")) {
+                ViewInstall[1][1] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("angle_sight_Zaxis") && sub_properties.get("group").getAsString().equals("payload2")) {
+                ViewInstall[1][2] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            }
+            //第三个
+            else if (sub_properties.get("key").getAsString().equals("angle_sight_Xaxis") && sub_properties.get("group").getAsString().equals("payload3")) {
+                ViewInstall[2][0] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("angle_sight_Yaxis") && sub_properties.get("group").getAsString().equals("payload3")) {
+                ViewInstall[2][1] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("angle_sight_Zaxis") && sub_properties.get("group").getAsString().equals("payload3")) {
+                ViewInstall[2][2] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            }
+            //第四个
+            else if (sub_properties.get("key").getAsString().equals("angle_sight_Xaxis") && sub_properties.get("group").getAsString().equals("payload4")) {
+                ViewInstall[3][0] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("angle_sight_Yaxis") && sub_properties.get("group").getAsString().equals("payload4")) {
+                ViewInstall[3][1] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            } else if (sub_properties.get("key").getAsString().equals("angle_sight_Zaxis") && sub_properties.get("group").getAsString().equals("payload4")) {
+                ViewInstall[3][2] = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            }
+            //最大侧摆角
+            else if (sub_properties.get("key").getAsString().equals("roll_angle_max")) {
+                RollMax = Double.parseDouble(sub_properties.get("value").getAsString()) * PI / 180.0;
+            }
+
+        }
+
+
+        //轨道六根数转化为惯性系下位置速度
+        double[] Position0 = new double[3];
+        double[] Velocity0 = new double[3];
+        OrbitSixToGEI(orbit0, Position0, Velocity0);
+        double[] orbit = {Position0[0], Position0[1], Position0[2], Velocity0[0], Velocity0[1], Velocity0[2]};
+
 
         int year = start.getYear();
         int month = start.getMonthValue();
         int day = start.getDayOfMonth();
-        double x = start.toEpochSecond(ZoneOffset.of("+8"));//获取秒数
-        double xmax = end.toEpochSecond(ZoneOffset.of("+8"));
+        int hour = start.getHour();
+        int minute = start.getMinute();
+        int second = start.getSecond();
+        double[] start_hms = {(double) year, (double) month, (double) day, (double) hour, (double) minute, (double) second};
+        double[] start_ymd = {(double) year, (double) month, (double) day, 8, 0, 0};
+        double[] end_hmsymd = {(double) end.getYear(), (double) end.getMonthValue(), (double) end.getDayOfMonth(), (double) end.getHour(), (double) end.getMinute(), (double) end.getSecond()};
+        double x = (JD(start_hms) - JD(start_ymd)) * (24 * 60 * 60);
+        double xmax = (JD(end_hmsymd) - JD(start_ymd)) * (24 * 60 * 60);
+
         DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         LocalDateTime current = start;
-//        double[] err = new double[6];
+        double[] err = new double[6];
         double[] y = new double[6];
         int j = 0;
         double[] sa = new double[3];
         double[] subsat = new double[3];
 
-        double[] Y = new double[]{orbit0[0], orbit0[1], orbit0[2], orbit0[3], orbit0[4], orbit0[5]};
+        double[] Y = new double[]{orbit[0], orbit[1], orbit[2], orbit[3], orbit[4], orbit[5]};
         double h = step;
         JsonArray orbit_attitud = new JsonArray();
         long step2 = (long) h;
-        while (x < xmax) {
 
+        //将数据存入数组
+        double Num = (xmax - x) / h;
+        int OrbitalDataNum = (new Double(Num)).intValue();
+        double[][] Orbital_Time = new double[OrbitalDataNum][6];
+        double[][] Orbital_SatPosition = new double[OrbitalDataNum][3];
+        double[][] Orbital_SatVelocity = new double[OrbitalDataNum][3];
+        double[][] Orbital_SatPositionLLA = new double[OrbitalDataNum][3];
+        double[][] Orbital_Subpotion = new double[OrbitalDataNum][3];
+        double[][] Orbital_ViewArea = new double[OrbitalDataNum][4 * ViewNum];
+
+        while (x < xmax) {
             JsonObject jsonObject = new JsonObject();
             if (h > (xmax - x)) {
                 h = xmax - x;
             }
             RK4(Y, y, x, year, month, day, h, sa);
             P2subsatP(y, subsat);
+            Y[0] = y[0];
+            Y[1] = y[1];
+            Y[2] = y[2];
+            Y[3] = y[3];
+            Y[4] = y[4];
+            Y[5] = y[5];
+            current = current.plusSeconds(step2);
+
+            //substring(n,m):截取string第n+1到m位置的字符
+            //String StringTime = "2019-06-27 04:00:00";
+            LocalDateTime Dtime_point = current;
+            String time_point = df.format(Dtime_point.plusHours(-8));
+            String StringTime = time_point.toString();
+            String StringTime_GetYear = StringTime.substring(0, 4);
+            String StringTime_GetMonth = StringTime.substring(5, 7);
+            String StringTime_GetDay = StringTime.substring(8, 10);
+            String StringTime_GetHour = StringTime.substring(11, 13);
+            String StringTime_GetMinute = StringTime.substring(14, 16);
+            String StringTime_GetSecond = StringTime.substring(17, 19);
+            Orbital_Time[j][0] = Double.parseDouble(StringTime_GetYear);
+            Orbital_Time[j][1] = Double.parseDouble(StringTime_GetMonth);
+            Orbital_Time[j][2] = Double.parseDouble(StringTime_GetDay);
+            Orbital_Time[j][3] = Double.parseDouble(StringTime_GetHour);
+            Orbital_Time[j][4] = Double.parseDouble(StringTime_GetMinute);
+            Orbital_Time[j][5] = Double.parseDouble(StringTime_GetSecond);
+            Orbital_SatPosition[j][0] = y[0];
+            Orbital_SatPosition[j][1] = y[1];
+            Orbital_SatPosition[j][2] = y[2];
+            Orbital_SatVelocity[j][0] = y[3];
+            Orbital_SatVelocity[j][1] = y[4];
+            Orbital_SatVelocity[j][2] = y[5];
+            Orbital_SatPositionLLA[j][0] = sa[0] * 180.0 / PI;
+            Orbital_SatPositionLLA[j][1] = sa[1] * 180.0 / PI;
+            Orbital_SatPositionLLA[j][2] = sa[2];
+            Orbital_Subpotion[j][0] = subsat[0];
+            Orbital_Subpotion[j][1] = subsat[1];
+            Orbital_Subpotion[j][2] = subsat[2];
+
+            //可见走廊
+            double Time_UTC = 0;
+            ViewArea(Orbital_SatPosition[j], Orbital_SatVelocity[j], ViewInstall, ViewAng, ViewNum, RollMax, Orbital_Time[j], Time_UTC, Orbital_ViewArea[j]);
             x += h;
-//            current = current.plusSeconds(step2);
-//            String time_point = df.format(current);
-//
-//            jsonObject.addProperty("time_point", time_point);
+
+            //数据输出
             jsonObject.addProperty("P_x", y[0]);
             jsonObject.addProperty("P_y", y[1]);
             jsonObject.addProperty("P_z", y[2]);
-            jsonObject.addProperty("lon", sa[0]);
-            jsonObject.addProperty("lat", sa[1]);
-            jsonObject.addProperty("H", sa[2]);
+            jsonObject.addProperty("lon", Orbital_SatPositionLLA[j][0]);
+            jsonObject.addProperty("lat", Orbital_SatPositionLLA[j][1]);
+            jsonObject.addProperty("H", Orbital_SatPositionLLA[j][2]);
             jsonObject.addProperty("Vx", y[3]);
             jsonObject.addProperty("Vy", y[4]);
             jsonObject.addProperty("Vz", y[5]);
@@ -660,46 +833,324 @@ class OrbitPrediction {
             jsonObject.addProperty("satellite_point_y", subsat[1]);
             jsonObject.addProperty("satellite_point_z", subsat[2]);
 
-            jsonObject.addProperty("visible_left_lon", 0);
-            jsonObject.addProperty("visible_left_lat", 0);
-            jsonObject.addProperty("visible_right_lon", 0);
-
             JsonArray orbit_attitud_lp = new JsonArray();
-            JsonObject jsonObject1 = new JsonObject();
-            jsonObject1.addProperty("load_amount", 2);
-            jsonObject1.addProperty("load_number", 1);
-            jsonObject1.addProperty("width_along_track", 1);
-            jsonObject1.addProperty("width_vertical_track", 1);
-            jsonObject1.addProperty("width_along_track_true", 1);
-            jsonObject1.addProperty("width_vertical_track_true", 1);
-            orbit_attitud_lp.add(jsonObject1);
-            JsonObject jsonObject2 = new JsonObject();
-            jsonObject2.addProperty("load_amount", 2);
-            jsonObject2.addProperty("load_number", 2);
-            jsonObject2.addProperty("width_along_track", 2);
-            jsonObject2.addProperty("width_vertical_track", 2);
-            jsonObject2.addProperty("width_along_track_true", 2);
-            jsonObject2.addProperty("width_vertical_track_true", 2);
-            orbit_attitud_lp.add(jsonObject2);
+
+            for (int i = 0; i < ViewNum; i++) {
+                JsonObject jsonObject1 = new JsonObject();
+                jsonObject1.addProperty("load_amount", ViewNum);
+                jsonObject1.addProperty("load_number", i + 1);
+                jsonObject1.addProperty("visible_left_lon", Orbital_ViewArea[j][4 * i + 0]);
+                jsonObject1.addProperty("visible_left_lat", Orbital_ViewArea[j][4 * i + 1]);
+                jsonObject1.addProperty("visible_right_lon", Orbital_ViewArea[j][4 * i + 2]);
+                jsonObject1.addProperty("visible_right_lat", Orbital_ViewArea[j][4 * i + 3]);
+                orbit_attitud_lp.add(jsonObject1);
+            }
+
             jsonObject.add("load_properties", orbit_attitud_lp);
 
-            jsonObject.addProperty("yaw_angle", 0);
-            jsonObject.addProperty("roll_angle", 0);
-            jsonObject.addProperty("pitch_angle", 0);
-            jsonObject.addProperty("V_yaw_angle", 0);
-            jsonObject.addProperty("V_roll_angle", 0);
-            jsonObject.addProperty("V_pitch_angle", 0);
-            orbit_attitud.add(jsonObject);
-
+            Document doc = Document.parse(jsonObject.toString());
+            doc.append("time_point", Date.from(timeRaw.plusMillis((long) (1000 * j * step))));
+            Document modifiers = new Document();
+            modifiers.append("$set", doc);
+//
+            orbitDB.updateOne(new Document("time_point", doc.getDate("time_point")), modifiers, new UpdateOptions().upsert(true));
+//
             j++;
         }
-//        System.out.println(orbit_attitud);
-        //System.out.print("/n");
-        return orbit_attitud;
+
+        //阳光规避计算及输出
+        JsonArray avoidance_sunlight = new JsonArray();
+        int[] SunAvoidTimePeriod = new int[10];
+        int SunAvoidTimePeriodNum = AvoidSunshineIITest(Orbital_Time, Orbital_SatPosition, SunAvoidTimePeriod);
+        for (int i = 0; i < SunAvoidTimePeriodNum; i++) {
+            LocalDateTime SunAvoidStar = start;
+            SunAvoidStar = SunAvoidStar.plusSeconds((long) (h * SunAvoidTimePeriod[2 * i]));
+            String Startime_point = df.format(SunAvoidStar.plusHours(-8));
+            LocalDateTime SunAvoidEnd = start;
+            SunAvoidEnd = SunAvoidEnd.plusSeconds((long) (h * SunAvoidTimePeriod[2 * i + 1]));
+            String Endtime_point = df.format(SunAvoidEnd.plusHours(-8));
+            JsonObject SunAvoidjsonObject = new JsonObject();
+            SunAvoidjsonObject.addProperty("amount_window", SunAvoidTimePeriodNum);
+            SunAvoidjsonObject.addProperty("window_number", i + 1);
+            SunAvoidjsonObject.addProperty("start_time", Startime_point);
+            SunAvoidjsonObject.addProperty("end_time", Endtime_point);
+            avoidance_sunlight.add(SunAvoidjsonObject);
+        }
+
+        if(avoidance_sunlight.size() >= 0) {
+            JsonObject as = new JsonObject();
+            as.add("windows", avoidance_sunlight);
+            Document d = Document.parse(as.toString());
+            d.append("time_point", Date.from(timeRaw));
+            Document modifiers = new Document();
+            modifiers.append("$set", d);
+            MongoCollection<Document> avoidanceSunlight = mongoDatabase.getCollection("avoidance_sunlight");
+            avoidanceSunlight.updateOne(new Document("time_point", d.getDate("time_point")), modifiers, new UpdateOptions().upsert(true));
+        }
     }
 
     public static LocalDateTime dateConvertToLocalDateTime(Date date) {
         return date.toInstant().atOffset(ZoneOffset.of("+8")).toLocalDateTime();
+    }
+
+    //计算卫星可见走廊
+    public static void ViewArea(double Position[], double Velocity[], double ViewInstall[][], double ViewAng[][], int ViewNum, double RollMax, double Time[], double Time_UTC, double ViewAreaPoint[]) {
+
+
+        double[] nv = {Velocity[0] / Math.sqrt(Math.pow(Velocity[0], 2) + Math.pow(Velocity[1], 2) + Math.pow(Velocity[2], 2)),
+                Velocity[1] / Math.sqrt(Math.pow(Velocity[0], 2) + Math.pow(Velocity[1], 2) + Math.pow(Velocity[2], 2)),
+                Velocity[2] / Math.sqrt(Math.pow(Velocity[0], 2) + Math.pow(Velocity[1], 2) + Math.pow(Velocity[2], 2))};
+        double r = Math.sqrt(Math.pow(Position[0], 2) + Math.pow(Position[1], 2) + Math.pow(Position[2], 2));
+        double theta = Math.asin(R_earth / r);
+
+        double alpha, beta, theta_V, theta_xz, theta_yz, ViewAng_min;
+        double R[][] = new double[3][3];
+        double r_beta[] = new double[3];
+        double SubSat[] = new double[3];
+        double SubSat_GEI[] = new double[3];
+        for (int j = 0; j < ViewNum; j++) {
+            theta_xz = Math.atan(Math.cos(ViewInstall[j][0]) / Math.cos(ViewInstall[j][2]));
+            theta_yz = Math.atan(Math.cos(ViewInstall[j][1]) / Math.cos(ViewInstall[j][2]));
+            if ((ViewAng[j][2] + theta_yz + RollMax) >= theta) {
+                theta_V = Math.asin(R_earth / r);
+                beta = -(Math.PI / 2 - theta_V);
+            } else {
+                alpha = Math.asin((Math.sin(theta_yz + ViewAng[j][2] + RollMax) * r) / R_earth);
+                beta = -(alpha - (theta_yz + ViewAng[j][2] + RollMax));
+            }
+            R[0][0] = nv[0] * nv[0] * (1 - Math.cos(beta)) + Math.cos(beta);
+            R[0][1] = nv[0] * nv[1] * (1 - Math.cos(beta)) + nv[2] * Math.sin(beta);
+            R[0][2] = nv[0] * nv[2] * (1 - Math.cos(beta)) - nv[1] * Math.sin(beta);
+            R[1][0] = nv[0] * nv[1] * (1 - Math.cos(beta)) - nv[2] * Math.sin(beta);
+            R[1][1] = nv[1] * nv[1] * (1 - Math.cos(beta)) + Math.cos(beta);
+            R[1][2] = nv[1] * nv[2] * (1 - Math.cos(beta)) + nv[0] * Math.sin(beta);
+            R[2][0] = nv[0] * nv[2] * (1 - Math.cos(beta)) + nv[1] * Math.sin(beta);
+            R[2][1] = nv[1] * nv[2] * (1 - Math.cos(beta)) - nv[0] * Math.sin(beta);
+            R[2][2] = nv[2] * nv[2] * (1 - Math.cos(beta)) + Math.cos(beta);
+            r_beta[0] = Position[0] * R[0][0] + Position[1] * R[1][0] + Position[2] * R[2][0];
+            r_beta[1] = Position[0] * R[0][1] + Position[1] * R[1][1] + Position[2] * R[2][1];
+            r_beta[2] = Position[0] * R[0][2] + Position[1] * R[1][2] + Position[2] * R[2][2];
+            PosionToSubSat(r_beta, Time, Time_UTC, SubSat, SubSat_GEI);
+            ViewAreaPoint[4 * j + 0] = SubSat[0];
+            ViewAreaPoint[4 * j + 1] = SubSat[1];
+
+            if (Math.abs(theta_yz - ViewAng[j][3] - RollMax) >= theta) {
+                theta_V = Math.asin(R_earth / r);
+                beta = Math.PI / 2 - theta_V;
+                beta = -beta;
+            } else {
+                alpha = Math.asin((Math.sin(theta_yz - ViewAng[j][3] - RollMax) * r) / R_earth);
+                beta = alpha - (theta_yz - ViewAng[j][3] - RollMax);
+                beta = -beta;
+            }
+            R[0][0] = nv[0] * nv[0] * (1 - Math.cos(beta)) + Math.cos(beta);
+            R[0][1] = nv[0] * nv[1] * (1 - Math.cos(beta)) + nv[2] * Math.sin(beta);
+            R[0][2] = nv[0] * nv[2] * (1 - Math.cos(beta)) - nv[1] * Math.sin(beta);
+            R[1][0] = nv[0] * nv[1] * (1 - Math.cos(beta)) - nv[2] * Math.sin(beta);
+            R[1][1] = nv[1] * nv[1] * (1 - Math.cos(beta)) + Math.cos(beta);
+            R[1][2] = nv[1] * nv[2] * (1 - Math.cos(beta)) + nv[0] * Math.sin(beta);
+            R[2][0] = nv[0] * nv[2] * (1 - Math.cos(beta)) + nv[1] * Math.sin(beta);
+            R[2][1] = nv[1] * nv[2] * (1 - Math.cos(beta)) - nv[0] * Math.sin(beta);
+            R[2][2] = nv[2] * nv[2] * (1 - Math.cos(beta)) + Math.cos(beta);
+            r_beta[0] = Position[0] * R[0][0] + Position[1] * R[1][0] + Position[2] * R[2][0];
+            r_beta[1] = Position[0] * R[0][1] + Position[1] * R[1][1] + Position[2] * R[2][1];
+            r_beta[2] = Position[0] * R[0][2] + Position[1] * R[1][2] + Position[2] * R[2][2];
+            PosionToSubSat(r_beta, Time, Time_UTC, SubSat, SubSat_GEI);
+            ViewAreaPoint[4 * j + 2] = SubSat[0];
+            ViewAreaPoint[4 * j + 3] = SubSat[1];
+        }
+    }
+
+    public static int AvoidSunshineIITest(double[][] Orbital_Time, double[][] Orbital_SatPosition, int[] SunAvoidTimePeriod) {
+        int Flag_tBefore = 0;
+        int Avoid_Flag = 0;
+        int Flag_t = 0;
+        int SunAvoidTimePeriodNum = 0;
+        for (int i = 0; i < Orbital_SatPosition.length; i++) {
+            double Time_JD = JD(Orbital_Time[i]);
+            double[] r_sun = new double[3];//地心惯性坐标系下太阳位置
+            double[] su = new double[2];//赤经和赤纬
+            double rad_sun;//太阳地球的距离
+            rad_sun = Sun(Time_JD, r_sun, su);
+            double a = r_sun[0] * Orbital_SatPosition[i][0] + r_sun[1] * Orbital_SatPosition[i][1] + r_sun[2] * Orbital_SatPosition[i][2];
+            double r_Sat = sqrt(Orbital_SatPosition[i][0] * Orbital_SatPosition[i][0] + Orbital_SatPosition[i][1] * Orbital_SatPosition[i][1] + Orbital_SatPosition[i][2] * Orbital_SatPosition[i][2]);
+            double theta = acos(a / (rad_sun * r_Sat));
+
+            if (theta >= 175 * PI / 180.0) {
+                Avoid_Flag = 1;
+                Flag_tBefore = Flag_t;
+                Flag_t = Avoid_Flag;
+            } else {
+                Avoid_Flag = 0;
+                Flag_tBefore = Flag_t;
+                Flag_t = Avoid_Flag;
+            }
+
+            //判定开始结束时间
+            if (Flag_tBefore == 0 && Flag_t == 1) {
+                SunAvoidTimePeriod[2 * SunAvoidTimePeriodNum] = i;
+            } else if (Flag_tBefore == 1 && Flag_t == 0) {
+                SunAvoidTimePeriod[2 * SunAvoidTimePeriodNum + 1] = i - 1;
+                SunAvoidTimePeriodNum = SunAvoidTimePeriodNum + 1;
+            }
+            if (i == Orbital_SatPosition.length - 1 && Flag_t == 1) {
+                SunAvoidTimePeriod[2 * SunAvoidTimePeriodNum + 1] = i;
+                SunAvoidTimePeriodNum = SunAvoidTimePeriodNum + 1;
+            }
+        }
+        return SunAvoidTimePeriodNum;
+    }
+
+    //由卫星位置计算星下点的经纬度，以及卫星位置的经纬高，以及卫星星下点在地心赤道惯性系中的位置
+    public static void PosionToSubSat(double posion_GEI[], double Time[], double Time_UTC, double SubSat[], double SubSat_GEI[]) {
+        double omega = 1.0027 * 180 / 43200;//地球自转角速度，单位为：度/秒
+
+
+        double x = posion_GEI[0];
+        double y = posion_GEI[1];
+        double z = posion_GEI[2];
+
+        double Dec;
+        if (x != 0 || y != 0) {
+            Dec = Math.atan(z / (Math.pow((Math.pow(x, 2) + Math.pow(y, 2)), 0.5))) * 180 / Math.PI;
+        } else {
+            if (z > 0)
+                Dec = 90;
+            else
+                Dec = -90;
+        }
+        double RA = 0;
+        if (x > 0)
+            RA = Math.atan(y / x) * 180 / Math.PI;
+        if (x < 0) {
+            if (y >= 0)
+                RA = 180 + Math.atan(y / x) * 180 / Math.PI;
+            else
+                RA = -180 + Math.atan(y / x) * 180 / Math.PI;
+        }
+        if (x == 0) {
+            if (y >= 0)
+                RA = 90;
+            else
+                RA = -90;
+        }
+
+        double lat = Dec;
+        double GAST = Time_GAST(Time);
+        GAST = GAST + omega * Time_UTC;
+        double lon = RA - GAST;
+
+        //限定范围
+        if (lon > 180)
+            lon = lon - 360;
+        else if (lon <= -180)
+            lon = lon + 360;
+
+        SubSat[0] = lon;
+        SubSat[1] = lat;
+        SubSat[2] = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2)) - R_earth;
+
+        double r = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2));
+        SubSat_GEI[0] = R_earth * x / r;
+        SubSat_GEI[1] = R_earth * y / r;
+        SubSat_GEI[2] = R_earth * z / r;
+    }
+
+    //计算参考时间的格林尼治赤经
+    public static double Time_GAST(double Time[]) {
+        /*
+        double year_UT=Time[0];
+        double month_UT=Time[1];
+        double day_UT=Time[2];
+        double hour_UT=Time[3];
+        double minute_UT=Time[4];
+        double second_UT=Time[5];
+         */
+        //double JD=JulianDate(2019,8,14,0);
+        double JD = JD(Time);
+        double D = JD - 2451545.0;
+        double T = D / 36525.0;
+        double GMST = 280.46061837 + 360.98564736629 * (JD - 2451545.0) + 0.000387933 * Math.pow(T, 2) - Math.pow(T, 3) / 38710000.0;
+        GMST = GMST % 360;
+        double Epsilon_m = (23 + 26 / 60.0 + 21.448 / 3600.0) - (46.8150 / 3600.0) * T - (0.00059 / 3600.0) * Math.pow(T, 2) + (0.001813 / 3600.0) * Math.pow(T, 3);
+
+        double L = 280.4665 + 36000.7698 * T;
+        double dL = 218.3165 + 481267.8813 * T;
+        double Omega = 125.04452 - 1934.136261 * T;
+        double dPsi = -17.20 * Math.sin(Omega * Math.PI / 180.0) - 1.32 * Math.sin(2 * L * Math.PI / 180.0) - 0.23 * Math.sin(2 * dL * Math.PI / 180.0) + 0.21 * Math.sin(2 * Omega * Math.PI / 180.0);
+        double dEpsilon = 9.20 * Math.cos(Omega * Math.PI / 180.0) + 0.57 * Math.cos(2 * L * Math.PI / 180.0) + 0.10 * Math.cos(2 * dL * Math.PI / 180.0) - 0.09 * Math.cos(2 * Omega * Math.PI / 180.0);
+        dPsi = dPsi / 3600.0;
+        dEpsilon = dEpsilon / 3600.0;
+
+        double GAST = GMST + dPsi * Math.cos((Epsilon_m + dEpsilon) * Math.PI / 180.0);
+        GAST = GAST % 360;
+
+        return GAST;
+    }
+
+    //儒略日计算
+    public static double JD(double Time[]) {
+        double year_UT = Time[0];
+        double month_UT = Time[1];
+        double day_UT = Time[2];
+        double hour_UT = Time[3];
+        double minute_UT = Time[4];
+        double second_UT = Time[5];
+
+        double D = day_UT;
+        double M, Y, B;
+        double JD;
+        if (month_UT == 1 || month_UT == 2) {
+            M = month_UT + 12;
+            Y = year_UT - 1;
+        } else {
+            Y = year_UT;
+            M = month_UT;
+        }
+        B = 0;
+        if (Y > 1582 || (Y == 1582 && M > 10) || (Y == 1582 && M == 10 && D >= 15)) {
+            B = 2 - (int) Math.floor(Y / 100.0) + (int) Math.floor(Y / 400.0);
+        }
+        JD = (int) Math.floor(365.25 * (Y + 4716)) + (int) Math.floor(30.6 * (M + 1)) + D + B - 1524.5;
+        JD = JD - 0.5 + hour_UT / 24.0 + minute_UT / 1440 + second_UT / 86400;
+        JD = JD + 0.5;
+        return JD;
+    }
+
+    //轨道六根数转化为惯性系下速度位置
+    public static void OrbitSixToGEI(double ClassicalOrbitalElements[], double Position[], double Velocity[]) {
+        double sma = ClassicalOrbitalElements[0] * 1000;
+        double ecc = ClassicalOrbitalElements[1];
+        double inc = ClassicalOrbitalElements[2] * PI / 180.0;
+        double argper = ClassicalOrbitalElements[4] * PI / 180.0;
+        double raan = ClassicalOrbitalElements[3] * PI / 180.0;
+        double tanom = ClassicalOrbitalElements[5] * PI / 180.0;
+
+        //double mu=398600.4415;//地球引力常数（m^3/s^2）
+
+        double slr = sma * (1 - ecc * ecc);
+        double rm = slr / (1 + ecc * Math.cos(tanom));
+
+        double arglat = argper + tanom;
+        double sarglat = Math.sin(arglat);
+        double carglat = Math.cos(arglat);
+
+        double c4 = Math.sqrt(mu / slr);
+        double c5 = ecc * Math.cos(argper) + carglat;
+        double c6 = ecc * Math.sin(argper) + sarglat;
+
+        double sinc = Math.sin(inc);
+        double cinc = Math.cos(inc);
+        double sraan = Math.sin(raan);
+        double craan = Math.cos(raan);
+
+        Position[0] = rm * (craan * carglat - sraan * sarglat * cinc);
+        Position[1] = rm * (sraan * carglat + craan * sarglat * cinc);
+        Position[2] = rm * sarglat * sinc;
+
+        Velocity[0] = -c4 * (c6 * craan + c5 * sraan * cinc);
+        Velocity[1] = -c4 * (c6 * sraan - c5 * craan * cinc);
+        Velocity[2] = c4 * c5 * sinc;
     }
 
     public static void main(String[] arr) {
@@ -711,7 +1162,7 @@ class OrbitPrediction {
         LocalDateTime end = LocalDateTime.parse(end0, df);
         double[] Y = new double[]{6678140, 0, -1.438, 0, 7725.76, -0.000410};
         double h = 2.0;//步长
-        OrbitPredictorII(start, end, h, Y, json);
+//        OrbitPredictorII(start, end, h, Y, json);
     }
 
 }

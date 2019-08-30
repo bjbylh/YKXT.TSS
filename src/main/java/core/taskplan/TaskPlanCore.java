@@ -1,209 +1,275 @@
 package core.taskplan;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Filters;
 import common.def.MainTaskStatus;
 import common.def.SubTaskStatus;
+import common.def.TaskType;
 import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import common.redis.RedisPublish;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
-import java.io.*;
+import java.text.ParseException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Date;
+
+import static common.mongo.CommUtils.*;
 
 /**
  * Created by lihan on 2018/10/24.
  */
 public class TaskPlanCore {
-    public static void main(String[] args) throws InterruptedException {
-        String id = args[0];
+    private String taskId;
+    private TaskType taskType;
 
-        String[] subList = getSubList(id);
-
-        for (String aSubList : subList) {
-            updateStatus(aSubList, SubTaskStatus.TODO);
-        }
-
-        Thread.sleep(1000);
-
-        RedisPublish.dbRefresh(id);
-
-        Thread.sleep(1000);
-
-
-        String subid = subList[0];
-        String path = getPath(subid);
-        String exename = getExename(subid);
-
-        String subid1 = subList[1];
-        String path1 = getPath(subid1);
-        String exename1 = getExename(subid1);
-
-        String subid2 = subList[2];
-        String path2 = getPath(subid2);
-        String exename2 = getExename(subid2);
-
-        Run(id, subid, path, exename);
-
-        MainTaskStatus mainTaskStatus = checkMainTaskStatus(id);
-        if (mainTaskStatus.name().equals("DELETE"))
-            return;
-        else if (mainTaskStatus.name().equals("SUSPEND")) {
-            updateStatus(subid1, SubTaskStatus.SUSPEND);
-            updateStatus(subid2, SubTaskStatus.SUSPEND);
-            RedisPublish.dbRefresh(id);
-        } else {
-        }
-
-
-        Run(id, subid1, path1, exename1);
-
-        if (mainTaskStatus.name().equals("DELETE"))
-            return;
-        else if (mainTaskStatus.name().equals("SUSPEND")) {
-            updateStatus(subid2, SubTaskStatus.SUSPEND);
-            RedisPublish.dbRefresh(id);
-        } else {
-        }
-
-        Run(id, subid2, path2, exename2);
-
-        updateMainStatus(id, MainTaskStatus.SUSPEND);
-        RedisPublish.dbRefresh(id);
+    public TaskPlanCore(String taskId, TaskType taskType) {
+        this.taskId = taskId;
+        this.taskType = taskType;
     }
 
-
-    private static MainTaskStatus checkMainTaskStatus(String id) {
-        MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
-
-        MongoCollection<Document> maintasks = mongoDatabase.getCollection("main_task");
-
-        Document cond = new Document();
-        cond.put("_id", new ObjectId(id));
-        Document first = maintasks.find(cond).first();
-
-        String status = first.getString("status");
-
-        return MainTaskStatus.valueOf(status);
+    public void startup() {
+        Thread t = new Thread(new TaskPlanCore.proc(taskId));
+        t.start();
     }
 
+    private class proc implements Runnable {
+        private String id;
+        private String[] subList;
+        ArrayList<String> mission_numbners;
+        Document Transmissionjson;
+        ArrayList<Document> Missionjson;
+        private MongoClient mongoClient;
+        private MongoDatabase mongoDatabase;
+        private Document Satllitejson;
+        private FindIterable<Document> D_orbitjson;
+        private long count;
+        private ArrayList<Document> GroundStationjson;
+        private Instant now = Instant.now();
+        private Date startTime = Date.from(Instant.now().plusSeconds(24 * 60 * 60 * 10000));
+        private Date endTime = Date.from(Instant.now().minusSeconds(24 * 60 * 60 * 10000));
 
-    private static void Run(String id, String subid, String path, String exename) {
-        Process p;
-        try {
-            ProcessBuilder builder = new ProcessBuilder(path + exename, "3", "1", "3", "4", "2", "2", "5", "3");
-            builder.directory(new File(path));
-            builder.redirectErrorStream(true);
-            p = builder.start();
 
-            updateStatus(subid, SubTaskStatus.RUNNING);
-            RedisPublish.dbRefresh(id);
+        public proc(String taskId) {
+            this.id = taskId;
+            this.subList = getSubList(id);
 
-            InputStream fis = p.getInputStream();
-            InputStreamReader isr = new InputStreamReader(fis);
-            BufferedReader br = new BufferedReader(isr);
-            String line;
+            //连接数据库
+            mongoClient = MangoDBConnector.getClient();
+            //获取名为"temp"的数据库
+            mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
-            while ((line = br.readLine()) != null) {
-                System.out.println(line);
+            //卫星资源表
+            MongoCollection<Document> Data_Satllitejson = mongoDatabase.getCollection("satellite_resource");
+            Satllitejson = Data_Satllitejson.find().first();
+            //轨道数据表
+            MongoCollection<Document> Data_Orbitjson = mongoDatabase.getCollection("orbit_attitude");
+            D_orbitjson = Data_Orbitjson.find();
+            count = Data_Orbitjson.count();
+
+            //地面站资源表
+            MongoCollection<Document> Data_GroundStationjson = mongoDatabase.getCollection("groundstation_resource");
+            FindIterable<Document> D_GroundStationjson = Data_GroundStationjson.find();
+            GroundStationjson = new ArrayList<>();
+            for (Document document : D_GroundStationjson) {
+                GroundStationjson.add(document);
             }
-            int i = p.exitValue();
-            if (i == 0) {
-                updateStatus(subid, SubTaskStatus.SUSPEND);
+        }
+
+        @Override
+        public void run() {
+
+            for (String aSubList : subList) {
+                updateSubStatus(aSubList, SubTaskStatus.TODO);
+            }
+
+            RedisPublish.dbRefresh(id);
+
+            //需求统筹
+            if (MOD_ORDER_OVERALL_PLAN(subList[0])) return;
+
+            //可见性分析
+            if (MOD_VISIBILITY_CALC(subList[1])) return;
+
+            //时间分配
+            if (MOD_MISSION_PLANNING(subList[2])) return;
+
+            //姿态角计算
+            if (MOD_ATTITUDE_CALCULATION(subList[3])) return;
+
+            //资源平衡
+            if (MOD_ENERGY_CALCULATION(subList[4])) return;
+
+            if (TaskType.CRONTAB == taskType)
+                updateMainStatus(id, MainTaskStatus.SUSPEND);
+            else
+                updateMainStatus(id, MainTaskStatus.FINISHED);
+            RedisPublish.dbRefresh(id);
+        }
+
+        private boolean MOD_ORDER_OVERALL_PLAN(String subid) {
+            updateSubStatus(subid, SubTaskStatus.RUNNING);
+            RedisPublish.dbRefresh(id);
+
+            ArrayList<String> orderList = getOrderList(subid);
+
+            MongoCollection<Document> image_order = mongoDatabase.getCollection("image_order");
+            FindIterable<Document> documents = image_order.find();
+            for (Document order : documents) {
+                if (orderList.contains(order)) {
+                    Date expected_start_time = order.getDate("expected_start_time");
+                    if (expected_start_time.before(startTime))
+                        startTime = expected_start_time;
+
+                    Date expected_end_time = order.getDate("expected_end_time");
+                    if (expected_end_time.after(endTime))
+                        endTime = expected_end_time;
+                }
+            }
+
+            OrderOverallPlan orderOverallPlan = new OrderOverallPlan(orderList);
+            ArrayList<String> mission_numbners = orderOverallPlan.Trans();
+
+            if (mission_numbners == null || mission_numbners.size() == 0) {
+                updateSubStatus(subid, SubTaskStatus.ERROR);
                 RedisPublish.dbRefresh(id);
+                return true;
+            }
+
+            this.mission_numbners = mission_numbners;
+            updateSubStatus(subid, SubTaskStatus.SUSPEND);
+            RedisPublish.dbRefresh(id);
+            return checkIfStopped(id, 0);
+        }
+
+        private boolean MOD_VISIBILITY_CALC(String subid) {
+            updateSubStatus(subid, SubTaskStatus.RUNNING);
+            RedisPublish.dbRefresh(id);
+
+            //任务表
+            MongoCollection<Document> Data_Missionjson = mongoDatabase.getCollection("image_mission");
+            FindIterable<Document> D_Missionjson = Data_Missionjson.find();
+            ArrayList<Document> Missionjson = new ArrayList<>();
+            for (Document document : D_Missionjson) {
+                if (mission_numbners.contains(document.getString("mission_number")))
+                    Missionjson.add(document);
+            }
+
+            try {
+                Transmissionjson = VisibilityCalculation.VisibilityCalculationII(Satllitejson, D_orbitjson, count, GroundStationjson, Missionjson);
+                this.Missionjson = Missionjson;
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+
+            updateSubStatus(subid, SubTaskStatus.SUSPEND);
+            RedisPublish.dbRefresh(id);
+            return checkIfStopped(id, 0);
+        }
+
+        private boolean MOD_MISSION_PLANNING(String subid) {
+            updateSubStatus(subid, SubTaskStatus.RUNNING);
+            RedisPublish.dbRefresh(id);
+
+            MongoCollection<Document> station_mission = mongoDatabase.getCollection("station_mission");
+
+            BasicDBObject query = new BasicDBObject();
+            query.put("expected_start_time", new BasicDBObject("$gte", endTime));
+            query.put("expected_end_time", new BasicDBObject("$lte", startTime));
+
+            FindIterable<Document> documents = station_mission.find(query);
+            ArrayList<Document> station_missions = new ArrayList<>();
+
+            for (Document sm : documents) {
+                station_missions.add(sm);
+            }
+
+            MissionPlanning.MissionPlanningII(this.Satllitejson, this.GroundStationjson, this.D_orbitjson, this.count, this.Missionjson, this.Transmissionjson, station_missions);
+
+            updateSubStatus(subid, SubTaskStatus.SUSPEND);
+            RedisPublish.dbRefresh(id);
+            return checkIfStopped(id, 0);
+
+        }
+
+        private boolean MOD_ATTITUDE_CALCULATION(String subid) {
+            updateSubStatus(subid, SubTaskStatus.RUNNING);
+            RedisPublish.dbRefresh(id);
+
+            AttitudeCalculation.AttitudeCalculationII(this.Satllitejson, this.D_orbitjson, this.count, this.Missionjson);
+
+            updateSubStatus(subid, SubTaskStatus.SUSPEND);
+            RedisPublish.dbRefresh(id);
+            return checkIfStopped(id, 0);
+        }
+
+        private boolean MOD_ENERGY_CALCULATION(String subid) {
+            updateSubStatus(subid, SubTaskStatus.RUNNING);
+            RedisPublish.dbRefresh(id);
+
+            updateSubStatus(subid, SubTaskStatus.SUSPEND);
+            RedisPublish.dbRefresh(id);
+            return checkIfStopped(id, 0);
+        }
+
+        private ArrayList<String> getOrderList(String subid) {
+            MongoClient mongoClient = MangoDBConnector.getClient();
+            MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+
+            MongoCollection<Document> sub_task = mongoDatabase.getCollection("sub_task");
+
+            ArrayList<String> params;
+            if (taskType == TaskType.CRONTAB) {
+                MongoCollection<Document> image_order = mongoDatabase.getCollection("image_order");
+
+                Date s = Date.from(now.plusSeconds(60 * 60 * 24));
+                Date e = Date.from(now.plusSeconds(60 * 60 * 24 * 2));
+
+                BasicDBObject query = new BasicDBObject();
+                query.put("expected_start_time", new BasicDBObject("$gte", e));
+                query.put("expected_end_time", new BasicDBObject("$lte", s));
+
+                FindIterable<Document> documents = image_order.find(query);
+                params = new ArrayList<>();
+                for (Document d : documents) {
+                    params.add(d.getObjectId("_id").toString());
+                }
             } else {
-                updateStatus(subid, SubTaskStatus.ERROR);
-                RedisPublish.dbRefresh(id);
+                Document condtion = new Document();
+                condtion.append("_id", new ObjectId(subid));
+
+                Document first = sub_task.find(condtion).first();
+
+                Document data = (Document) first.get("data");
+
+                params = (ArrayList<String>) data.get("params");
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
-    private static String getPath(String subid) {
-        MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
-
-        MongoCollection<Document> subtasks = mongoDatabase.getCollection("sub_task");
-        Document iddoc = subtasks.find(new Document("_id", new ObjectId(subid))).first();
-        JsonParser parse = new JsonParser();  //??json???
-        JsonObject json = (JsonObject) parse.parse(iddoc.toJson());
-        mongoClient.close();
-        return json.getAsJsonObject("method").getAsJsonObject("param").get("path").getAsString();
-    }
-
-    private static String getExename(String subid) {
-        MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
-
-        MongoCollection<Document> subtasks = mongoDatabase.getCollection("sub_task");
-        Document iddoc = subtasks.find(new Document("_id", new ObjectId(subid))).first();
-        JsonParser parse = new JsonParser();  //??json???
-        JsonObject json = (JsonObject) parse.parse(iddoc.toJson());
-        mongoClient.close();
-        return json.get("exename").getAsString();
-    }
-
-    private static String[] getSubList(String id) {
-        MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
-
-        MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
-
-        Document document = tasks.find(new Document("_id", new ObjectId(id))).first();
-
-        JsonParser parse = new JsonParser();  //??json???
-        JsonObject json = (JsonObject) parse.parse(document.toJson());
-
-        JsonArray asJsonArray = json.getAsJsonObject("tp_info").getAsJsonArray("sub_tasks");
-
-        String[] ret = new String[3];
-        for (int i = 0; i < 3; i++) {
-            ret[i] = asJsonArray.get(i).getAsJsonObject().get("sub_taskid").getAsString();
+            return params;
         }
 
-        mongoClient.close();
-
-        return ret;
+        private boolean checkIfStopped(String id, int ser) {
+            MainTaskStatus mainTaskStatus = checkMainTaskStatus(id);
+            if (mainTaskStatus == MainTaskStatus.DELETE) {
+                for (int i = ser + 1; i < subList.length; i++) {
+                    updateSubStatus(subList[i], SubTaskStatus.DELETE);
+                }
+                RedisPublish.dbRefresh(id);
+                return true;
+            } else if (mainTaskStatus == MainTaskStatus.SUSPEND) {
+                for (int i = ser + 1; i < subList.length; i++) {
+                    updateSubStatus(subList[i], SubTaskStatus.SUSPEND);
+                }
+                RedisPublish.dbRefresh(id);
+                return true;
+            } else {
+            }
+            return false;
+        }
     }
-
-    private static void updateStatus(String id, SubTaskStatus subTaskStatus) {
-        MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
-
-        MongoCollection<Document> subtasks = mongoDatabase.getCollection("sub_task");
-
-        Document doc = new Document();
-        doc.append("_id", new ObjectId(id));
-        subtasks.updateOne(doc,
-                new Document("$push",
-                        new Document("history",
-                                new Document()
-                                        .append("status", subTaskStatus.name())
-                                        .append("message", "")
-                                        .append("update_time", Instant.now().toString())
-                        )
-                )
-        );
-        mongoClient.close();
-    }
-
-    private static void updateMainStatus(String id, MainTaskStatus mainTaskStatus) {
-        MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
-
-        MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
-
-        tasks.updateOne(Filters.eq("_id", new ObjectId(id)), new Document("$set", new Document("status", mainTaskStatus.name())));
-        mongoClient.close();
-    }
-
 }

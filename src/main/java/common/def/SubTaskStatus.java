@@ -5,6 +5,7 @@ package common.def;
  */
 public enum SubTaskStatus {
     NEW,
+    DELETE,
     SUSPEND,
     RUNNING,
     ERROR,

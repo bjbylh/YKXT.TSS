@@ -1,11 +1,13 @@
 package common.redis;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import common.def.InsType;
 import common.def.TaskType;
 import common.def.TempletType;
 
 import java.time.Instant;
+import java.util.Map;
 
 /**
  * Created by lihan on 2018/11/15.
@@ -37,12 +39,31 @@ public class RedisDataEntity {
         JsonObject ret = new JsonObject();
         JsonObject head = GenHead(MsgType.NEW_TASK, "MAG", "TSS", "");
         JsonObject data = new JsonObject();
-        data.addProperty("name", "task12345");
-        data.addProperty("tasktype", TaskType.CRONTAB.name());
-        data.addProperty("templet", TempletType.ORBIT_FORECAST.name());
+        data.addProperty("name", "test111");
+        data.addProperty("tasktype", TaskType.REALTIME.name());
+        data.addProperty("templet", TempletType.TASK_PLAN.name());
         data.addProperty("firsttime", Instant.now().toString());
         data.addProperty("cycle", "60000");
         data.addProperty("count", "0");
+        data.addProperty("content","XXXXX");
+        ret.add("Head", head);
+        ret.add("data", data);
+        return ret.toString();
+    }
+
+    public static String GenCheckResult(Map<String,Boolean> trueorfalse) {
+        JsonObject ret = new JsonObject();
+        JsonObject head = GenHead(MsgType.NEW_TASK, "TSS", "MAG", "");
+        JsonObject data = new JsonObject();
+
+        JsonArray jsonArray = new JsonArray();
+        for(String mission_number : trueorfalse.keySet()){
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty("mission_number",mission_number);
+            jsonObject.addProperty("return",trueorfalse.get(mission_number).toString());
+            jsonArray.add(jsonObject);
+        }
+        data.addProperty("content", jsonArray.toString());
         ret.add("Head", head);
         ret.add("data", data);
         return ret.toString();

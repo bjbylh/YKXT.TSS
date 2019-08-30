@@ -78,7 +78,7 @@ public class TaskMonitor {
                         String templet = document.getString("templet");
 
                         if (templet.equals(TempletType.ORBIT_FORECAST.name())) {
-                            OrbitCore orbitCore = new OrbitCore(document.get("_id").toString());
+                            OrbitCore orbitCore = new OrbitCore(document.get("_id").toString(), TaskType.REALTIME);
                             orbitCore.startup();
                         } else if (templet.equals(TempletType.TASK_PLAN.name())) {
 
@@ -105,7 +105,7 @@ public class TaskMonitor {
                             String templet = document.getString("templet");
 
                             if (templet.equals(TempletType.ORBIT_FORECAST.name())) {
-                                OrbitCore orbitCore = new OrbitCore(document.get("_id").toString());
+                                OrbitCore orbitCore = new OrbitCore(document.get("_id").toString(), TaskType.CRONTAB);
                                 orbitCore.startup();
                             } else if (templet.equals(TempletType.TASK_PLAN.name())) {
 
@@ -134,7 +134,7 @@ public class TaskMonitor {
                             String templet = document.getString("templet");
 
                             if (templet.equals(TempletType.ORBIT_FORECAST.name())) {
-                                OrbitCore orbitCore = new OrbitCore(document.get("_id").toString());
+                                OrbitCore orbitCore = new OrbitCore(document.get("_id").toString(),TaskType.CRONTAB);
                                 orbitCore.startup();
                             } else if (templet.equals(TempletType.TASK_PLAN.name())) {
 
