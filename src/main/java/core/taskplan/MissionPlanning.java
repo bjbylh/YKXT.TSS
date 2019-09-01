@@ -18,73 +18,78 @@ import static java.lang.Math.*;
 
 public class MissionPlanning {
 
-    public static double AUtokm = 1.49597870e8;
-    public static double kmtom = 10e3;
+    private static double AUtokm = 1.49597870e8;
+    private static double kmtom = 10e3;
 
     //阳光规避弧段
-    public static int[] SunAvoidTimePeriod = new int[10];
-    public static int SunAvoidTimePeriodNum;
+    private static int[] SunAvoidTimePeriod = new int[10];
+    private static int SunAvoidTimePeriodNum;
 
     //常量
     private static double Re = 6371393;                  //地球半径，单位为：米
     private static double Step = 1;                        //数据步长
 
     //卫星资源参数
-    public static int LoadNumber = 4;                    //载荷数量
-    public static double[][] LoadInstall = {{90 * Math.PI / 180.0, 86.3 * Math.PI / 180.0, 3.7 * Math.PI / 180.0},
+    private static int LoadNumber = 4;                    //载荷数量
+    private static double[][] LoadInstall = {{90 * Math.PI / 180.0, 86.3 * Math.PI / 180.0, 3.7 * Math.PI / 180.0},
             {90 * Math.PI / 180.0, 93.7 * Math.PI / 180.0, 3.7 * Math.PI / 180.0},
             {90 * Math.PI / 180.0, 85.6 * Math.PI / 180.0, 3.7 * Math.PI / 180.0},
             {90 * Math.PI / 180.0, 94.4 * Math.PI / 180.0, 3.7 * Math.PI / 180.0}};
     //载荷视场角，格式：每行代表一个载荷，每行格式[内视角，外视角，上视角，下视角]，单位：弧度
-    public static double[][] LoadViewAng = {{3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0},
+    private static double[][] LoadViewAng = {{3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0},
             {3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0},
             {3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0},
             {3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0}};
     //卫星变量
     //卫星最大机动能力，最大机动欧拉角，格式[绕x轴最大机动角度，绕y轴最大机动角度，绕z轴最大机动角度]，单位：弧度
-    public static double[] SatelliteManeuverEuler = {5 * Math.PI / 180.0, 5 * Math.PI / 180.0, 5 * Math.PI / 180.0};
-    public static double[] SatelliteManeuverVelocity = {10 * Math.PI / 180.0, 10 * Math.PI / 180.0, 10 * Math.PI / 180.0};//最大机动角速度
+    private static double[] SatelliteManeuverEuler = {5 * Math.PI / 180.0, 5 * Math.PI / 180.0, 5 * Math.PI / 180.0};
+    private static double[] SatelliteManeuverVelocity = {10 * Math.PI / 180.0, 10 * Math.PI / 180.0, 10 * Math.PI / 180.0};//最大机动角速度
 
-    public static double ImageTimeMin = 100;//任务间最短时间
+    private static double ImageTimeMin = 100;//任务间最短时间
 
     //地面站变量
-    public static int StationNumber;                   //地面站数量
-    public static String[] StationSerialNumber;        //地面站编号，格式：每行代表一个地面站
-    public static double[][] StationPosition;          //地面站位置，格式，每行代表一个地面站，每行格式：[地面站经度，地面站纬度，地面站高度]，高度单位：米
-    public static double[] StationPitch;               //地面站最低仰角要求，格式：每行代表一个地面站，每行格式：最小仰角角度，单位：弧度
-    public static double[][] StationMissionStar;           //地面站传输任务时间
-    public static double[][] stationMissionStop;       //地面站传输任务时间
+    private static int StationNumber;                   //地面站数量
+    private static String[] StationSerialNumber;        //地面站编号，格式：每行代表一个地面站
+    private static double[][] StationPosition;          //地面站位置，格式，每行代表一个地面站，每行格式：[地面站经度，地面站纬度，地面站高度]，高度单位：米
+    private static double[] StationPitch;               //地面站最低仰角要求，格式：每行代表一个地面站，每行格式：最小仰角角度，单位：弧度
+    private static double[][] StationMissionStar;           //地面站传输任务时间
+    private static double[][] stationMissionStop;       //地面站传输任务时间
+
+    //地面站任务变量
+    private static double[][] StationMissionStarTime;//传输任务期望开始时间
+    private static double[][] StationMissionEndTime;//传输任务期望结束时间
+    private static int StationMissionNum;//传输任务个数
 
     //轨道数据变量
-    public static int OrbitalDataNum;
-    public static double[][] Orbital_Time;
-    public static double[][] Orbital_SatPosition;
-    public static double[][] Orbital_SatVelocity;
-    public static Date[] Time_Point;
-    public static double[][] Orbital_SatPositionLLA;
+    private static int OrbitalDataNum;
+    private static double[][] Orbital_Time;
+    private static double[][] Orbital_SatPosition;
+    private static double[][] Orbital_SatVelocity;
+    private static Date[] Time_Point;
+    private static double[][] Orbital_SatPositionLLA;
 
     //任务变量
-    public static int MissionNumber;                   //任务数量
-    public static int[] MissionTargetNum;
-    public static String[] MissionSerialNumber = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"};        //任务编号
-    public static int[] MissionImagingMode;            //成像模式，格式：每行代表一个任务。1：常规模式，2：凝视模式，3：定标模式
-    public static int[] MissionTargetType;             //成像目标类型，格式：每行代表一个任务。1：点目标，2：区域目标
-    public static double[][] MissionTargetArea;        //成像区域描述，格式：每行代表一个任务，每行格式[经度，纬度，经度，纬度，……]
-    public static double[] MissionStareTime;//最小成像时长
-    public static int[] MissionPriority;//任务优先级
-    public static int[][] MissionLoadType;//任务对相机的需求，格式，每行达标一个任务，每行格式[是否使用相机1，……]，1代表是，0代表否，第1,2列表示高分相机，第3,4列表示多光谱相机
+    private static int MissionNumber;                   //任务数量
+    private static int[] MissionTargetNum;
+    private static String[] MissionSerialNumber = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"};        //任务编号
+    private static int[] MissionImagingMode;            //成像模式，格式：每行代表一个任务。1：常规模式，2：凝视模式，3：定标模式
+    private static int[] MissionTargetType;             //成像目标类型，格式：每行代表一个任务。1：点目标，2：区域目标
+    private static double[][] MissionTargetArea;        //成像区域描述，格式：每行代表一个任务，每行格式[经度，纬度，经度，纬度，……]
+    private static double[] MissionStareTime;//最小成像时长
+    private static int[] MissionPriority;//任务优先级
+    private static int[][] MissionLoadType;//任务对相机的需求，格式，每行达标一个任务，每行格式[是否使用相机1，……]，1代表是，0代表否，第1,2列表示高分相机，第3,4列表示多光谱相机
     //可见性输出
     //int[][][] VisibilityTimePeriod=new int[4][MissionNumber][20];
     //int[][] TimePeriodNum=new int[4][MissionNumber];
-    public static int[][][] VisibilityTimePeriod;
-    public static int[][] TimePeriodNum;
+    private static int[][][] VisibilityTimePeriod;
+    private static int[][] TimePeriodNum;
     //任务规划输出
-    public static int[] PlanningMissionFailReason;//任务规划结果，0表示未规划，1表示规划成功，2表示无可见弧段，3表示任务冲突
-    public static int[][] PlanningMissionTimePeriod;//任务弧段
-    public static int[] PlanningMissionLoad;//为任务分配的载荷
-    public static int[][] PlanningTransTimePeriod = new int[100][2];
-    public static int[] PlanningTransStation = new int[100];
-    public static int PlanningTransNum;
+    private static int[] PlanningMissionFailReason;//任务规划结果，0表示未规划，1表示规划成功，2表示无可见弧段，3表示任务冲突
+    private static int[][] PlanningMissionTimePeriod;//任务弧段
+    private static int[] PlanningMissionLoad;//为任务分配的载荷
+    private static int[][] PlanningTransTimePeriod = new int[100][2];
+    private static int[] PlanningTransStation = new int[100];
+    private static int PlanningTransNum;
 
 
     public static void MissionPlanningII(Document Satllitejson, ArrayList<Document> GroundStationjson, FindIterable<Document> Orbitjson, long OrbitDataCount, ArrayList<Document> ImageMissionjson, Document TransmissionMissionJson, ArrayList<Document> StationMissionJson) {
@@ -186,6 +191,33 @@ public class MissionPlanning {
                 }
             }
             StationNumber = StationNumber + 1;
+        }
+
+        //地面站任务读入
+
+        StationMissionStarTime = new double[StationMissionJson.size()][6];
+        StationMissionEndTime=new double[StationMissionJson.size()][6];
+        StationMissionNum = 0;
+        for (Document document : StationMissionJson) {
+            Date time_point=document.getDate("expected_start_time");
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String StringTime;
+            StringTime = sdf.format(time_point);
+            StationMissionStarTime[StationMissionNum][0] = Double.parseDouble(StringTime.substring(0, 4));
+            StationMissionStarTime[StationMissionNum][1] = Double.parseDouble(StringTime.substring(5, 7));
+            StationMissionStarTime[StationMissionNum][2] = Double.parseDouble(StringTime.substring(8, 10));
+            StationMissionStarTime[StationMissionNum][3] = Double.parseDouble(StringTime.substring(11, 13));
+            StationMissionStarTime[StationMissionNum][4] = Double.parseDouble(StringTime.substring(14, 16));
+            StationMissionStarTime[StationMissionNum][5] = Double.parseDouble(StringTime.substring(17, 19));
+            time_point=document.getDate("expected_end_time");
+            StringTime = sdf.format(time_point);
+            StationMissionEndTime[StationMissionNum][0] = Double.parseDouble(StringTime.substring(0, 4));
+            StationMissionEndTime[StationMissionNum][1] = Double.parseDouble(StringTime.substring(5, 7));
+            StationMissionEndTime[StationMissionNum][2] = Double.parseDouble(StringTime.substring(8, 10));
+            StationMissionEndTime[StationMissionNum][3] = Double.parseDouble(StringTime.substring(11, 13));
+            StationMissionEndTime[StationMissionNum][4] = Double.parseDouble(StringTime.substring(14, 16));
+            StationMissionEndTime[StationMissionNum][5] = Double.parseDouble(StringTime.substring(17, 19));
+            StationMissionNum=StationMissionNum+1;
         }
 
         //轨道数据读入
@@ -343,6 +375,10 @@ public class MissionPlanning {
                 MissionTargetType[MissionNumber] = 2;
             }
             MissionNumber = MissionNumber + 1;
+
+            if (MissionNumber == 1) {
+                break;
+            }
         }
 
         //为任务分配载荷
@@ -625,33 +661,31 @@ public class MissionPlanning {
 
         //传输任务分配
         int[][] MissionPeriodAll = new int[100][2];
-        int MissionPeriodNumAll = 0;
-        for (int i = 1; i < (int) OrbitDataCount; i++) {
-            if (PlanningFlag[i] == 0 && PlanningFlag[i - 1] != 0) {
-                MissionPeriodAll[MissionPeriodNumAll][0] = i;
-            }
-            if ((PlanningFlag[i - 1] == 0 && PlanningFlag[i] != 0) || PlanningFlag[i] == 0 && i == (int) OrbitDataCount - 1) {
-                MissionPeriodAll[MissionPeriodNumAll][1] = i - 1;
-                MissionPeriodNumAll = MissionPeriodNumAll + 1;
-            }
-        }
         PlanningTransNum = 0;
-        for (int i = 0; i < MissionPeriodNumAll; i++) {
-            for (int j = 0; j < StationNumber; j++) {
-                int StationFlag = 0;
-                int Side_Flag = 0;
-                int Flag_tBefore = 0;
-                int Visibility_Flag = 0;
-                int Flag_t = 0;
-                int PeriodNum = 0;
-                double[] Target_LLA = new double[3];
-                double[] Target_ECEF = new double[3];
-                Target_LLA[0] = StationPosition[j][0];
-                Target_LLA[1] = StationPosition[j][1];
-                Target_LLA[2] = StationPosition[j][2] + Re;
-                LLAToECEF(Target_LLA, Target_ECEF);
-                for (int k = MissionPeriodAll[i][0]; k < MissionPeriodAll[i][1]; k++) {
-                    double Time_JD = JD(Orbital_Time[k]);
+        StationNumber = 1;
+        for (int j = 0; j < StationNumber; j++) {
+            int Side_Flag = 0;
+            int Flag_tBefore = 0;
+            int Visibility_Flag = 0;
+            int Flag_t = 0;
+            double[] Target_LLA = new double[3];
+            double[] Target_ECEF = new double[3];
+            Target_LLA[0] = StationPosition[j][0];
+            Target_LLA[1] = StationPosition[j][1];
+            Target_LLA[2] = StationPosition[j][2] + Re;
+            LLAToECEF(Target_LLA, Target_ECEF);
+            for (int k = 0; k < (int) OrbitDataCount; k++) {
+                double Time_JD = JD(Orbital_Time[k]);
+                int Flag_StationTime=0;
+                for (int i = 0; i < StationMissionNum; i++) {
+                    double StationStarTime_JD=JD(StationMissionStarTime[i]);
+                    double StationEndTime_JD=JD(StationMissionEndTime[i]);
+                    if (Time_JD >= StationStarTime_JD && Time_JD<=StationEndTime_JD) {
+                        Flag_StationTime=1;
+                        break;
+                    }
+                }
+                if (Flag_StationTime == 1) {
                     double[] Target_GEI = new double[3];
                     ECEFToICRS(Time_JD, Target_ECEF, Target_GEI);
                     double[] SatPositionRe_LLA = new double[3];
@@ -670,25 +704,22 @@ public class MissionPlanning {
                         Flag_tBefore = Flag_t;
                         Flag_t = Visibility_Flag;
                     }
-
-                    if (Flag_tBefore == 0 && Flag_t == 1) {
-                        PlanningTransTimePeriod[PlanningTransNum][0] = k;
-                        PlanningTransStation[PlanningTransNum] = j;
-                    } else if (Flag_tBefore == 1 && Flag_t == 0) {
-                        PlanningTransTimePeriod[PlanningTransNum][1] = k - 1;
-                        PlanningTransNum = PlanningTransNum + 1;
-                        StationFlag = 1;
-                        break;
-                    }
-                    if (k == MissionPeriodAll[i][1] - 1 && Flag_t == 1) {
-                        PlanningTransTimePeriod[PlanningTransNum][1] = k;
-                        PlanningTransNum = PlanningTransNum + 1;
-                        StationFlag = 1;
-                        break;
-                    }
+                }else {
+                    Visibility_Flag = 0;
+                    Flag_tBefore = Flag_t;
+                    Flag_t = Visibility_Flag;
                 }
-                if (StationFlag == 1) {
-                    break;
+
+                if (Flag_tBefore == 0 && Flag_t == 1) {
+                    PlanningTransTimePeriod[PlanningTransNum][0] = k;
+                    PlanningTransStation[PlanningTransNum] = j;
+                } else if (Flag_tBefore == 1 && Flag_t == 0) {
+                    PlanningTransTimePeriod[PlanningTransNum][1] = k - 1;
+                    PlanningTransNum = PlanningTransNum + 1;
+                }
+                if (k == (int)OrbitDataCount - 1 && Flag_t == 1) {
+                    PlanningTransTimePeriod[PlanningTransNum][1] = k;
+                    PlanningTransNum = PlanningTransNum + 1;
                 }
             }
         }
@@ -774,7 +805,7 @@ public class MissionPlanning {
 
 
     //姿态角计算
-    public static void AttitudeCalculation(double[] SatPosition_GEI, double[] SatVelocity_GEI, double[] Target_LLA, double[] Time, double[] ViewInstall, double[] Attitude) {
+    private static void AttitudeCalculation(double[] SatPosition_GEI, double[] SatVelocity_GEI, double[] Target_LLA, double[] Time, double[] ViewInstall, double[] Attitude) {
         double[] SatelliteTime = new double[6];
         double[][] BToS;
         double[][] BToO = new double[3][3];
@@ -843,7 +874,7 @@ public class MissionPlanning {
     }
 
     //判断地面站是否可见
-    public static int StationVisibilityJudge(double Target_ECEF[], double SatPosition_ECEF[], double StationPitch) {
+    private static int StationVisibilityJudge(double Target_ECEF[], double SatPosition_ECEF[], double StationPitch) {
         double[] error = new double[3];
         error[0] = SatPosition_ECEF[0] - Target_ECEF[0];
         error[1] = SatPosition_ECEF[1] - Target_ECEF[1];
@@ -858,7 +889,7 @@ public class MissionPlanning {
     }
 
     //太阳矢量
-    public static double Sun(double JD, double[] r_sun, double[] su) {
+    private static double Sun(double JD, double[] r_sun, double[] su) {
         double rad_sun;
         double T_TDB, L_sun, M_sun, C, lambda_sun, e, ecc, v;
         /*...Compute Julian centuries*/
@@ -903,7 +934,7 @@ public class MissionPlanning {
     }
 
     //儒略日计算
-    public static double JD(double Time[]) {
+    private static double JD(double Time[]) {
         double year_UT = Time[0];
         double month_UT = Time[1];
         double day_UT = Time[2];
@@ -932,7 +963,7 @@ public class MissionPlanning {
     }
 
     //地固坐标系转到惯性坐标系
-    public static void ECEFToICRS(double JD, double position_ECEF[], double position_GEI[]) {
+    private static void ECEFToICRS(double JD, double position_ECEF[], double position_GEI[]) {
         double T = (JD - 2451545.0) / 36525.0;
         double z = 2306.2182 * T + 1.09468 * Math.pow(T, 2) + 0.018203 * Math.pow(T, 3);
         double theta = 2004.3109 * T + 0.42665 * Math.pow(T, 2) - 0.041833 * Math.pow(T, 3);
@@ -976,7 +1007,7 @@ public class MissionPlanning {
     }
 
     //地固直角坐标系转换为地心地固坐标系
-    public static void LLAToECEF(double Position_LLA[], double Position_ECEF[]) {
+    private static void LLAToECEF(double Position_LLA[], double Position_ECEF[]) {
         double L = Position_LLA[0] * Math.PI / 180.0;
         double B = Position_LLA[1] * Math.PI / 180.0;
         double H = Position_LLA[2];
@@ -987,7 +1018,7 @@ public class MissionPlanning {
     }
 
     //惯性坐标系转到轨道坐标系
-    public static void GEIToORF(double SatPosition_GEI[], double SatVelocity_GEI[], double Position_GEI[], double Position_ORF[]) {
+    private static void GEIToORF(double SatPosition_GEI[], double SatVelocity_GEI[], double Position_GEI[], double Position_ORF[]) {
         double r = Math.sqrt(Math.pow(SatPosition_GEI[0], 2) + Math.pow(SatPosition_GEI[1], 2) + Math.pow(SatPosition_GEI[2], 2));
         double v = Math.sqrt(Math.pow(SatVelocity_GEI[0], 2) + Math.pow(SatVelocity_GEI[1], 2) + Math.pow(SatVelocity_GEI[2], 2));
         double[] zs = {-SatPosition_GEI[0] / r, -SatPosition_GEI[1] / r, -SatPosition_GEI[2] / r};
@@ -1006,7 +1037,7 @@ public class MissionPlanning {
     }
 
     //计算参考时间的格林尼治赤经
-    public static double Time_GAST(double JD) {
+    private static double Time_GAST(double JD) {
         double D = JD - 2451545.0;
         double T = D / 36525.0;
         double GMST = 280.46061837 + 360.98564736629 * (JD - 2451545.0) + 0.000387933 * Math.pow(T, 2) - Math.pow(T, 3) / 38710000.0;
@@ -1028,7 +1059,7 @@ public class MissionPlanning {
     }
 
     //矩阵乘法
-    public static double[][] MatrixMultiplication(double A[][], double B[][]) {
+    private static double[][] MatrixMultiplication(double A[][], double B[][]) {
         int A_rowNum = A.length;
         int A_columnNum = A[0].length;
         int B_rowNum = B.length;
@@ -1047,7 +1078,7 @@ public class MissionPlanning {
     }
 
     //矩阵求逆
-    public static double[][] MatrixInverse(double A[][]) {
+    private static double[][] MatrixInverse(double A[][]) {
         int A_rowNum = A.length;
         int A_columnNum = A[0].length;
         if (A_rowNum != A_columnNum)
@@ -1071,7 +1102,7 @@ public class MissionPlanning {
     }
 
     //求矩阵(h,v)位置的余子式，用于矩阵求逆
-    public static double[][] MatrixCofactor(double[][] A, int h, int v) {
+    private static double[][] MatrixCofactor(double[][] A, int h, int v) {
         int A_rowNum = A.length;
         int A_columnNum = A[0].length;
         if (A_rowNum != A_columnNum)
@@ -1098,7 +1129,7 @@ public class MissionPlanning {
     }
 
     //计算行列式的值
-    public static double MatrixResult(double A[][]) {
+    private static double MatrixResult(double A[][]) {
         int A_rowNum = A.length;
         int A_columnNum = A[0].length;
         if (A_rowNum != A_columnNum)
@@ -1128,7 +1159,7 @@ public class MissionPlanning {
     }
 
     //矩阵的转置
-    public static double[][] MatrixTransposition(double A[][]) {
+    private static double[][] MatrixTransposition(double A[][]) {
         double[][] Result = new double[A[0].length][A.length];
         for (int i = 0; i < A.length; i++) {
             for (int j = 0; j < A[0].length; j++)
@@ -1138,7 +1169,7 @@ public class MissionPlanning {
     }
 
     //矢量叉乘
-    public static double[] VectorCross(double A[], double B[]) {
+    private static double[] VectorCross(double A[], double B[]) {
         if (A.length != 3 || B.length != 3)
             JOptionPane.showMessageDialog(null, "求矢量的叉乘输入不合法", "求矢量叉乘错误", JOptionPane.ERROR_MESSAGE);
         double[] Result = new double[3];

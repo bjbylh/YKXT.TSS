@@ -12,12 +12,15 @@ import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import common.redis.MsgType;
 import common.redis.RedisPublish;
+import core.taskplan.VisibilityCalculation;
 import org.bson.Document;
 import redis.clients.jedis.JedisPubSub;
 import srv.task.TaskInit;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * Created by lihan on 2018/11/15.
@@ -96,7 +99,13 @@ public class NewTaskSubscriber extends JedisPubSub {
             }
 
             //todo
-            RedisPublish.checkResult(null);
+            try {
+                Map<String, Boolean> stringBooleanMap = VisibilityCalculation.VisibilityCalculationEmergency(Satllitejson, D_orbitjson, count, GroundStationjson, Missionjson);
+                RedisPublish.checkResult(stringBooleanMap);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+
         } else return;
     }
 
