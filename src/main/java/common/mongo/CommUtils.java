@@ -47,8 +47,8 @@ public class CommUtils {
 
         JsonArray asJsonArray = json.getAsJsonObject("tp_info").getAsJsonArray("sub_tasks");
 
-        String[] ret = new String[3];
-        for (int i = 0; i < 3; i++) {
+        String[] ret = new String[5];
+        for (int i = 0; i < 5; i++) {
             ret[i] = asJsonArray.get(i).getAsJsonObject().get("sub_taskid").getAsString();
         }
 

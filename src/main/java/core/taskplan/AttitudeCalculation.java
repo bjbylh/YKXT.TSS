@@ -5,46 +5,49 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.UpdateOptions;
-import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
 import javax.swing.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 
 import static java.lang.Math.*;
 
+//import common.mongo.DbDefine;
+//import common.mongo.MangoDBConnector;
+
 public class AttitudeCalculation {
     //载荷变量
     // 载荷安装 矩阵，格式：每行代表一个载荷，每行格式[光轴与本体系x轴夹角，光轴与本体系y轴夹角，光轴与本体系z轴夹角]，单位：弧度
-    public static int LoadNumber = 4;                    //载荷数量
-    public static double[][] LoadInstall = {{90 * Math.PI * 180.0, 86.3 * Math.PI * 180.0, 3.7 * Math.PI * 180.0},
+    private static int LoadNumber = 4;                    //载荷数量
+    private static double[][] LoadInstall = {{90 * Math.PI * 180.0, 86.3 * Math.PI * 180.0, 3.7 * Math.PI * 180.0},
             {90 * Math.PI * 180.0, 93.7 * Math.PI * 180.0, 3.7 * Math.PI * 180.0},
             {90 * Math.PI * 180.0, 85.6 * Math.PI * 180.0, 3.7 * Math.PI * 180.0},
             {90 * Math.PI * 180.0, 94.4 * Math.PI * 180.0, 3.7 * Math.PI * 180.0}};
     //载荷视场角，格式：每行代表一个载荷，每行格式[内视角，外视角，上视角，下视角]，单位：弧度
-    public static double[][] LoadViewAng = {{3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0},
+    private static double[][] LoadViewAng = {{3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0},
             {3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0},
             {3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0},
             {3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0}};
 
     //卫星变量
     //卫星最大机动能力，最大机动欧拉角，格式[绕x轴最大机动角度，绕y轴最大机动角度，绕z轴最大机动角度]，单位：弧度
-    public static double[] SatelliteManeuverEuler = {5 * Math.PI / 180.0, 5 * Math.PI / 180.0, 5 * Math.PI / 180.0};
-    public static double[] SatelliteManeuverVelocity = {10 * Math.PI / 180.0, 10 * Math.PI / 180.0, 10 * Math.PI / 180.0};//最大机动角速度
+    private static double[] SatelliteManeuverEuler = {5 * Math.PI / 180.0, 5 * Math.PI / 180.0, 5 * Math.PI / 180.0};
+    private static double[] SatelliteManeuverVelocity = {10 * Math.PI / 180.0, 10 * Math.PI / 180.0, 10 * Math.PI / 180.0};//最大机动角速度
 
     //任务变量
-    public static int MissionNumber;                   //任务数量
-    public static double[][] MissionStarTime;          //任务起始时间，格式：每行代表一个任务，每行格式[年，月，日，时，分，秒]
-    public static double[][] MissionStopTime;          //任务结束时间，格式：每行代表一个任务，每行格式[年，月，日，时，分，秒]
-    public static String[] MissionSerialNumber;        //任务编号
-    public static int[] MissionImagingMode;            //成像模式，格式：每行代表一个任务。1：常规模式，2：凝视模式，3：定标模式
-    public static int[] MissionTargetType;             //成像目标类型，格式：每行代表一个任务。1：点目标，2：区域目标
-    public static double[][] MissionTargetArea;        //成像区域描述，格式：每行代表一个任务，每行格式[经度，纬度，经度，纬度，……]
-    public static double[][] MisssionTargetHeight;     //成像高度要求，格式：每行代表一个任务，每行格式[最低成像要求，最高成像要求]，单位：米
-    public static int[] PlanningMissionLoad;
+    private static int MissionNumber;                   //任务数量
+    private static double[][] MissionStarTime;          //任务起始时间，格式：每行代表一个任务，每行格式[年，月，日，时，分，秒]
+    private static double[][] MissionStopTime;          //任务结束时间，格式：每行代表一个任务，每行格式[年，月，日，时，分，秒]
+    private static String[] MissionSerialNumber;        //任务编号
+    private static int[] MissionImagingMode;            //成像模式，格式：每行代表一个任务。1：常规模式，2：凝视模式，3：定标模式
+    private static int[] MissionTargetType;             //成像目标类型，格式：每行代表一个任务。1：点目标，2：区域目标
+    private static double[][] MissionTargetArea;        //成像区域描述，格式：每行代表一个任务，每行格式[经度，纬度，经度，纬度，……]
+    private static double[][] MisssionTargetHeight;     //成像高度要求，格式：每行代表一个任务，每行格式[最低成像要求，最高成像要求]，单位：米
+    private static int[] PlanningMissionLoad;
 
     //常量
     private static double Re = 6371393;                  //地球半径，单位为：米
@@ -138,7 +141,10 @@ public class AttitudeCalculation {
             Date time_point = document.getDate("time_point");
             //时间转换为doubule型
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            StringTime = sdf.format(time_point);
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(time_point);
+            cal.add(Calendar.HOUR_OF_DAY, -8);
+            StringTime = sdf.format(cal.getTime());
             Time_Point[OrbitalDataNum] = time_point;
             Time[OrbitalDataNum][0] = Double.parseDouble(StringTime.substring(0, 4));
             Time[OrbitalDataNum][1] = Double.parseDouble(StringTime.substring(5, 7));
@@ -176,53 +182,68 @@ public class AttitudeCalculation {
             ArrayList<Document> features = (ArrayList<Document>) target_region.get("features");
             for (Document document1 : features) {
                 Document geometry = (Document) document1.get("geometry");
-                ArrayList<ArrayList<Object>> coordinates = (ArrayList<ArrayList<Object>>) geometry.get("coordinates");
-                for (ArrayList<Object> document2 : coordinates) {
-                    for (int i = 0; i < document2.size(); i++) {
-                        ArrayList<Double> document222 = (ArrayList<Double>) document2.get(i);
-                        MissionTargetArea[MissionNumber][2 * i] = document222.get(0);
-                        MissionTargetArea[MissionNumber][2 * i + 1] = document222.get(1);
-                    }
-                    TargetNum[MissionNumber] = document2.size();
+                ArrayList<ArrayList<Double>> coordinates = (ArrayList<ArrayList<Double>>) geometry.get("coordinates");
+                int i = 0;
+                for (ArrayList<Double> document2 : coordinates) {
+                    MissionTargetArea[MissionNumber][2 * i] = document2.get(0);
+                    MissionTargetArea[MissionNumber][2 * i + 1] = document2.get(1);
+                    i = i + 1;
                 }
+                TargetNum[MissionNumber] = coordinates.size();
             }
-            Document image_window = (Document) document.get("image_window");
-            PlanningMissionLoad[MissionNumber] = Integer.parseInt(image_window.get("LoadNumber").toString());
-            Date start_time = image_window.getDate("start_time");
-            //时间转换为doubule型
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            StringTime = sdf.format(start_time);
-            MissionStarTime[MissionNumber][0] = Double.parseDouble(StringTime.substring(0, 4));
-            MissionStarTime[MissionNumber][1] = Double.parseDouble(StringTime.substring(5, 7));
-            MissionStarTime[MissionNumber][2] = Double.parseDouble(StringTime.substring(8, 10));
-            MissionStarTime[MissionNumber][3] = Double.parseDouble(StringTime.substring(11, 13));
-            MissionStarTime[MissionNumber][4] = Double.parseDouble(StringTime.substring(14, 16));
-            MissionStarTime[MissionNumber][5] = Double.parseDouble(StringTime.substring(17, 19));
-            Date end_time = document.getDate("end_time");
-            //时间转换为doubule型
-            StringTime = sdf.format(end_time);
-            MissionStopTime[MissionNumber][0] = Double.parseDouble(StringTime.substring(0, 4));
-            MissionStopTime[MissionNumber][1] = Double.parseDouble(StringTime.substring(5, 7));
-            MissionStopTime[MissionNumber][2] = Double.parseDouble(StringTime.substring(8, 10));
-            MissionStopTime[MissionNumber][3] = Double.parseDouble(StringTime.substring(11, 13));
-            MissionStopTime[MissionNumber][4] = Double.parseDouble(StringTime.substring(14, 16));
-            MissionStopTime[MissionNumber][5] = Double.parseDouble(StringTime.substring(17, 19));
+            ArrayList<Document> image_window = (ArrayList<Document>) document.get("image_window");
+            for (Document document1 : image_window) {
+                PlanningMissionLoad[MissionNumber] = Integer.parseInt(document1.get("load_number").toString());
+                Date start_time = document1.getDate("start_time");
+                //时间转换为doubule型
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(start_time);
+                cal.add(Calendar.HOUR_OF_DAY, -8);
+                StringTime = sdf.format(cal.getTime());
+                MissionStarTime[MissionNumber][0] = Double.parseDouble(StringTime.substring(0, 4));
+                MissionStarTime[MissionNumber][1] = Double.parseDouble(StringTime.substring(5, 7));
+                MissionStarTime[MissionNumber][2] = Double.parseDouble(StringTime.substring(8, 10));
+                MissionStarTime[MissionNumber][3] = Double.parseDouble(StringTime.substring(11, 13));
+                MissionStarTime[MissionNumber][4] = Double.parseDouble(StringTime.substring(14, 16));
+                MissionStarTime[MissionNumber][5] = Double.parseDouble(StringTime.substring(17, 19));
+                Date end_time = document1.getDate("end_time");
+                //时间转换为doubule型
+                cal.setTime(end_time);
+                cal.add(Calendar.HOUR_OF_DAY, -8);
+                StringTime = sdf.format(cal.getTime());
+                MissionStopTime[MissionNumber][0] = Double.parseDouble(StringTime.substring(0, 4));
+                MissionStopTime[MissionNumber][1] = Double.parseDouble(StringTime.substring(5, 7));
+                MissionStopTime[MissionNumber][2] = Double.parseDouble(StringTime.substring(8, 10));
+                MissionStopTime[MissionNumber][3] = Double.parseDouble(StringTime.substring(11, 13));
+                MissionStopTime[MissionNumber][4] = Double.parseDouble(StringTime.substring(14, 16));
+                MissionStopTime[MissionNumber][5] = Double.parseDouble(StringTime.substring(17, 19));
+            }
             MissionSerialNumber[MissionNumber] = document.getString("mission_number");
             if (document.getString("image_mode").equals("常规")) {
                 MissionImagingMode[MissionNumber] = 1;
             }
-            if (document.getString("image_type").equals("点目标")) {
+            if (document.getString("image_type").equals("Point")) {
                 MissionTargetType[MissionNumber] = 1;
             }
-            MisssionTargetHeight[MissionNumber][0] = Double.parseDouble(document.getString("orbit_heigth_min"));
-            MisssionTargetHeight[MissionNumber][1] = Double.parseDouble(document.getString("orbit_heigth_max"));
+            MisssionTargetHeight[MissionNumber][0] = Double.parseDouble(document.getString("min_height_orbit"));
+            MisssionTargetHeight[MissionNumber][1] = Double.parseDouble(document.getString("max_height_orbit"));
             MissionNumber = MissionNumber + 1;
         }
 
         //姿态计算，欧拉角1-2-3转序
         double[][] SatAttitud = new double[(int) OrbitDataCount][3];
         double[][] SatAttitudVel = new double[(int) OrbitalDataNum][3];
+
+        MongoClient mongoClient = MangoDBConnector.getClient();
+        //获取名为"temp"的数据库
+        //MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
+
+        MongoCollection<Document> normal_attitude = mongoDatabase.getCollection("normal_attitude");
+
         for (int i = 0; i < OrbitalDataNum; i++) {
+            boolean MissionFlag = false;
             int LoadNum = 0;
             double Mission_FLag = 0;
             double NowTime_JD = JD(Time[i]);
@@ -256,16 +277,17 @@ public class AttitudeCalculation {
             }
             if (Mission_FLag == 1) {
                 AttitudeCalculation(SatPosition_GEI[i], SatVelocity_GEI[i], Target_LLA, Time[i], LoadInstall[LoadNum], SatAttitud[i]);
+                MissionFlag = true;
             } else {
                 SatAttitud[i][0] = 0;
                 SatAttitud[i][1] = 0;
                 SatAttitud[i][2] = 0;
             }
             if (i == 0) {
-                SatAttitudVel[i][0]=0;
-                SatAttitudVel[i][1]=0;
-                SatAttitudVel[i][2]=0;
-            }else {
+                SatAttitudVel[i][0] = 0;
+                SatAttitudVel[i][1] = 0;
+                SatAttitudVel[i][2] = 0;
+            } else {
                 double[][] AngRaid = {{(SatAttitud[i][0] - SatAttitud[i - 1][0]) / Step},
                         {(SatAttitud[i][1] - SatAttitud[i - 1][1]) / Step},
                         {(SatAttitud[i][2] - SatAttitud[i - 1][2]) / Step}};
@@ -281,30 +303,29 @@ public class AttitudeCalculation {
                 SatAttitudVel[i][2] = Vel[2][0];
             }
 
-            MongoClient mongoClient = MangoDBConnector.getClient();
-            //获取名为"temp"的数据库
-            MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
-            MongoCollection<Document> normal_attitude = mongoDatabase.getCollection("normal_attitude");
-            //数据输出，计算一步传出一组姿态数据
-            Document jsonObject = new Document();
+            if (MissionFlag == true) {
+                //数据输出，计算一步传出一组姿态数据
+                Document jsonObject = new Document();
 
-            jsonObject.append("yaw_angle", SatAttitud[i][2]);
-            jsonObject.append("roll_angle",SatAttitud[i][0]);
-            jsonObject.append("pitch_angle",SatAttitud[i][1]);
-            jsonObject.append("V_yaw_angle",SatAttitudVel[i][2]);
-            jsonObject.append("V_roll_angle",SatAttitudVel[i][0]);
-            jsonObject.append("V_pitch_angle",SatAttitudVel[i][1]);
-            jsonObject.append("time_point", Time_Point[i]);
+                jsonObject.append("yaw_angle", SatAttitud[i][2]);
+                jsonObject.append("roll_angle", SatAttitud[i][0]);
+                jsonObject.append("pitch_angle", SatAttitud[i][1]);
+                jsonObject.append("V_yaw_angle", SatAttitudVel[i][2]);
+                jsonObject.append("V_roll_angle", SatAttitudVel[i][0]);
+                jsonObject.append("V_pitch_angle", SatAttitudVel[i][1]);
+                jsonObject.append("time_point", Time_Point[i]);
 
-            Document modifiers = new Document();
-            modifiers.append("$set", jsonObject);
-            normal_attitude.updateOne(new Document("time_point", jsonObject.getDate("time_point")), modifiers, new UpdateOptions().upsert(true));
+                Document modifiers = new Document();
+                modifiers.append("$set", jsonObject);
+                normal_attitude.updateOne(new Document("time_point", jsonObject.getDate("time_point")), modifiers, new UpdateOptions().upsert(true));
+            }
+
         }
     }
 
     //姿态角计算
-    public static void AttitudeCalculation(double[] SatPosition_GEI, double[] SatVelocity_GEI, double[] Target_LLA, double[] Time, double[] ViewInstall, double[] Attitude) {
+    private static void AttitudeCalculation(double[] SatPosition_GEI, double[] SatVelocity_GEI, double[] Target_LLA, double[] Time, double[] ViewInstall, double[] Attitude) {
         double[] SatelliteTime = new double[6];
         double[][] BToS;
         double[][] BToO = new double[3][3];
@@ -350,7 +371,7 @@ public class AttitudeCalculation {
             BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), -sin(ViewInstall[2])}, {0, sin(ViewInstall[2]), cos(ViewInstall[2])}};
         else
             BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), sin(ViewInstall[2])}, {0, -sin(ViewInstall[2]), cos(ViewInstall[2])}};
-        BToO = MatrixMultiplication(BToO, BToS);//BToO=Result
+        BToO = MatrixMultiplication(SToO, BToS);//BToO=Result
 
         //欧拉角转序位1-2-3
         sy = sqrt(BToO[0][0] * BToO[0][0] + BToO[1][0] * BToO[1][0]);
@@ -360,20 +381,28 @@ public class AttitudeCalculation {
             flag = 0;
         if (flag == 0) {
             //atan2(X,Y)的含义和atan(X/Y)的含义是一样的。
-            x = atan2(BToO[2][1], BToO[2][2]);
-            y = atan2(-BToO[2][0], sy);
-            z = atan2(BToO[1][0], BToO[0][0]);
+            //x = atan2(BToO[2][1], BToO[2][2]);
+            //y = atan2(-BToO[2][0], sy);
+            //z = atan2(BToO[1][0], BToO[0][0]);
+            x = atan(BToO[2][1] / BToO[2][2]);
+            y = atan(-BToO[2][0] / sy);
+            z = atan(BToO[1][0] / BToO[0][0]);
         } else {
-            x = atan2(-BToO[1][2], BToO[1][1]);
-            y = atan2(-BToO[2][0], sy);
+            //x = atan2(-BToO[1][2], BToO[1][1]);
+            //y = atan2(-BToO[2][0], sy);
+            //z = 0;
+            x = atan(-BToO[1][2] / BToO[1][1]);
+            y = atan(-BToO[2][0] / sy);
             z = 0;
         }
 
-        Attitude = new double[]{x, y, z};
+        Attitude[0] = x;
+        Attitude[1] = y;
+        Attitude[2] = z;
     }
 
     //儒略日计算
-    public static double JD(double Time[]) {
+    private static double JD(double Time[]) {
         double year_UT = Time[0];
         double month_UT = Time[1];
         double day_UT = Time[2];
@@ -402,7 +431,7 @@ public class AttitudeCalculation {
     }
 
     //地固坐标系转到惯性坐标系
-    public static void ECEFToICRS(double JD, double position_ECEF[], double position_GEI[]) {
+    private static void ECEFToICRS(double JD, double position_ECEF[], double position_GEI[]) {
         double T = (JD - 2451545.0) / 36525.0;
         double z = 2306.2182 * T + 1.09468 * Math.pow(T, 2) + 0.018203 * Math.pow(T, 3);
         double theta = 2004.3109 * T + 0.42665 * Math.pow(T, 2) - 0.041833 * Math.pow(T, 3);
@@ -446,7 +475,7 @@ public class AttitudeCalculation {
     }
 
     //地固直角坐标系转换为地心地固坐标系
-    public static void LLAToECEF(double Position_LLA[], double Position_ECEF[]) {
+    private static void LLAToECEF(double Position_LLA[], double Position_ECEF[]) {
         double L = Position_LLA[0] * Math.PI / 180.0;
         double B = Position_LLA[1] * Math.PI / 180.0;
         double H = Position_LLA[2];
@@ -457,7 +486,7 @@ public class AttitudeCalculation {
     }
 
     //惯性坐标系转到轨道坐标系
-    public static void GEIToORF(double SatPosition_GEI[], double SatVelocity_GEI[], double Position_GEI[], double Position_ORF[]) {
+    private static void GEIToORF(double SatPosition_GEI[], double SatVelocity_GEI[], double Position_GEI[], double Position_ORF[]) {
         double r = Math.sqrt(Math.pow(SatPosition_GEI[0], 2) + Math.pow(SatPosition_GEI[1], 2) + Math.pow(SatPosition_GEI[2], 2));
         double v = Math.sqrt(Math.pow(SatVelocity_GEI[0], 2) + Math.pow(SatVelocity_GEI[1], 2) + Math.pow(SatVelocity_GEI[2], 2));
         double[] zs = {SatPosition_GEI[0] / r, SatPosition_GEI[1] / r, SatPosition_GEI[2] / r};
@@ -476,7 +505,7 @@ public class AttitudeCalculation {
     }
 
     //计算参考时间的格林尼治赤经
-    public static double Time_GAST(double JD) {
+    private static double Time_GAST(double JD) {
         double D = JD - 2451545.0;
         double T = D / 36525.0;
         double GMST = 280.46061837 + 360.98564736629 * (JD - 2451545.0) + 0.000387933 * Math.pow(T, 2) - Math.pow(T, 3) / 38710000.0;
@@ -498,7 +527,7 @@ public class AttitudeCalculation {
     }
 
     //矩阵乘法
-    public static double[][] MatrixMultiplication(double A[][], double B[][]) {
+    private static double[][] MatrixMultiplication(double A[][], double B[][]) {
         int A_rowNum = A.length;
         int A_columnNum = A[0].length;
         int B_rowNum = B.length;
@@ -517,7 +546,7 @@ public class AttitudeCalculation {
     }
 
     //矩阵求逆
-    public static double[][] MatrixInverse(double A[][]) {
+    private static double[][] MatrixInverse(double A[][]) {
         int A_rowNum = A.length;
         int A_columnNum = A[0].length;
         if (A_rowNum != A_columnNum)
@@ -541,7 +570,7 @@ public class AttitudeCalculation {
     }
 
     //求矩阵(h,v)位置的余子式，用于矩阵求逆
-    public static double[][] MatrixCofactor(double[][] A, int h, int v) {
+    private static double[][] MatrixCofactor(double[][] A, int h, int v) {
         int A_rowNum = A.length;
         int A_columnNum = A[0].length;
         if (A_rowNum != A_columnNum)
@@ -568,7 +597,7 @@ public class AttitudeCalculation {
     }
 
     //计算行列式的值
-    public static double MatrixResult(double A[][]) {
+    private static double MatrixResult(double A[][]) {
         int A_rowNum = A.length;
         int A_columnNum = A[0].length;
         if (A_rowNum != A_columnNum)
@@ -598,7 +627,7 @@ public class AttitudeCalculation {
     }
 
     //矩阵的转置
-    public static double[][] MatrixTransposition(double A[][]) {
+    private static double[][] MatrixTransposition(double A[][]) {
         double[][] Result = new double[A[0].length][A.length];
         for (int i = 0; i < A.length; i++) {
             for (int j = 0; j < A[0].length; j++)
@@ -608,7 +637,7 @@ public class AttitudeCalculation {
     }
 
     //矢量叉乘
-    public static double[] VectorCross(double A[], double B[]) {
+    private static double[] VectorCross(double A[], double B[]) {
         if (A.length != 3 || B.length != 3)
             JOptionPane.showMessageDialog(null, "求矢量的叉乘输入不合法", "求矢量叉乘错误", JOptionPane.ERROR_MESSAGE);
         double[] Result = new double[3];

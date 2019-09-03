@@ -13,6 +13,7 @@ import common.def.TempletType;
 import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import core.orbit.OrbitCore;
+import core.taskplan.TaskPlanCore;
 import org.bson.Document;
 
 import java.io.IOException;
@@ -81,7 +82,8 @@ public class TaskMonitor {
                             OrbitCore orbitCore = new OrbitCore(document.get("_id").toString(), TaskType.REALTIME);
                             orbitCore.startup();
                         } else if (templet.equals(TempletType.TASK_PLAN.name())) {
-
+                            TaskPlanCore taskPlanCore = new TaskPlanCore(document.get("_id").toString(), TaskType.REALTIME);
+                            taskPlanCore.startup();
                         } else {
                             tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("status", MainTaskStatus.ERROR.name())));
                         }
@@ -108,7 +110,8 @@ public class TaskMonitor {
                                 OrbitCore orbitCore = new OrbitCore(document.get("_id").toString(), TaskType.CRONTAB);
                                 orbitCore.startup();
                             } else if (templet.equals(TempletType.TASK_PLAN.name())) {
-
+                                TaskPlanCore taskPlanCore = new TaskPlanCore(document.get("_id").toString(), TaskType.CRONTAB);
+                                taskPlanCore.startup();
                             } else {
                                 tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("status", MainTaskStatus.ERROR.name())));
                             }
@@ -134,10 +137,11 @@ public class TaskMonitor {
                             String templet = document.getString("templet");
 
                             if (templet.equals(TempletType.ORBIT_FORECAST.name())) {
-                                OrbitCore orbitCore = new OrbitCore(document.get("_id").toString(),TaskType.CRONTAB);
+                                OrbitCore orbitCore = new OrbitCore(document.get("_id").toString(), TaskType.CRONTAB);
                                 orbitCore.startup();
                             } else if (templet.equals(TempletType.TASK_PLAN.name())) {
-
+                                TaskPlanCore taskPlanCore = new TaskPlanCore(document.get("_id").toString(), TaskType.CRONTAB);
+                                taskPlanCore.startup();
                             } else {
                                 tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("status", MainTaskStatus.ERROR.name())));
                             }

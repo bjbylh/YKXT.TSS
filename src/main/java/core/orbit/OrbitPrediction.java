@@ -3,10 +3,6 @@ package core.orbit;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mongodb.MongoClient;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.UpdateOptions;
-import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
@@ -20,57 +16,57 @@ import static java.lang.Math.acos;
 import static java.lang.Math.sqrt;
 
 class OrbitPrediction {
-    public static double GRAVP = 1;
-    public static double MOON = 1;
-    public static double SUN = 1;
-    public static double SRP = 1;
-    public static double ADRAG = 0;
-    public static double OnlyJ2 = 0;
+    private static double GRAVP = 1;
+    private static double MOON = 1;
+    private static double SUN = 1;
+    private static double SRP = 1;
+    private static double ADRAG = 0;
+    private static double OnlyJ2 = 0;
 
-    public static double j2 = 1082.626e-6;
-    public static double j3 = -2.5356e-6;
-    public static double j4 = -1.62336e-6;
+    private static double j2 = 1082.626e-6;
+    private static double j3 = -2.5356e-6;
+    private static double j4 = -1.62336e-6;
 
-    public static double j22 = 0;
-    public static double j31 = 0;
-    public static double j32 = 0;
-    public static double j33 = 0;
-    public static double j41 = 0;
-    public static double j42 = 0;
-    public static double j43 = 0;
-    public static double j44 = 0;
+    private static double j22 = 0;
+    private static double j31 = 0;
+    private static double j32 = 0;
+    private static double j33 = 0;
+    private static double j41 = 0;
+    private static double j42 = 0;
+    private static double j43 = 0;
+    private static double j44 = 0;
 
-    public static double l22 = -14.545;
-    public static double l31 = 7.0805;
-    public static double l32 = -17.4649;
-    public static double l33 = 21.2097;
-    public static double l41 = -138.756;
-    public static double l42 = 31.0335;
-    public static double l43 = -3.8459;
-    public static double l44 = 30.792;
+    private static double l22 = -14.545;
+    private static double l31 = 7.0805;
+    private static double l32 = -17.4649;
+    private static double l33 = 21.2097;
+    private static double l41 = -138.756;
+    private static double l42 = 31.0335;
+    private static double l43 = -3.8459;
+    private static double l44 = 30.792;
 
-    public static double mu = 398600.4418e9;
-    public static double mu_moon = 4.902799e6;
-    public static double mu_sun = 1.327124e14;
-    public static double PSR = 4.51e-6;
-    public static double CR = 1.0;
-    public static double AMRatio = 0.02;
-    public static double C_D = 2.200000;
-    public static double rho_0 = 0.36;
-    public static double h0 = 37.4;
-    public static double AUtokm = 1.49597870e8;
-    public static double kmtom = 10e3;
-    public static double rate = 4.178074216e-3;
-    public static double DtR = 3.1415926 / 180;
+    private static double mu = 398600.4418e9;
+    private static double mu_moon = 4.902799e6;
+    private static double mu_sun = 1.327124e14;
+    private static double PSR = 4.51e-6;
+    private static double CR = 1.0;
+    private static double AMRatio = 0.02;
+    private static double C_D = 2.200000;
+    private static double rho_0 = 0.36;
+    private static double h0 = 37.4;
+    private static double AUtokm = 1.49597870e8;
+    private static double kmtom = 10e3;
+    private static double rate = 4.178074216e-3;
+    private static double DtR = 3.1415926 / 180;
 
-    public static double DENSMOD = 2;
-    public static double PI = 3.1415926;
+    private static double DENSMOD = 2;
+    private static double PI = 3.1415926;
 
-    public static double R_earth = 6378136.3;
-    public static double eccent = 0.08182;
+    private static double R_earth = 6378136.3;
+    private static double eccent = 0.08182;
     private static Object JsonToStringUtil;
 
-    public static double GetDensity(double height) {
+    private static double GetDensity(double height) {
         double dsr;
         double dif;
         int i;
@@ -129,7 +125,7 @@ class OrbitPrediction {
     }
 
     //四阶龙格库塔
-    public static void RK4(double[] X, double[] xout, double t, int year, int month, int day, double h, double[] sa) {
+    private static void RK4(double[] X, double[] xout, double t, int year, int month, int day, double h, double[] sa) {
         int i;
         double hh = h * 0.5, th = t + hh;
         //double y[6], k1[6], k2[6], k3[6], k4[6];
@@ -168,7 +164,7 @@ class OrbitPrediction {
     }
 
     //带摄动的动力学
-    public static void DXDT(double t, double[] X, double[] DX, int year, int month, int day)   // 轨道动力学
+    private static void DXDT(double t, double[] X, double[] DX, int year, int month, int day)   // 轨道动力学
     {
         int im;
         int int_in;
@@ -413,7 +409,7 @@ class OrbitPrediction {
     }
 
     //地心赤道坐标系星下点位置
-    public static void P2subsatP(double[] P, double[] subsat) {
+    private static void P2subsatP(double[] P, double[] subsat) {
         double omega = 1.0027 * 180 / 43200;
         double x = P[0];
         double y = P[1];
@@ -425,7 +421,7 @@ class OrbitPrediction {
         subsat[2] = R_earth * (P[2] / sqrt(P[0] * P[0] + P[1] * P[1] + P[2] * P[2]));
     }
 
-    public static void trigfunc(int mm, double lat, double lon, double[] CN, double[] SN, double[] TN) {
+    private static void trigfunc(int mm, double lat, double lon, double[] CN, double[] SN, double[] TN) {
         //if(mm ==0)
         CN[0] = 1;
         SN[0] = 0;
@@ -443,7 +439,7 @@ class OrbitPrediction {
     }
 
     //惯性系转地心地固
-    public static void ECI_ECEF(double JD, double[] R, double[] sa) {
+    private static void ECI_ECEF(double JD, double[] R, double[] sa) {
         double gast, Range, Radius, sphi, x, y, z;
         double[] R_ECEF = new double[3];
         //Compute GAST
@@ -469,7 +465,7 @@ class OrbitPrediction {
     }
 
     //儒略日
-    public static double JulianDate(int year, int month, int day, double UT) {
+    private static double JulianDate(int year, int month, int day, double UT) {
         double JD, C1, C2, C3;
         C1 = 367.0 * year;
         C2 = (int) ((7 * (year + (int) ((month + 9) / 12))) * 0.25);
@@ -479,7 +475,7 @@ class OrbitPrediction {
         return JD;
     }
 
-    public static void legendre(int nn, double x, double[][] p) {
+    private static void legendre(int nn, double x, double[][] p) {
         double y;
         y = Math.sqrt(1 - x * x);
         p[0][0] = 1;
@@ -503,7 +499,7 @@ class OrbitPrediction {
     }
 
     //月球矢量
-    public static double Moon(double JD, double[] r_moon) {
+    private static double Moon(double JD, double[] r_moon) {
         double rad_moon;
         double T_TDB, M_moon, lambda_moon, uM_moon, D_sun,
                 lambda_ecliptic, phi_ecliptic, e, parallax;
@@ -560,7 +556,7 @@ class OrbitPrediction {
     }
 
     //太阳矢量
-    public static double Sun(double JD, double[] r_sun, double[] su) {
+    private static double Sun(double JD, double[] r_sun, double[] su) {
         double rad_sun;
         double T_TDB, L_sun, M_sun, C, lambda_sun, e, ecc, v;
         /*...Compute Julian centuries*/
@@ -604,13 +600,13 @@ class OrbitPrediction {
         return rad_sun;
     }
 
-    public static double Exp_model(double h) {
+    private static double Exp_model(double h) {
         double rho = rho_0 * Math.exp(h / h0);
         return rho;
 
     }
 
-    public static double app_sidereal_time(double JD) {
+    private static double app_sidereal_time(double JD) {
         double T_TDB = (JD - 2451545.0) / 36525.0;
         //double hour = (JD - (int) JD) * 24;
         double hour = (JD - (int) JD - 0.5) * 24;
@@ -619,7 +615,7 @@ class OrbitPrediction {
     }
 
     //求余
-    public static double mod(double x, double y) {
+    private static double mod(double x, double y) {
         int n;
         n = (int) (x / y);
         return x - n * y;
@@ -629,8 +625,8 @@ class OrbitPrediction {
     //轨道外推
     public static void OrbitPredictorII(Instant timeRaw, LocalDateTime start, LocalDateTime end, double step, double[] orbit0, JsonObject json) {
         MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
-        MongoCollection<Document> orbitDB = mongoDatabase.getCollection("orbit_attitude");
+        //MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+        //MongoCollection<Document> orbitDB = mongoDatabase.getCollection("orbit_attitude");
         JsonArray properties = json.getAsJsonArray("properties");
         //载荷参数初始话
         int ViewNum = 4;
@@ -820,6 +816,7 @@ class OrbitPrediction {
             x += h;
 
             //数据输出
+            jsonObject.addProperty("time_point", time_point);
             jsonObject.addProperty("P_x", y[0]);
             jsonObject.addProperty("P_y", y[1]);
             jsonObject.addProperty("P_z", y[2]);
@@ -838,7 +835,7 @@ class OrbitPrediction {
             for (int i = 0; i < ViewNum; i++) {
                 JsonObject jsonObject1 = new JsonObject();
                 jsonObject1.addProperty("load_amount", ViewNum);
-                jsonObject1.addProperty("load_number", i + 1);
+                jsonObject1.addProperty("load_number", i+1);
                 jsonObject1.addProperty("visible_left_lon", Orbital_ViewArea[j][4 * i + 0]);
                 jsonObject1.addProperty("visible_left_lat", Orbital_ViewArea[j][4 * i + 1]);
                 jsonObject1.addProperty("visible_right_lon", Orbital_ViewArea[j][4 * i + 2]);
@@ -853,40 +850,31 @@ class OrbitPrediction {
             Document modifiers = new Document();
             modifiers.append("$set", doc);
 //
-            orbitDB.updateOne(new Document("time_point", doc.getDate("time_point")), modifiers, new UpdateOptions().upsert(true));
+            //orbitDB.updateOne(new Document("time_point", doc.getDate("time_point")), modifiers, new UpdateOptions().upsert(true));
 //
             j++;
         }
 
         //阳光规避计算及输出
-        JsonArray avoidance_sunlight = new JsonArray();
-        int[] SunAvoidTimePeriod = new int[10];
-        int SunAvoidTimePeriodNum = AvoidSunshineIITest(Orbital_Time, Orbital_SatPosition, SunAvoidTimePeriod);
+        JsonArray avoidance_sunlight=new JsonArray();
+        int[] SunAvoidTimePeriod=new int[10];
+        int SunAvoidTimePeriodNum=AvoidSunshineIITest( Orbital_Time,Orbital_SatPosition,SunAvoidTimePeriod);
         for (int i = 0; i < SunAvoidTimePeriodNum; i++) {
-            LocalDateTime SunAvoidStar = start;
-            SunAvoidStar = SunAvoidStar.plusSeconds((long) (h * SunAvoidTimePeriod[2 * i]));
-            String Startime_point = df.format(SunAvoidStar.plusHours(-8));
-            LocalDateTime SunAvoidEnd = start;
-            SunAvoidEnd = SunAvoidEnd.plusSeconds((long) (h * SunAvoidTimePeriod[2 * i + 1]));
-            String Endtime_point = df.format(SunAvoidEnd.plusHours(-8));
-            JsonObject SunAvoidjsonObject = new JsonObject();
-            SunAvoidjsonObject.addProperty("amount_window", SunAvoidTimePeriodNum);
-            SunAvoidjsonObject.addProperty("window_number", i + 1);
-            SunAvoidjsonObject.addProperty("start_time", Startime_point);
-            SunAvoidjsonObject.addProperty("end_time", Endtime_point);
+            LocalDateTime SunAvoidStar=start;
+            SunAvoidStar=SunAvoidStar.plusSeconds((long) (h*SunAvoidTimePeriod[2*i]));
+            String Startime_point=df.format(SunAvoidStar.plusHours(-8));
+            LocalDateTime SunAvoidEnd=start;
+            SunAvoidEnd=SunAvoidEnd.plusSeconds((long) (h*SunAvoidTimePeriod[2*i+1]));
+            String Endtime_point=df.format(SunAvoidEnd.plusHours(-8));
+            JsonObject SunAvoidjsonObject=new JsonObject();
+            SunAvoidjsonObject.addProperty("amount_window",SunAvoidTimePeriodNum);
+            SunAvoidjsonObject.addProperty("window_number",i+1);
+            SunAvoidjsonObject.addProperty("start_time",Startime_point);
+            SunAvoidjsonObject.addProperty("end_time",Endtime_point);
             avoidance_sunlight.add(SunAvoidjsonObject);
         }
 
-        if(avoidance_sunlight.size() >= 0) {
-            JsonObject as = new JsonObject();
-            as.add("windows", avoidance_sunlight);
-            Document d = Document.parse(as.toString());
-            d.append("time_point", Date.from(timeRaw));
-            Document modifiers = new Document();
-            modifiers.append("$set", d);
-            MongoCollection<Document> avoidanceSunlight = mongoDatabase.getCollection("avoidance_sunlight");
-            avoidanceSunlight.updateOne(new Document("time_point", d.getDate("time_point")), modifiers, new UpdateOptions().upsert(true));
-        }
+
     }
 
     public static LocalDateTime dateConvertToLocalDateTime(Date date) {
@@ -894,7 +882,7 @@ class OrbitPrediction {
     }
 
     //计算卫星可见走廊
-    public static void ViewArea(double Position[], double Velocity[], double ViewInstall[][], double ViewAng[][], int ViewNum, double RollMax, double Time[], double Time_UTC, double ViewAreaPoint[]) {
+    private static void ViewArea(double Position[], double Velocity[], double ViewInstall[][], double ViewAng[][], int ViewNum, double RollMax, double Time[], double Time_UTC, double ViewAreaPoint[]) {
 
 
         double[] nv = {Velocity[0] / Math.sqrt(Math.pow(Velocity[0], 2) + Math.pow(Velocity[1], 2) + Math.pow(Velocity[2], 2)),
@@ -961,7 +949,7 @@ class OrbitPrediction {
         }
     }
 
-    public static int AvoidSunshineIITest(double[][] Orbital_Time, double[][] Orbital_SatPosition, int[] SunAvoidTimePeriod) {
+    private static int AvoidSunshineIITest( double[][] Orbital_Time,double[][] Orbital_SatPosition,int[] SunAvoidTimePeriod) {
         int Flag_tBefore = 0;
         int Avoid_Flag = 0;
         int Flag_t = 0;
@@ -1002,7 +990,7 @@ class OrbitPrediction {
     }
 
     //由卫星位置计算星下点的经纬度，以及卫星位置的经纬高，以及卫星星下点在地心赤道惯性系中的位置
-    public static void PosionToSubSat(double posion_GEI[], double Time[], double Time_UTC, double SubSat[], double SubSat_GEI[]) {
+    private static void PosionToSubSat(double posion_GEI[], double Time[], double Time_UTC, double SubSat[], double SubSat_GEI[]) {
         double omega = 1.0027 * 180 / 43200;//地球自转角速度，单位为：度/秒
 
 
@@ -1057,7 +1045,7 @@ class OrbitPrediction {
     }
 
     //计算参考时间的格林尼治赤经
-    public static double Time_GAST(double Time[]) {
+    private static double Time_GAST(double Time[]) {
         /*
         double year_UT=Time[0];
         double month_UT=Time[1];
@@ -1089,7 +1077,7 @@ class OrbitPrediction {
     }
 
     //儒略日计算
-    public static double JD(double Time[]) {
+    private static double JD(double Time[]) {
         double year_UT = Time[0];
         double month_UT = Time[1];
         double day_UT = Time[2];
@@ -1118,7 +1106,7 @@ class OrbitPrediction {
     }
 
     //轨道六根数转化为惯性系下速度位置
-    public static void OrbitSixToGEI(double ClassicalOrbitalElements[], double Position[], double Velocity[]) {
+    private static void OrbitSixToGEI(double ClassicalOrbitalElements[], double Position[], double Velocity[]) {
         double sma = ClassicalOrbitalElements[0] * 1000;
         double ecc = ClassicalOrbitalElements[1];
         double inc = ClassicalOrbitalElements[2] * PI / 180.0;
@@ -1153,7 +1141,7 @@ class OrbitPrediction {
         Velocity[2] = c4 * c5 * sinc;
     }
 
-    public static void main(String[] arr) {
+    private static void main(String[] arr) {
         JsonObject json = new JsonObject();
         String start0 = "2018-08-01 21:22:22";
         String end0 = "2018-08-01 22:22:22";

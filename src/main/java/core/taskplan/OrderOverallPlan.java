@@ -67,9 +67,10 @@ public class OrderOverallPlan {
         order.remove("order_submit_time");
         order.remove("modify_time");
         order.remove("order_state");
-        order.remove("mission_number");
+//        order.remove("mission_number");
         order.remove("_id");
         order.append("mission_state", "待规划");
+        order.append("mission_interval_min","40");
 
         ArrayList<String> order_numbers = new ArrayList<>();
         order_numbers.add(order.getString("order_number"));

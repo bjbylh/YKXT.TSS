@@ -6,11 +6,11 @@ import com.mongodb.MongoClient;
  * Created by lihan on 2018/11/29.
  */
 public class MangoDBConnector {
-    public static MongoClient getClient() {
-        return new MongoClient("127.0.0.1", 27017);
-    }
-//
 //    public static MongoClient getClient() {
-//        return new MongoClient("39.98.93.230", 27017);
+//        return new MongoClient("127.0.0.1", 27017);
 //    }
+//
+    public static MongoClient getClient() {
+        return new MongoClient("192.168.71.78", 27017);
+    }
 }

@@ -5,6 +5,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
 import common.def.MainTaskStatus;
 import common.def.SubTaskStatus;
 import common.def.TaskType;
@@ -12,6 +13,7 @@ import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import common.redis.RedisPublish;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 
 import java.text.ParseException;
@@ -67,10 +69,6 @@ public class TaskPlanCore {
             //卫星资源表
             MongoCollection<Document> Data_Satllitejson = mongoDatabase.getCollection("satellite_resource");
             Satllitejson = Data_Satllitejson.find().first();
-            //轨道数据表
-            MongoCollection<Document> Data_Orbitjson = mongoDatabase.getCollection("orbit_attitude");
-            D_orbitjson = Data_Orbitjson.find();
-            count = Data_Orbitjson.count();
 
             //地面站资源表
             MongoCollection<Document> Data_GroundStationjson = mongoDatabase.getCollection("groundstation_resource");
@@ -93,6 +91,8 @@ public class TaskPlanCore {
             //需求统筹
             if (MOD_ORDER_OVERALL_PLAN(subList[0])) return;
 
+            initOrbit();
+
             //可见性分析
             if (MOD_VISIBILITY_CALC(subList[1])) return;
 
@@ -112,6 +112,16 @@ public class TaskPlanCore {
             RedisPublish.dbRefresh(id);
         }
 
+        private void initOrbit(){
+            //轨道数据表
+            MongoCollection<Document> Data_Orbitjson = mongoDatabase.getCollection("orbit_attitude");
+
+            Bson queryBson = Filters.and(Filters.gte("time_point", startTime), Filters.lte("time_point", endTime));
+
+            D_orbitjson = Data_Orbitjson.find(Filters.and(queryBson));
+            count = Data_Orbitjson.count(Filters.and(queryBson));
+        }
+
         private boolean MOD_ORDER_OVERALL_PLAN(String subid) {
             updateSubStatus(subid, SubTaskStatus.RUNNING);
             RedisPublish.dbRefresh(id);
@@ -121,7 +131,7 @@ public class TaskPlanCore {
             MongoCollection<Document> image_order = mongoDatabase.getCollection("image_order");
             FindIterable<Document> documents = image_order.find();
             for (Document order : documents) {
-                if (orderList.contains(order)) {
+                if (orderList.contains(order.getString("order_number"))) {
                     Date expected_start_time = order.getDate("expected_start_time");
                     if (expected_start_time.before(startTime))
                         startTime = expected_start_time;
@@ -245,9 +255,7 @@ public class TaskPlanCore {
 
                 Document first = sub_task.find(condtion).first();
 
-                Document data = (Document) first.get("data");
-
-                params = (ArrayList<String>) data.get("params");
+                params = (ArrayList<String>) first.get("param");
             }
 
             return params;

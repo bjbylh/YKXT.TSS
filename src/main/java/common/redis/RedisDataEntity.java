@@ -39,15 +39,15 @@ public class RedisDataEntity {
         JsonObject ret = new JsonObject();
         JsonObject head = GenHead(MsgType.NEW_TASK, "MAG", "TSS", "");
         JsonObject data = new JsonObject();
-        data.addProperty("name", "test111");
+        data.addProperty("name", "ORBIT_FORECAST");
         data.addProperty("tasktype", TaskType.REALTIME.name());
-        data.addProperty("templet", TempletType.TASK_PLAN.name());
-        data.addProperty("firsttime", Instant.now().toString());
-        data.addProperty("cycle", "60000");
-        data.addProperty("count", "0");
-        data.addProperty("content","XXXXX");
+        data.addProperty("templet", TempletType.ORBIT_FORECAST.name());
+//        data.addProperty("firsttime", Instant.now().toString());
+//        data.addProperty("cycle", "60000");
+//        data.addProperty("count", "0");
+        //data.addProperty("content","XXXXX");
         ret.add("Head", head);
-        ret.add("data", data);
+        ret.add("Data", data);
         return ret.toString();
     }
 
@@ -59,13 +59,13 @@ public class RedisDataEntity {
         JsonArray jsonArray = new JsonArray();
         for(String mission_number : trueorfalse.keySet()){
             JsonObject jsonObject = new JsonObject();
-            jsonObject.addProperty("mission_number",mission_number);
+            jsonObject.addProperty("order_number",mission_number);
             jsonObject.addProperty("return",trueorfalse.get(mission_number).toString());
             jsonArray.add(jsonObject);
         }
         data.addProperty("content", jsonArray.toString());
         ret.add("Head", head);
-        ret.add("data", data);
+        ret.add("Data", data);
         return ret.toString();
     }
 

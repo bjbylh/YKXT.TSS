@@ -76,15 +76,12 @@ public class OrbitCore {
                 }
             }
 
-            Instant end = start.plusMillis(1000 * 60 * 60 * 24 * 2L);//2 days
+            Instant end = start.plusMillis(1000 * 60 * 60 * 24 * 7L);//2 days
 
             JsonParser parse = new JsonParser();  //创建json解析器
             JsonObject json = (JsonObject) parse.parse(first.toJson());
 
-            System.out.println(Instant.now().toString());
             OrbitPrediction.OrbitPredictorII(start, OrbitPrediction.dateConvertToLocalDateTime(Date.from(start)), OrbitPrediction.dateConvertToLocalDateTime(Date.from(end)), 1, orbits, json);
-
-            System.out.println(Instant.now().toString());
 
             MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
             Instant instant_ft = Instant.now();
