@@ -81,6 +81,7 @@ public class TaskPlanCore {
 
         @Override
         public void run() {
+            System.out.println(Instant.now());
 
             for (String aSubList : subList) {
                 updateSubStatus(aSubList, SubTaskStatus.TODO);
@@ -100,7 +101,7 @@ public class TaskPlanCore {
             if (MOD_MISSION_PLANNING(subList[2])) return;
 
             //姿态角计算
-            if (MOD_ATTITUDE_CALCULATION(subList[3])) return;
+            //if (MOD_ATTITUDE_CALCULATION(subList[3])) return;
 
             //资源平衡
             if (MOD_ENERGY_CALCULATION(subList[4])) return;
@@ -110,6 +111,8 @@ public class TaskPlanCore {
             else
                 updateMainStatus(id, MainTaskStatus.FINISHED);
             RedisPublish.dbRefresh(id);
+
+            System.out.println(Instant.now());
         }
 
         private void initOrbit(){

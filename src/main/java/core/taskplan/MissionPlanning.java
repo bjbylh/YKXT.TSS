@@ -772,7 +772,7 @@ public class MissionPlanning {
                 ImageWindowjsonObject.append("start_time", "");
                 ImageWindowjsonObject.append("end_time", "");
                 ImageWindowjsonArry.add(ImageWindowjsonObject);
-                ImageMissionjson.get(i).append("fail_reason", "未规划");
+                ImageMissionjson.get(i).append("mission_state", "待规划");
                 ImageMissionjson.get(i).append("image_window", ImageWindowjsonArry);
             } else if (PlanningMissionFailReason[i] == 1) {
                 Document ImageWindowjsonObject = new Document();
@@ -780,7 +780,7 @@ public class MissionPlanning {
                 ImageWindowjsonObject.append("start_time", Time_Point[PlanningMissionTimePeriod[i][0]]);
                 ImageWindowjsonObject.append("end_time", Time_Point[PlanningMissionTimePeriod[i][1]]);
                 ImageWindowjsonArry.add(ImageWindowjsonObject);
-                ImageMissionjson.get(i).append("fail_reason", "已规划");
+                ImageMissionjson.get(i).append("mission_state", "待执行");
                 ImageMissionjson.get(i).append("image_window", ImageWindowjsonArry);
             } else if (PlanningMissionFailReason[i] == 2) {
                 Document ImageWindowjsonObject = new Document();
@@ -788,6 +788,7 @@ public class MissionPlanning {
                 ImageWindowjsonObject.append("start_time", "");
                 ImageWindowjsonObject.append("end_time", "");
                 ImageWindowjsonArry.add(ImageWindowjsonObject);
+                ImageMissionjson.get(i).append("mission_state", "被退回");
                 ImageMissionjson.get(i).append("fail_reason", "不可见");
                 ImageMissionjson.get(i).append("image_window", ImageWindowjsonArry);
             } else if (PlanningMissionFailReason[i] == 3) {
@@ -796,6 +797,7 @@ public class MissionPlanning {
                 ImageWindowjsonObject.append("start_time", "");
                 ImageWindowjsonObject.append("end_time", "");
                 ImageWindowjsonArry.add(ImageWindowjsonObject);
+                ImageMissionjson.get(i).append("mission_state", "被退回");
                 ImageMissionjson.get(i).append("fail_reason", "任务冲突");
                 ImageMissionjson.get(i).append("image_window", ImageWindowjsonArry);
             }
@@ -809,12 +811,10 @@ public class MissionPlanning {
         ArrayList<Document> TranWindowjsonArry = new ArrayList<>();
         for (int i = 0; i < PlanningTransNum; i++) {
             Document TranWindowjsonObject = new Document();
-            if (PlanningTransStation[i] == 0) {
-                TranWindowjsonObject.append("station_name", "地面站一号");
-            } else if (PlanningTransStation[i] == 1) {
-                TranWindowjsonObject.append("station_name", "地面站二号");
-            } else if (PlanningTransStation[i] == 2) {
-                TranWindowjsonObject.append("station_name", "地面站三号");
+            for (int j = 0; j < StationNumber; j++) {
+                if (PlanningTransStation[i] == j) {
+                    TranWindowjsonObject.append("station_name", StationSerialNumber[j]);
+                }
             }
             TranWindowjsonObject.append("start_time", Time_Point[PlanningTransTimePeriod[i][0]]);
             TranWindowjsonObject.append("end_time", Time_Point[PlanningTransTimePeriod[i][1]]);

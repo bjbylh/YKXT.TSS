@@ -315,7 +315,21 @@ public class AttitudeCalculation {
                 jsonObject.append("V_roll_angle", SatAttitudVel[i][0]);
                 jsonObject.append("V_pitch_angle", SatAttitudVel[i][1]);
                 jsonObject.append("time_point", Time_Point[i]);
+                jsonObject.append("tag","1");
+                Document modifiers = new Document();
+                modifiers.append("$set", jsonObject);
+                normal_attitude.updateOne(new Document("time_point", jsonObject.getDate("time_point")), modifiers, new UpdateOptions().upsert(true));
+            }else {
+                Document jsonObject = new Document();
 
+                jsonObject.append("yaw_angle", SatAttitud[i][2]);
+                jsonObject.append("roll_angle", SatAttitud[i][0]);
+                jsonObject.append("pitch_angle", SatAttitud[i][1]);
+                jsonObject.append("V_yaw_angle", SatAttitudVel[i][2]);
+                jsonObject.append("V_roll_angle", SatAttitudVel[i][0]);
+                jsonObject.append("V_pitch_angle", SatAttitudVel[i][1]);
+                jsonObject.append("time_point", Time_Point[i]);
+                jsonObject.append("tag","0");
                 Document modifiers = new Document();
                 modifiers.append("$set", jsonObject);
                 normal_attitude.updateOne(new Document("time_point", jsonObject.getDate("time_point")), modifiers, new UpdateOptions().upsert(true));
