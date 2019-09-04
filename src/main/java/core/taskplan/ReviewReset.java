@@ -173,7 +173,7 @@ public class ReviewReset {
                 ArrayList<Document> available_window = (ArrayList<Document>) document.get("image_window");
                 for (Document document1 : available_window) {
                     Date time_point = document1.getDate("start_time");
-                    //时间转换为doubule型
+                    //时间转换为double型
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                     String StringTime;
                     StringTime = sdf.format(time_point);

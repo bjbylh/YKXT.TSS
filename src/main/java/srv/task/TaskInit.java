@@ -128,7 +128,7 @@ public class TaskInit {
         json.addProperty("templet", TempletType.TASK_PLAN.name());
 
 
-        List<String> list = initTaskPlanSubTask(new ArrayList<>());
+        List<String> list = initTaskPlanSubTask(new ArrayList<>(),new ArrayList<>());
         for (int i = 0; i < subtaskname.length; i++) {
             json.get("tp_info").getAsJsonObject().get("sub_tasks").getAsJsonArray().get(i).getAsJsonObject().addProperty("sub_taskid", list.get(i));
         }
@@ -157,7 +157,7 @@ public class TaskInit {
 
     }
 
-    private static List<String> initTaskPlanSubTask(ArrayList<String> params) throws IOException {
+    private static List<String> initTaskPlanSubTask(ArrayList<String> params,ArrayList<String> params2) throws IOException {
         List<String> ids = Lists.newLinkedList();
 
         MongoClient mongoClient = MangoDBConnector.getClient();
@@ -171,8 +171,10 @@ public class TaskInit {
             ids.add(pId.toString());
             parse1.append("name", subtaskname[i]);
 
-            if(i == 0)
+            if(i == 0) {
                 parse1.append("param", params);
+                parse1.append("param2", params2);
+            }
             else
                 parse1.append("param", new ArrayList<String>());
 
@@ -197,8 +199,9 @@ public class TaskInit {
         initCronTaskForTaskPlan("task_" + Instant.now().toEpochMilli(), Instant.now().toString(), "60000", "0");
     }
 
-    public static void initRTTaskForTaskPlan(String taskname, String content) throws IOException {
+    public static void initRTTaskForTaskPlan(String taskname, String content,String content2) throws IOException {
         String[] order_numbers = content.split(",");
+        String[] station_numbers = content2.split(",");
 
         String path = TaskInit.class.getClassLoader().getResource("maintask.json").getPath();
         File file = new File(path);
@@ -219,13 +222,19 @@ public class TaskInit {
 
         if (TempletType.TASK_PLAN.name().equals("TASK_PLAN")) {
             ArrayList<String> params = new ArrayList<>();
+            ArrayList<String> params2 = new ArrayList<>();
             List<String> list;
             if (order_numbers.length > 0) {
                 for(String order_number : order_numbers)
                     params.add(order_number);
             }
 
-            list = initTaskPlanSubTask(params);
+            if (station_numbers.length > 0) {
+                for(String station_number : station_numbers)
+                    params2.add(station_number);
+            }
+
+            list = initTaskPlanSubTask(params,params2);
             for (int i = 0; i < subtaskname.length; i++) {
                 json.get("tp_info").getAsJsonObject().get("sub_tasks").getAsJsonArray().get(i).getAsJsonObject().addProperty("sub_taskid", list.get(i));
             }

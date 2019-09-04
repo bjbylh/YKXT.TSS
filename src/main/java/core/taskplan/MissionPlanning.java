@@ -416,10 +416,10 @@ public class MissionPlanning {
         }
 
         //为任务分配载荷
-        int[][] VisibilityTimePeriodAll = new int[MissionNumber][40];
+        int[][] VisibilityTimePeriodAll = new int[MissionNumber][400];
         int[] TimePeriodNumAll = new int[MissionNumber];
-        int[][] VisibilityLoadType = new int[MissionNumber][20];
-        double[][] VisibilityAttitude = new double[MissionNumber][20];
+        int[][] VisibilityLoadType = new int[MissionNumber][200];
+        double[][] VisibilityAttitude = new double[MissionNumber][200];
         for (int i = 0; i < MissionNumber; i++) {
             //目标点位置经纬度，区域目标取中心点
             double[] TargetPosition_LLA = {0, 0, Re};
@@ -464,7 +464,7 @@ public class MissionPlanning {
                             StareTimeFlag = 0;
                         }
                         //判定该弧段是否满足凝视机动需求
-                        double[] ViewInstall = LoadInstall[k];
+                        double[] ViewInstall = LoadInstall[j];
                         if (MissionImagingMode[i] == 2 || MissionImagingMode[i] == 3) {
                             int VisibilityStarPeriod = VisibilityTimePeriod[j][i][2 * k];
                             int VisibilityEndPeriod = VisibilityTimePeriod[j][i][2 * k + 1];
@@ -834,7 +834,6 @@ public class MissionPlanning {
         Document modifiers = new Document();
         modifiers.append("$set", TransmissionMissionJson);
         transmission_mission.updateOne(new Document("_id", TransmissionMissionJson.getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
-        //StationMissionJson.get(1).replace("visible_window",TranWindowjsonArry);
     }
 
 

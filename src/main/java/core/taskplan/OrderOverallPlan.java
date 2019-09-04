@@ -44,7 +44,6 @@ public class OrderOverallPlan {
                 mission_numbers.add(mission_number);
                 dd.append("mission_number", mission_number);
 
-
                 Document imageMissionFromImageOrder = getImageMissionFromImageOrder(order, mission_number);
                 image_mission.insertOne(imageMissionFromImageOrder);
 

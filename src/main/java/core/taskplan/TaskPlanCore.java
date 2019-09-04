@@ -55,6 +55,7 @@ public class TaskPlanCore {
         private Instant now = Instant.now();
         private Date startTime = Date.from(Instant.now().plusSeconds(24 * 60 * 60 * 10000));
         private Date endTime = Date.from(Instant.now().minusSeconds(24 * 60 * 60 * 10000));
+        private ArrayList<Document> station_missions = new ArrayList<>();
 
 
         public proc(String taskId) {
@@ -81,8 +82,6 @@ public class TaskPlanCore {
 
         @Override
         public void run() {
-            System.out.println(Instant.now());
-
             for (String aSubList : subList) {
                 updateSubStatus(aSubList, SubTaskStatus.TODO);
             }
@@ -101,7 +100,7 @@ public class TaskPlanCore {
             if (MOD_MISSION_PLANNING(subList[2])) return;
 
             //姿态角计算
-            //if (MOD_ATTITUDE_CALCULATION(subList[3])) return;
+            if (MOD_ATTITUDE_CALCULATION(subList[3])) return;
 
             //资源平衡
             if (MOD_ENERGY_CALCULATION(subList[4])) return;
@@ -111,11 +110,9 @@ public class TaskPlanCore {
             else
                 updateMainStatus(id, MainTaskStatus.FINISHED);
             RedisPublish.dbRefresh(id);
-
-            System.out.println(Instant.now());
         }
 
-        private void initOrbit(){
+        private void initOrbit() {
             //轨道数据表
             MongoCollection<Document> Data_Orbitjson = mongoDatabase.getCollection("orbit_attitude");
 
@@ -173,6 +170,38 @@ public class TaskPlanCore {
                     Missionjson.add(document);
             }
 
+            MongoCollection<Document> station_mission = mongoDatabase.getCollection("station_mission");
+
+            if (taskType == TaskType.CRONTAB) {
+                Date s = Date.from(now.plusSeconds(60 * 60 * 24));
+                Date e = Date.from(now.plusSeconds(60 * 60 * 24 * 2));
+
+                BasicDBObject query2 = new BasicDBObject();
+                query2.put("expected_start_time", new BasicDBObject("$lte", e));
+                query2.put("expected_end_time", new BasicDBObject("$gte", s));
+
+                FindIterable<Document> documents2 = station_mission.find(query2);
+
+                for (Document d : documents2) {
+                    station_missions.add(d);
+                }
+            } else {
+                Document condtion = new Document();
+                condtion.append("_id", new ObjectId(subid));
+                MongoCollection<Document> sub_task = mongoDatabase.getCollection("sub_task");
+
+                Document first = sub_task.find(condtion).first();
+
+                ArrayList<String> params2 = (ArrayList<String>) first.get("param2");
+
+                FindIterable<Document> documents = station_mission.find();
+
+                for (Document sn : documents) {
+                    if (params2.contains(sn.getString("mission_number")))
+                        station_missions.add(sn);
+                }
+            }
+
             try {
                 Transmissionjson = VisibilityCalculation.VisibilityCalculationII(Satllitejson, D_orbitjson, count, GroundStationjson, Missionjson);
                 this.Missionjson = Missionjson;
@@ -189,20 +218,7 @@ public class TaskPlanCore {
             updateSubStatus(subid, SubTaskStatus.RUNNING);
             RedisPublish.dbRefresh(id);
 
-            MongoCollection<Document> station_mission = mongoDatabase.getCollection("station_mission");
-
-            BasicDBObject query = new BasicDBObject();
-            query.put("expected_start_time", new BasicDBObject("$gte", endTime));
-            query.put("expected_end_time", new BasicDBObject("$lte", startTime));
-
-            FindIterable<Document> documents = station_mission.find(query);
-            ArrayList<Document> station_missions = new ArrayList<>();
-
-            for (Document sm : documents) {
-                station_missions.add(sm);
-            }
-
-            MissionPlanning.MissionPlanningII(this.Satllitejson, this.GroundStationjson, this.D_orbitjson, this.count, this.Missionjson, this.Transmissionjson, station_missions);
+            MissionPlanning.MissionPlanningII(this.Satllitejson, this.GroundStationjson, this.D_orbitjson, this.count, this.Missionjson, this.Transmissionjson, this.station_missions);
 
             updateSubStatus(subid, SubTaskStatus.SUSPEND);
             RedisPublish.dbRefresh(id);
@@ -244,8 +260,8 @@ public class TaskPlanCore {
                 Date e = Date.from(now.plusSeconds(60 * 60 * 24 * 2));
 
                 BasicDBObject query = new BasicDBObject();
-                query.put("expected_start_time", new BasicDBObject("$gte", e));
-                query.put("expected_end_time", new BasicDBObject("$lte", s));
+                query.put("expected_start_time", new BasicDBObject("$lte", e));
+                query.put("expected_end_time", new BasicDBObject("$gte", s));
 
                 FindIterable<Document> documents = image_order.find(query);
                 params = new ArrayList<>();

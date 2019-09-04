@@ -4,7 +4,6 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.UpdateOptions;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
@@ -276,7 +275,7 @@ public class AttitudeCalculation {
                 }
             }
             if (Mission_FLag == 1) {
-                AttitudeCalculation(SatPosition_GEI[i], SatVelocity_GEI[i], Target_LLA, Time[i], LoadInstall[LoadNum], SatAttitud[i]);
+                AttitudeCalculation(SatPosition_GEI[i], SatVelocity_GEI[i], Target_LLA, Time[i], LoadInstall[LoadNum-1], SatAttitud[i]);
                 MissionFlag = true;
             } else {
                 SatAttitud[i][0] = 0;
@@ -304,7 +303,7 @@ public class AttitudeCalculation {
             }
 
 
-            if (MissionFlag == true) {
+            if (MissionFlag) {
                 //数据输出，计算一步传出一组姿态数据
                 Document jsonObject = new Document();
 
@@ -315,11 +314,11 @@ public class AttitudeCalculation {
                 jsonObject.append("V_roll_angle", SatAttitudVel[i][0]);
                 jsonObject.append("V_pitch_angle", SatAttitudVel[i][1]);
                 jsonObject.append("time_point", Time_Point[i]);
-                jsonObject.append("tag","1");
+                jsonObject.append("tag", "1");
                 Document modifiers = new Document();
                 modifiers.append("$set", jsonObject);
-                normal_attitude.updateOne(new Document("time_point", jsonObject.getDate("time_point")), modifiers, new UpdateOptions().upsert(true));
-            }else {
+                //normal_attitude.updateOne(new Document("time_point", jsonObject.getDate("time_point")), modifiers, new UpdateOptions().upsert(true));
+            } else {
                 Document jsonObject = new Document();
 
                 jsonObject.append("yaw_angle", SatAttitud[i][2]);
@@ -329,10 +328,10 @@ public class AttitudeCalculation {
                 jsonObject.append("V_roll_angle", SatAttitudVel[i][0]);
                 jsonObject.append("V_pitch_angle", SatAttitudVel[i][1]);
                 jsonObject.append("time_point", Time_Point[i]);
-                jsonObject.append("tag","0");
+                jsonObject.append("tag", "0");
                 Document modifiers = new Document();
                 modifiers.append("$set", jsonObject);
-                normal_attitude.updateOne(new Document("time_point", jsonObject.getDate("time_point")), modifiers, new UpdateOptions().upsert(true));
+                //normal_attitude.updateOne(new Document("time_point", jsonObject.getDate("time_point")), modifiers, new UpdateOptions().upsert(true));
             }
 
         }

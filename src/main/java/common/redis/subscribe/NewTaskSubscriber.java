@@ -32,6 +32,7 @@ import java.util.Map;
 public class NewTaskSubscriber extends JedisPubSub {
     private Date startTime = Date.from(Instant.now().plusSeconds(24 * 60 * 60 * 10000));
     private Date endTime = Date.from(Instant.now().minusSeconds(24 * 60 * 60 * 10000));
+
     public NewTaskSubscriber() {
     }
 
@@ -55,8 +56,10 @@ public class NewTaskSubscriber extends JedisPubSub {
                         TaskInit.initCronTaskForTaskPlan(json.get("name").getAsString(), json.get("firsttime").getAsString(), json.get("cycle").getAsString(), json.get("count").getAsString());
 
                     else if (json.get("tasktype").getAsString().equals(TaskType.REALTIME.name()) && json.get("templet").getAsString().equals(TempletType.TASK_PLAN.name())) {
-                        String content = json.get("content").getAsString();
-                        TaskInit.initRTTaskForTaskPlan(json.get("name").getAsString(), content);
+                        String imageorder = json.get("imageorder").getAsString();
+                        String stationmission = json.get("stationmission").getAsString();
+
+                        TaskInit.initRTTaskForTaskPlan(json.get("name").getAsString(), imageorder, stationmission);
                     } else if (json.get("tasktype").getAsString().equals(TaskType.CRONTAB.name()) && json.get("templet").getAsString().equals(TempletType.ORBIT_FORECAST.name()))
                         TaskInit.initCronTaskForOrbitForecast(json.get("name").getAsString(), json.get("firsttime").getAsString(), json.get("cycle").getAsString(), json.get("count").getAsString());
 
@@ -70,17 +73,28 @@ public class NewTaskSubscriber extends JedisPubSub {
             } else if (asString.equals(MsgType.CHECK_QUERY.name())) {
                 ArrayList<String> order_numbners = new ArrayList<>();
 
-                String content = json.get("content").getAsString();
-                String[] mns = content.split(",");
+                String ordermission = json.get("imageorder").getAsString();
+                String[] mns = ordermission.split(",");
 
                 //Map<String, Boolean> stringBooleanMap = new TreeMap<>();
 
                 if (mns.length > 0) {
                     for (String mn : mns)
                         order_numbners.add(mn);
-                        //stringBooleanMap.put("mn", true);
+                    //stringBooleanMap.put("mn", true);
                 }
+                ArrayList<String> station_numbners = new ArrayList<>();
 
+                String stationmission = json.get("stationmission").getAsString();
+                mns = stationmission.split(",");
+
+                //Map<String, Boolean> stringBooleanMap = new TreeMap<>();
+
+                if (mns.length > 0) {
+                    for (String mn : mns)
+                        station_numbners.add(mn);
+                    //stringBooleanMap.put("mn", true);
+                }
                 //RedisPublish.checkResult(stringBooleanMap);
 
                 MongoClient mongoClient = MangoDBConnector.getClient();
@@ -116,7 +130,21 @@ public class NewTaskSubscriber extends JedisPubSub {
                             endTime = expected_end_time;
                     }
                 }
+                MongoCollection<Document> station_mission = mongoDatabase.getCollection("station_mission");
+                FindIterable<Document> documents = station_mission.find();
+                ArrayList<Document> StationMissionjson = new ArrayList<>();
+                for (Document document : documents) {
+                    if (station_numbners.contains(document.getString("mission_number"))) {
+                        StationMissionjson.add(document);
+                        Date expected_start_time = document.getDate("expected_start_time");
+                        if (expected_start_time.before(startTime))
+                            startTime = expected_start_time;
 
+                        Date expected_end_time = document.getDate("expected_end_time");
+                        if (expected_end_time.after(endTime))
+                            endTime = expected_end_time;
+                    }
+                }
                 //轨道数据表
                 MongoCollection<Document> Data_Orbitjson = mongoDatabase.getCollection("orbit_attitude");
 

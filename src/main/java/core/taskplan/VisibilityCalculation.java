@@ -273,7 +273,7 @@ public class VisibilityCalculation {
         double[] SatPositionRe_LLA = new double[3];
         double[] SatPosition_ECEF = new double[3];
         double Time_JD;
-        int[][][] VisibilityTimePeriod = new int[LoadNumber][MissionNumber][10];
+        int[][][] VisibilityTimePeriod = new int[LoadNumber][MissionNumber][100];
         int[][] TimePeriodNum = new int[LoadNumber][MissionNumber];
 
         //任务循环
@@ -293,7 +293,7 @@ public class VisibilityCalculation {
                     if (j == 0 && Flag_tBefore == 0 && Flag_t == 1) {
                         VisibilityTimePeriod[k][i][2 * PeriodNum] = j;
                     } else if (j != 0 && Flag_tBefore == 0 && Flag_t == 1) {
-                        for (int l = j - OrbitalStepPlus + 1; l < j; l++) {
+                        for (int l = j - OrbitalStepPlus; l <= j; l++) {
                             Visibility_Flag = VisibilityJudgeAll(i, l, k, Time[l], SatPosition_LLA[l], SatPosition_GEI[l], SatVelocity_GEI[l]);
                             if (Visibility_Flag == 1) {
                                 VisibilityTimePeriod[k][i][2 * PeriodNum] = l;
@@ -301,7 +301,7 @@ public class VisibilityCalculation {
                             }
                         }
                     } else if (Flag_tBefore == 1 && Flag_t == 0) {
-                        for (int l = j - OrbitalStepPlus + 1; l < j; l++) {
+                        for (int l = j - OrbitalStepPlus; l <= j; l++) {
                             Visibility_Flag = VisibilityJudgeAll(i, l, k, Time[l], SatPosition_LLA[l], SatPosition_GEI[l], SatVelocity_GEI[l]);
                             if (Visibility_Flag == 0) {
                                 VisibilityTimePeriod[k][i][2 * PeriodNum + 1] = l - 1;
@@ -664,7 +664,7 @@ public class VisibilityCalculation {
         double[] SatPositionRe_LLA = new double[3];
         double[] SatPosition_ECEF = new double[3];
         double Time_JD;
-        int[][][] VisibilityTimePeriod = new int[LoadNumber][MissionNumber][10];
+        int[][][] VisibilityTimePeriod = new int[LoadNumber][MissionNumber][100];
         int[][] TimePeriodNum = new int[LoadNumber][MissionNumber];
 
         //任务循环
@@ -687,7 +687,7 @@ public class VisibilityCalculation {
                         if (Flag_tBefore == 0 && Flag_t == 1 && j == 0) {
                             VisibilityTimePeriod[k][i][2 * PeriodNum] = j;
                         } else if (Flag_tBefore == 0 && Flag_t == 1 && j != 0) {
-                            for (int l = j - OrbitalStepPlus + 1; l < j; l++) {
+                            for (int l = j - OrbitalStepPlus; l <= j; l++) {
                                 Visibility_Flag = VisibilityJudgeAll(i, l, k, Time[l], SatPosition_LLA[l], SatPosition_GEI[l], SatVelocity_GEI[l]);
                                 if (Visibility_Flag == 1) {
                                     VisibilityTimePeriod[k][i][2 * PeriodNum] = l;
@@ -695,7 +695,7 @@ public class VisibilityCalculation {
                                 }
                             }
                         } else if (Flag_tBefore == 1 && Flag_t == 0) {
-                            for (int l = j - OrbitalStepPlus + 1; l < j; l++) {
+                            for (int l = j - OrbitalStepPlus; l <= j; l++) {
                                 Visibility_Flag = VisibilityJudgeAll(i, l, k, Time[l], SatPosition_LLA[l], SatPosition_GEI[l], SatVelocity_GEI[l]);
                                 if (Visibility_Flag == 0) {
                                     VisibilityTimePeriod[k][i][2 * PeriodNum + 1] = l - 1;
