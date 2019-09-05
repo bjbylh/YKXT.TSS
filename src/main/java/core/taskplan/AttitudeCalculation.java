@@ -15,6 +15,8 @@ import java.util.Date;
 
 import static java.lang.Math.*;
 
+//import common.mongo.MangoDBConnector;
+
 //import common.mongo.DbDefine;
 //import common.mongo.MangoDBConnector;
 
@@ -275,7 +277,7 @@ public class AttitudeCalculation {
                 }
             }
             if (Mission_FLag == 1) {
-                AttitudeCalculation(SatPosition_GEI[i], SatVelocity_GEI[i], Target_LLA, Time[i], LoadInstall[LoadNum-1], SatAttitud[i]);
+                AttitudeCalculation(SatPosition_GEI[i], SatVelocity_GEI[i], Target_LLA, Time[i], LoadInstall[LoadNum - 1], SatAttitud[i]);
                 MissionFlag = true;
             } else {
                 SatAttitud[i][0] = 0;
@@ -315,9 +317,8 @@ public class AttitudeCalculation {
                 jsonObject.append("V_pitch_angle", SatAttitudVel[i][1]);
                 jsonObject.append("time_point", Time_Point[i]);
                 jsonObject.append("tag", "1");
-                Document modifiers = new Document();
-                modifiers.append("$set", jsonObject);
-                //normal_attitude.updateOne(new Document("time_point", jsonObject.getDate("time_point")), modifiers, new UpdateOptions().upsert(true));
+                normal_attitude.insertOne(jsonObject);
+
             } else {
                 Document jsonObject = new Document();
 
@@ -329,12 +330,11 @@ public class AttitudeCalculation {
                 jsonObject.append("V_pitch_angle", SatAttitudVel[i][1]);
                 jsonObject.append("time_point", Time_Point[i]);
                 jsonObject.append("tag", "0");
-                Document modifiers = new Document();
-                modifiers.append("$set", jsonObject);
-                //normal_attitude.updateOne(new Document("time_point", jsonObject.getDate("time_point")), modifiers, new UpdateOptions().upsert(true));
-            }
 
+                normal_attitude.insertOne(jsonObject);
+            }
         }
+        mongoClient.close();
     }
 
     //姿态角计算

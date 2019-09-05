@@ -3,6 +3,9 @@ package core.orbit;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
@@ -625,8 +628,8 @@ class OrbitPrediction {
     //轨道外推
     public static void OrbitPredictorII(Instant timeRaw, LocalDateTime start, LocalDateTime end, double step, double[] orbit0, JsonObject json) {
         MongoClient mongoClient = MangoDBConnector.getClient();
-        //MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
-        //MongoCollection<Document> orbitDB = mongoDatabase.getCollection("orbit_attitude");
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+        MongoCollection<Document> orbitDB = mongoDatabase.getCollection("orbit_attitude");
         JsonArray properties = json.getAsJsonArray("properties");
         //载荷参数初始话
         int ViewNum = 4;
@@ -847,13 +850,16 @@ class OrbitPrediction {
 
             Document doc = Document.parse(jsonObject.toString());
             doc.append("time_point", Date.from(timeRaw.plusMillis((long) (1000 * j * step))));
-            Document modifiers = new Document();
-            modifiers.append("$set", doc);
+//            Document modifiers = new Document();
+//            modifiers.append("$set", doc);
+////
+//            orbitDB.updateOne(new Document("time_point", doc.getDate("time_point")), modifiers, new UpdateOptions().upsert(true));
 //
-            //orbitDB.updateOne(new Document("time_point", doc.getDate("time_point")), modifiers, new UpdateOptions().upsert(true));
-//
+            orbitDB.insertOne(doc);
             j++;
         }
+
+        mongoClient.close();
 
         //阳光规避计算及输出
         JsonArray avoidance_sunlight=new JsonArray();

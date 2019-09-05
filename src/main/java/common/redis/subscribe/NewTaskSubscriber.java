@@ -154,12 +154,13 @@ public class NewTaskSubscriber extends JedisPubSub {
                 long count = Data_Orbitjson.count(Filters.and(queryBson));
 
                 try {
-                    Map<String, Boolean> stringBooleanMap = VisibilityCalculation.VisibilityCalculationEmergency(Satllitejson, D_orbitjson, count, GroundStationjson, Missionjson);
+                    Map<String, Boolean> stringBooleanMap = VisibilityCalculation.VisibilityCalculationEmergency(Satllitejson, D_orbitjson, count, GroundStationjson, Missionjson, StationMissionjson);
                     RedisPublish.checkResult(stringBooleanMap);
                 } catch (ParseException e) {
                     e.printStackTrace();
                 }
 
+                mongoClient.close();
             } else return;
         } catch (Exception e) {
             e.printStackTrace();

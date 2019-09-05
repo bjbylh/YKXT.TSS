@@ -44,6 +44,7 @@ public class TaskStatusSubscriber extends JedisPubSub {
             tasks.updateOne(Filters.eq("_id", new ObjectId(taskID)), new Document("$set", new Document("status", status)));
 
             RedisPublish.dbRefresh(taskID);
+            mongoClient.close();
         }
     }
 

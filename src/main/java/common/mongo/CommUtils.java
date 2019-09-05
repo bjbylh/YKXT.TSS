@@ -30,6 +30,7 @@ public class CommUtils {
         Document first = maintasks.find(cond).first();
 
         String status = first.getString("status");
+        mongoClient.close();
 
         return MainTaskStatus.valueOf(status);
     }

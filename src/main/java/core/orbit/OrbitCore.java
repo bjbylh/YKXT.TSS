@@ -13,6 +13,7 @@ import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import common.redis.RedisPublish;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 
 import java.time.Instant;
@@ -80,6 +81,11 @@ public class OrbitCore {
 
             JsonParser parse = new JsonParser();  //创建json解析器
             JsonObject json = (JsonObject) parse.parse(first.toJson());
+
+            MongoCollection<Document> orbit_attitude = mongoDatabase.getCollection("orbit_attitude");
+
+            Bson queryBson = Filters.and(Filters.gte("time_point", Date.from(start)), Filters.lte("time_point", Date.from(end)));
+            orbit_attitude.deleteMany(queryBson);
 
             OrbitPrediction.OrbitPredictorII(start, OrbitPrediction.dateConvertToLocalDateTime(Date.from(start)), OrbitPrediction.dateConvertToLocalDateTime(Date.from(end)), 1, orbits, json);
 

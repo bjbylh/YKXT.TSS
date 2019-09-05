@@ -6,6 +6,7 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.UpdateOptions;
 import common.def.MainTaskStatus;
 import common.def.SubTaskStatus;
 import common.def.TaskType;
@@ -43,9 +44,10 @@ public class TaskPlanCore {
     private class proc implements Runnable {
         private String id;
         private String[] subList;
-        ArrayList<String> mission_numbners;
-        Document Transmissionjson;
-        ArrayList<Document> Missionjson;
+        private ArrayList<String> mission_numbners;
+        private ArrayList<String> station_mission_numbers;
+        private String Transmission_number;
+
         private MongoClient mongoClient;
         private MongoDatabase mongoDatabase;
         private Document Satllitejson;
@@ -55,8 +57,8 @@ public class TaskPlanCore {
         private Instant now = Instant.now();
         private Date startTime = Date.from(Instant.now().plusSeconds(24 * 60 * 60 * 10000));
         private Date endTime = Date.from(Instant.now().minusSeconds(24 * 60 * 60 * 10000));
-        private ArrayList<Document> station_missions = new ArrayList<>();
 
+        private ArrayList<String> orderList;
 
         public proc(String taskId) {
             this.id = taskId;
@@ -78,6 +80,7 @@ public class TaskPlanCore {
             for (Document document : D_GroundStationjson) {
                 GroundStationjson.add(document);
             }
+
         }
 
         @Override
@@ -110,6 +113,8 @@ public class TaskPlanCore {
             else
                 updateMainStatus(id, MainTaskStatus.FINISHED);
             RedisPublish.dbRefresh(id);
+
+            mongoClient.close();
         }
 
         private void initOrbit() {
@@ -126,7 +131,9 @@ public class TaskPlanCore {
             updateSubStatus(subid, SubTaskStatus.RUNNING);
             RedisPublish.dbRefresh(id);
 
-            ArrayList<String> orderList = getOrderList(subid);
+            orderList = getOrderList(subid);
+
+            ArrayList<Document> orders = new ArrayList<>();
 
             MongoCollection<Document> image_order = mongoDatabase.getCollection("image_order");
             FindIterable<Document> documents = image_order.find();
@@ -139,19 +146,22 @@ public class TaskPlanCore {
                     Date expected_end_time = order.getDate("expected_end_time");
                     if (expected_end_time.after(endTime))
                         endTime = expected_end_time;
+
+                    orders.add(order);
                 }
             }
 
-            OrderOverallPlan orderOverallPlan = new OrderOverallPlan(orderList);
-            ArrayList<String> mission_numbners = orderOverallPlan.Trans();
+            this.mission_numbners = OrderOverall.OrderOverallII(orders);
 
-            if (mission_numbners == null || mission_numbners.size() == 0) {
-                updateSubStatus(subid, SubTaskStatus.ERROR);
-                RedisPublish.dbRefresh(id);
-                return true;
+            for (Document order : documents) {
+                if (orderList.contains(order.getString("order_number"))) {
+                    order.append("order_state", "待规划");
+                    Document modifiers = new Document();
+                    modifiers.append("$set", order);
+                    image_order.updateOne(new Document("order_number", order.getString("order_number")), modifiers, new UpdateOptions().upsert(true));
+                }
             }
 
-            this.mission_numbners = mission_numbners;
             updateSubStatus(subid, SubTaskStatus.SUSPEND);
             RedisPublish.dbRefresh(id);
             return checkIfStopped(id, 0);
@@ -171,6 +181,8 @@ public class TaskPlanCore {
             }
 
             MongoCollection<Document> station_mission = mongoDatabase.getCollection("station_mission");
+
+            ArrayList<Document> station_missions = new ArrayList<>();
 
             if (taskType == TaskType.CRONTAB) {
                 Date s = Date.from(now.plusSeconds(60 * 60 * 24));
@@ -202,9 +214,13 @@ public class TaskPlanCore {
                 }
             }
 
+            for (Document d : station_missions) {
+                station_mission_numbers.add(d.getString("mission_number"));
+            }
+
             try {
-                Transmissionjson = VisibilityCalculation.VisibilityCalculationII(Satllitejson, D_orbitjson, count, GroundStationjson, Missionjson);
-                this.Missionjson = Missionjson;
+                Document Transmissionjson = VisibilityCalculation.VisibilityCalculationII(Satllitejson, D_orbitjson, count, GroundStationjson, Missionjson, station_missions);
+                Transmission_number = Transmissionjson.getString("transmission_number");
             } catch (ParseException e) {
                 e.printStackTrace();
             }
@@ -218,7 +234,37 @@ public class TaskPlanCore {
             updateSubStatus(subid, SubTaskStatus.RUNNING);
             RedisPublish.dbRefresh(id);
 
-            MissionPlanning.MissionPlanningII(this.Satllitejson, this.GroundStationjson, this.D_orbitjson, this.count, this.Missionjson, this.Transmissionjson, this.station_missions);
+            MongoCollection<Document> station_mission = mongoDatabase.getCollection("station_mission");
+
+            ArrayList<Document> station_missions = new ArrayList<>();
+
+            for (Document d : station_mission.find()) {
+                if (station_mission_numbers.contains(d.getString("mission_number")))
+                    station_missions.add(d);
+            }
+
+
+            MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
+            ArrayList<Document> Missionjson = new ArrayList<>();
+            for (Document mission : image_mission.find()) {
+                if (mission_numbners.contains(mission.getString("mission_number"))) {
+                    Missionjson.add(mission);
+                }
+            }
+
+            MongoCollection<Document> transmission_misison = mongoDatabase.getCollection("transmission_mission");
+
+            Document Transmissionjson = null;
+
+            for (Document mission : transmission_misison.find()) {
+                if (Transmission_number.equals(mission.getString("transmission_number"))) {
+                    Transmissionjson = mission;
+                    break;
+                }
+
+            }
+
+            MissionPlanning.MissionPlanningII(this.Satllitejson, this.GroundStationjson, this.D_orbitjson, this.count, Missionjson, Transmissionjson, station_missions);
 
             updateSubStatus(subid, SubTaskStatus.SUSPEND);
             RedisPublish.dbRefresh(id);
@@ -230,7 +276,40 @@ public class TaskPlanCore {
             updateSubStatus(subid, SubTaskStatus.RUNNING);
             RedisPublish.dbRefresh(id);
 
-            AttitudeCalculation.AttitudeCalculationII(this.Satllitejson, this.D_orbitjson, this.count, this.Missionjson);
+            MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
+            ArrayList<Document> Missionjson = new ArrayList<>();
+            for (Document mission : image_mission.find()) {
+                if (mission_numbners.contains(mission.getString("mission_number"))) {
+                    Missionjson.add(mission);
+                }
+            }
+
+            MongoCollection<Document> normal_attitude = mongoDatabase.getCollection("normal_attitude");
+
+            Bson queryBson = Filters.and(Filters.gte("time_point", startTime), Filters.lte("time_point", endTime));
+            normal_attitude.deleteMany(queryBson);
+
+            AttitudeCalculation.AttitudeCalculationII(this.Satllitejson, this.D_orbitjson, this.count, Missionjson);
+
+            MongoCollection<Document> image_order = mongoDatabase.getCollection("image_order");
+            FindIterable<Document> documents = image_order.find();
+            for (Document order : documents) {
+                if (orderList.contains(order.getString("order_number"))) {
+                    order.append("order_state", "待执行");
+                    Document modifiers = new Document();
+                    modifiers.append("$set", order);
+                    image_order.updateOne(new Document("order_number", order.getString("order_number")), modifiers, new UpdateOptions().upsert(true));
+                }
+            }
+
+            for (Document mission : image_mission.find()) {
+                if (mission_numbners.contains(mission.getString("mission_number"))) {
+                    mission.append("mission_state", "待执行");
+                    Document modifiers = new Document();
+                    modifiers.append("$set", mission);
+                    image_mission.updateOne(new Document("mission_number", mission.getString("mission_number")), modifiers, new UpdateOptions().upsert(true));
+                }
+            }
 
             updateSubStatus(subid, SubTaskStatus.SUSPEND);
             RedisPublish.dbRefresh(id);
@@ -240,6 +319,37 @@ public class TaskPlanCore {
         private boolean MOD_ENERGY_CALCULATION(String subid) {
             updateSubStatus(subid, SubTaskStatus.RUNNING);
             RedisPublish.dbRefresh(id);
+
+            MongoCollection<Document> normal_attitude = mongoDatabase.getCollection("normal_attitude");
+
+            Bson queryBson = Filters.and(Filters.gte("time_point", startTime), Filters.lte("time_point", endTime));
+
+            FindIterable<Document> documents = normal_attitude.find(Filters.and(queryBson));
+            long dcount = normal_attitude.count(Filters.and(queryBson));
+
+            MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
+            ArrayList<Document> Missionjson = new ArrayList<>();
+            for (Document mission : image_mission.find()) {
+                if (mission_numbners.contains(mission.getString("mission_number"))) {
+                    Missionjson.add(mission);
+                }
+            }
+
+
+            MongoCollection<Document> transmission_misison = mongoDatabase.getCollection("transmission_mission");
+
+            Document Transmissionjson = null;
+
+            for (Document mission : transmission_misison.find()) {
+                if (Transmission_number.equals(mission.getString("transmission_number"))) {
+                    Transmissionjson = mission;
+                    break;
+                }
+
+            }
+
+            ReviewReset.ReviewResetII(Satllitejson, this.D_orbitjson, this.count, documents, dcount, Missionjson, Transmissionjson);
+
 
             updateSubStatus(subid, SubTaskStatus.SUSPEND);
             RedisPublish.dbRefresh(id);
@@ -276,7 +386,7 @@ public class TaskPlanCore {
 
                 params = (ArrayList<String>) first.get("param");
             }
-
+            mongoClient.close();
             return params;
         }
 

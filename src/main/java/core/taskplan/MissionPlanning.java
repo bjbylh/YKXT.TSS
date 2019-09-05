@@ -19,13 +19,15 @@ import static java.lang.Math.*;
 
 //import common.mongo.MangoDBConnector;
 
+//import common.mongo.MangoDBConnector;
+
 public class MissionPlanning {
 
     private static double AUtokm = 1.49597870e8;
     private static double kmtom = 10e3;
 
     //阳光规避弧段
-    private static int[] SunAvoidTimePeriod = new int[10];
+    private static int[] SunAvoidTimePeriod = new int[100];
     private static int SunAvoidTimePeriodNum;
 
     //常量
@@ -239,8 +241,8 @@ public class MissionPlanning {
             StationMissionStarTime = new double[1][6];
             StationMissionEndTime=new double[1][6];
             for (int i = 0; i < 6; i++) {
-                StationMissionStarTime[0][i]=Orbital_Time[0][i];
-                StationMissionEndTime[0][i]=Orbital_Time[OrbitalDataNum-1][i];
+                StationMissionStarTime[0][i]=Orbital_Time[1][i];
+                StationMissionEndTime[0][i]=Orbital_Time[0][i];
             }
         }else {
             StationMissionStarTime = new double[StationMissionJson.size()][6];
@@ -278,10 +280,10 @@ public class MissionPlanning {
         //任务读入
         MissionNumber = ImageMissionjson.size();
         MissionTargetNum = new int[MissionNumber];
-        MissionTargetArea = new double[MissionNumber][20];        //成像区域描述，格式：每行代表一个任务，每行格式[经度，纬度，经度，纬度，……]
+        MissionTargetArea = new double[MissionNumber][200];        //成像区域描述，格式：每行代表一个任务，每行格式[经度，纬度，经度，纬度，……]
         MissionLoadType = new int[MissionNumber][LoadNumber];
         TimePeriodNum = new int[LoadNumber][MissionNumber];
-        VisibilityTimePeriod = new int[LoadNumber][MissionNumber][50];
+        VisibilityTimePeriod = new int[LoadNumber][MissionNumber][200];
         MissionStareTime = new double[MissionNumber];
         MissionImagingMode = new int[MissionNumber];
         MissionPriority = new int[MissionNumber];
@@ -291,7 +293,7 @@ public class MissionPlanning {
         for (int i = 0; i < MissionNumber; i++) {
             PlanningMissionFailReason[i] = 0;
         }
-        Date[][][] VisibilityDatePeriod = new Date[LoadNumber][MissionNumber][50];
+        Date[][][] VisibilityDatePeriod = new Date[LoadNumber][MissionNumber][200];
         for (int i = 0; i < MissionNumber; i++) {
             for (int j = 0; j < LoadNumber; j++) {
                 MissionLoadType[i][j] = 0;
@@ -834,6 +836,7 @@ public class MissionPlanning {
         Document modifiers = new Document();
         modifiers.append("$set", TransmissionMissionJson);
         transmission_mission.updateOne(new Document("_id", TransmissionMissionJson.getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
+        mongoClient.close();
     }
 
 

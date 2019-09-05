@@ -20,6 +20,8 @@ import static java.lang.Math.*;
 
 //import common.mongo.MangoDBConnector;
 
+//import common.mongo.MangoDBConnector;
+
 public class VisibilityCalculation {
     //任务变量
     private static int MissionNumber;                   //任务数量
@@ -32,6 +34,7 @@ public class VisibilityCalculation {
     private static double[][] MisssionTargetHeight;     //成像高度要求，格式：每行代表一个任务，每行格式[最低成像要求，最高成像要求]，单位：米
     private static int[] TargetNum;                     //成像区域的目标点个数
     private static int[][] MissionLoadType;//任务对相机的需求，格式，每行达标一个任务，每行格式[是否使用相机1，……]，1代表是，0代表否，第1,2列表示高分相机，第3,4列表示多光谱相机
+    private static int[] MissionWorkMode;               //传输模式，格式：每行代表一个任务，1：实传
 
     //载荷变量
     // 载荷安装 矩阵，格式：每行代表一个载荷，每行格式[光轴与本体系x轴夹角，光轴与本体系y轴夹角，光轴与本体系z轴夹角]，单位：弧度
@@ -55,7 +58,9 @@ public class VisibilityCalculation {
     private static double[][] StationPosition;          //地面站位置，格式，每行代表一个地面站，每行格式：[地面站经度，地面站纬度，地面站高度]，高度单位：米
     private static double[] StationPitch;               //地面站最低仰角要求，格式：每行代表一个地面站，每行格式：最小仰角角度，单位：弧度
     private static double[][] StationMissionStar;           //地面站传输任务时间
-    private static double[][] stationMissionStop;       //地面站传输任务时间
+    private static double[][] StationMissionStop;       //地面站传输任务时间
+    private static int StationMissionNum;               //地面站传输任务数量
+    private static String[] StationMissionNumber;       //地面站传输任务编号
 
 
     //常量
@@ -70,76 +75,80 @@ public class VisibilityCalculation {
     //SatVelocity_GEI：输入：卫星在惯性系下的速度
     //SatPosition_LLA：输入：卫星的经纬高
     //Json格式
-    public static Document VisibilityCalculationII(Document Satllitejson, FindIterable<Document> Orbitjson, long orbitDataCount, ArrayList<Document> GroundStationjson, ArrayList<Document> Missionjson) throws ParseException {
+    public static Document VisibilityCalculationII(Document Satllitejson, FindIterable<Document> Orbitjson, long orbitDataCount, ArrayList<Document> GroundStationjson, ArrayList<Document> Missionjson, ArrayList<Document> StationMissionjson) throws ParseException {
         //载荷参数更新
-        ArrayList<Document> properties = (ArrayList<Document>) Satllitejson.get("properties");
-        int ii = 0;
-        for (Document document : properties) {
 
-            if (document.getString("key").equals("out_side_sight") && document.getString("group").equals("payload" + "1")) {
-                LoadViewAng[1 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("in_side_sight") && document.getString("group").equals("payload" + "1")) {
-                LoadViewAng[1 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("up_side_sight") && document.getString("group").equals("payload" + "1")) {
-                LoadViewAng[1 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("down_side_sight") && document.getString("group").equals("payload" + "1")) {
-                LoadViewAng[1 - 1][3] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Xaxis") && document.getString("group").equals("payload" + "1")) {
-                LoadInstall[1 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Yaxis") && document.getString("group").equals("payload" + "1")) {
-                LoadInstall[1 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Zaxis") && document.getString("group").equals("payload" + "1")) {
-                LoadInstall[1 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("out_side_sight") && document.getString("group").equals("payload" + "2")) {
-                LoadViewAng[2 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("in_side_sight") && document.getString("group").equals("payload" + "2")) {
-                LoadViewAng[2 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("up_side_sight") && document.getString("group").equals("payload" + "2")) {
-                LoadViewAng[2 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("down_side_sight") && document.getString("group").equals("payload" + "2")) {
-                LoadViewAng[2 - 1][3] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Xaxis") && document.getString("group").equals("payload" + "2")) {
-                LoadInstall[2 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Yaxis") && document.getString("group").equals("payload" + "2")) {
-                LoadInstall[2 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Zaxis") && document.getString("group").equals("payload" + "2")) {
-                LoadInstall[2 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("out_side_sight") && document.getString("group").equals("payload" + "3")) {
-                LoadViewAng[3 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("in_side_sight") && document.getString("group").equals("payload" + "3")) {
-                LoadViewAng[3 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("up_side_sight") && document.getString("group").equals("payload" + "3")) {
-                LoadViewAng[3 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("down_side_sight") && document.getString("group").equals("payload" + "3")) {
-                LoadViewAng[3 - 1][3] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Xaxis") && document.getString("group").equals("payload" + "3")) {
-                LoadInstall[3 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Yaxis") && document.getString("group").equals("payload" + "3")) {
-                LoadInstall[3 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Zaxis") && document.getString("group").equals("payload" + "3")) {
-                LoadInstall[3 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("out_side_sight") && document.getString("group").equals("payload" + "4")) {
-                LoadViewAng[4 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("in_side_sight") && document.getString("group").equals("payload" + "4")) {
-                LoadViewAng[4 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("up_side_sight") && document.getString("group").equals("payload" + "4")) {
-                LoadViewAng[4 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("down_side_sight") && document.getString("group").equals("payload" + "4")) {
-                LoadViewAng[4 - 1][3] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Xaxis") && document.getString("group").equals("payload" + "4")) {
-                LoadInstall[4 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Yaxis") && document.getString("group").equals("payload" + "4")) {
-                LoadInstall[4 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Zaxis") && document.getString("group").equals("payload" + "4")) {
-                LoadInstall[4 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("roll_angle_max")) {
-                SatelliteManeuverEuler[0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("pitch_angle_max")) {
-                SatelliteManeuverEuler[1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else
-                continue;
-
+        if (Satllitejson.size() == 0) {
+            System.out.println("卫星资源数据为空");
+        } else {
+            ArrayList<Document> properties = (ArrayList<Document>) Satllitejson.get("properties");
+            for (Document document : properties) {
+                if (document.getString("key").equals("out_side_sight") && document.getString("group").equals("payload" + "1")) {
+                    LoadViewAng[1 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("in_side_sight") && document.getString("group").equals("payload" + "1")) {
+                    LoadViewAng[1 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("up_side_sight") && document.getString("group").equals("payload" + "1")) {
+                    LoadViewAng[1 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("down_side_sight") && document.getString("group").equals("payload" + "1")) {
+                    LoadViewAng[1 - 1][3] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Xaxis") && document.getString("group").equals("payload" + "1")) {
+                    LoadInstall[1 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Yaxis") && document.getString("group").equals("payload" + "1")) {
+                    LoadInstall[1 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Zaxis") && document.getString("group").equals("payload" + "1")) {
+                    LoadInstall[1 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("out_side_sight") && document.getString("group").equals("payload" + "2")) {
+                    LoadViewAng[2 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("in_side_sight") && document.getString("group").equals("payload" + "2")) {
+                    LoadViewAng[2 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("up_side_sight") && document.getString("group").equals("payload" + "2")) {
+                    LoadViewAng[2 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("down_side_sight") && document.getString("group").equals("payload" + "2")) {
+                    LoadViewAng[2 - 1][3] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Xaxis") && document.getString("group").equals("payload" + "2")) {
+                    LoadInstall[2 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Yaxis") && document.getString("group").equals("payload" + "2")) {
+                    LoadInstall[2 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Zaxis") && document.getString("group").equals("payload" + "2")) {
+                    LoadInstall[2 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("out_side_sight") && document.getString("group").equals("payload" + "3")) {
+                    LoadViewAng[3 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("in_side_sight") && document.getString("group").equals("payload" + "3")) {
+                    LoadViewAng[3 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("up_side_sight") && document.getString("group").equals("payload" + "3")) {
+                    LoadViewAng[3 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("down_side_sight") && document.getString("group").equals("payload" + "3")) {
+                    LoadViewAng[3 - 1][3] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Xaxis") && document.getString("group").equals("payload" + "3")) {
+                    LoadInstall[3 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Yaxis") && document.getString("group").equals("payload" + "3")) {
+                    LoadInstall[3 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Zaxis") && document.getString("group").equals("payload" + "3")) {
+                    LoadInstall[3 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("out_side_sight") && document.getString("group").equals("payload" + "4")) {
+                    LoadViewAng[4 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("in_side_sight") && document.getString("group").equals("payload" + "4")) {
+                    LoadViewAng[4 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("up_side_sight") && document.getString("group").equals("payload" + "4")) {
+                    LoadViewAng[4 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("down_side_sight") && document.getString("group").equals("payload" + "4")) {
+                    LoadViewAng[4 - 1][3] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Xaxis") && document.getString("group").equals("payload" + "4")) {
+                    LoadInstall[4 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Yaxis") && document.getString("group").equals("payload" + "4")) {
+                    LoadInstall[4 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Zaxis") && document.getString("group").equals("payload" + "4")) {
+                    LoadInstall[4 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("roll_angle_max")) {
+                    SatelliteManeuverEuler[0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("pitch_angle_max")) {
+                    SatelliteManeuverEuler[1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else
+                    continue;
+            }
         }
+
+        //轨道数据读入
         String StringTime;
         double[][] Time = new double[(int) orbitDataCount][6];
         double[][] SatPosition_GEI = new double[(int) orbitDataCount][3];
@@ -178,35 +187,86 @@ public class VisibilityCalculation {
         }
 
         //地面站资源读入
-        StationSerialNumber = new String[GroundStationjson.size()];
-        StationPosition = new double[GroundStationjson.size()][3];
-        StationPitch = new double[GroundStationjson.size()];
-        StationNumber = 0;
-        for (Document document : GroundStationjson) {
-            ArrayList<Document> Stationproperties = (ArrayList<Document>) document.get("properties");
-            for (Document document1 : Stationproperties) {
-                if (document1.getString("key").equals("station_name")) {
-                    StationSerialNumber[StationNumber] = document1.getString("value");
-                } else if (document1.getString("key").equals("station_lon")) {
-                    StationPosition[StationNumber][0] = Double.parseDouble(document1.getString("value"));
-                } else if (document1.getString("key").equals("station_lat")) {
-                    StationPosition[StationNumber][1] = Double.parseDouble(document1.getString("value"));
-                } else if (document1.getString("key").equals("altitude")) {
-                    StationPosition[StationNumber][2] = Double.parseDouble(document1.getString("value"));
-                } else if (document1.getString("key").equals("angle_pitch_min")) {
-                    StationPitch[StationNumber] = Double.parseDouble(document1.getString("value")) * PI / 180.0;
+        if (GroundStationjson.size() == 0) {
+            System.out.println("无地面站资源");
+        } else {
+            StationSerialNumber = new String[GroundStationjson.size()];
+            StationPosition = new double[GroundStationjson.size()][3];
+            StationPitch = new double[GroundStationjson.size()];
+            StationNumber = 0;
+            for (Document document : GroundStationjson) {
+                ArrayList<Document> Stationproperties = (ArrayList<Document>) document.get("properties");
+                for (Document document1 : Stationproperties) {
+                    if (document1.getString("key").equals("station_name")) {
+                        StationSerialNumber[StationNumber] = document1.getString("value");
+                    } else if (document1.getString("key").equals("station_lon")) {
+                        StationPosition[StationNumber][0] = Double.parseDouble(document1.getString("value"));
+                    } else if (document1.getString("key").equals("station_lat")) {
+                        StationPosition[StationNumber][1] = Double.parseDouble(document1.getString("value"));
+                    } else if (document1.getString("key").equals("altitude")) {
+                        StationPosition[StationNumber][2] = Double.parseDouble(document1.getString("value"));
+                    } else if (document1.getString("key").equals("angle_pitch_min")) {
+                        StationPitch[StationNumber] = Double.parseDouble(document1.getString("value")) * PI / 180.0;
+                    }
                 }
+                StationNumber = StationNumber + 1;
             }
-            StationNumber = StationNumber + 1;
+        }
+
+
+        //数传任务读入
+        if (StationMissionjson.size() == 0) {
+            StationMissionStar = new double[1][6];
+            StationMissionStop = new double[1][6];
+            StationMissionNumber[0]=null;
+            for (int i = 0; i < 6; i++) {
+                StationMissionStar[0][i]=Time[1][i];
+                StationMissionStop[0][i]=Time[0][i];
+            }
+            StationMissionNum = 1;
+        } else {
+            StationMissionStar = new double[StationMissionjson.size()][6];
+            StationMissionStop = new double[StationMissionjson.size()][6];
+            StationMissionNum = 0;
+            for (Document document : StationMissionjson) {
+                StationMissionNumber[StationMissionNum]=document.getString("mission_number");
+                Date time_point = document.getDate("expected_start_time");
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(time_point);
+                cal.add(Calendar.HOUR_OF_DAY, -8);
+                StringTime = sdf.format(cal.getTime());
+                StationMissionStar[StationMissionNum][0] = Double.parseDouble(StringTime.substring(0, 4));
+                StationMissionStar[StationMissionNum][1] = Double.parseDouble(StringTime.substring(5, 7));
+                StationMissionStar[StationMissionNum][2] = Double.parseDouble(StringTime.substring(8, 10));
+                StationMissionStar[StationMissionNum][3] = Double.parseDouble(StringTime.substring(11, 13));
+                StationMissionStar[StationMissionNum][4] = Double.parseDouble(StringTime.substring(14, 16));
+                StationMissionStar[StationMissionNum][5] = Double.parseDouble(StringTime.substring(17, 19));
+                time_point = document.getDate("expected_end_time");
+                cal.setTime(time_point);
+                cal.add(Calendar.HOUR_OF_DAY, -8);
+                StringTime = sdf.format(cal.getTime());
+                StationMissionStop[StationMissionNum][0] = Double.parseDouble(StringTime.substring(0, 4));
+                StationMissionStop[StationMissionNum][1] = Double.parseDouble(StringTime.substring(5, 7));
+                StationMissionStop[StationMissionNum][2] = Double.parseDouble(StringTime.substring(8, 10));
+                StationMissionStop[StationMissionNum][3] = Double.parseDouble(StringTime.substring(11, 13));
+                StationMissionStop[StationMissionNum][4] = Double.parseDouble(StringTime.substring(14, 16));
+                StationMissionStop[StationMissionNum][5] = Double.parseDouble(StringTime.substring(17, 19));
+                StationMissionNum = StationMissionNum + 1;
+            }
         }
 
         //任务读入
+        if (Missionjson.size() == 0) {
+            System.out.println("无任务资源");
+        }
         MissionStarTime = new double[Missionjson.size()][6];
         MissionStopTime = new double[Missionjson.size()][6];
         MissionSerialNumber = new String[Missionjson.size()];
         MissionImagingMode = new int[Missionjson.size()];
         MissionTargetType = new int[Missionjson.size()];
-        MissionTargetArea = new double[Missionjson.size()][20];        //成像区域描述，格式：每行代表一个任务，每行格式[经度，纬度，经度，纬度，……]
+        MissionWorkMode = new int[Missionjson.size()];
+        MissionTargetArea = new double[Missionjson.size()][200];        //成像区域描述，格式：每行代表一个任务，每行格式[经度，纬度，经度，纬度，……]
         MisssionTargetHeight = new double[Missionjson.size()][2];
         MissionNumber = 0;
         TargetNum = new int[Missionjson.size()];
@@ -261,6 +321,11 @@ public class VisibilityCalculation {
             } else if (document.getString("image_type").equals("Polygon")) {
                 MissionTargetType[MissionNumber] = 2;
             }
+            if (document.getString("work_mode").equals("实传")){
+                MissionWorkMode[MissionNumber]=1;
+            }else {
+                MissionWorkMode[MissionNumber]=0;
+            }
             MisssionTargetHeight[MissionNumber][0] = Double.parseDouble(document.getString("min_height_orbit"));
             MisssionTargetHeight[MissionNumber][1] = Double.parseDouble(document.getString("max_height_orbit"));
             MissionNumber = MissionNumber + 1;
@@ -273,54 +338,126 @@ public class VisibilityCalculation {
         double[] SatPositionRe_LLA = new double[3];
         double[] SatPosition_ECEF = new double[3];
         double Time_JD;
-        int[][][] VisibilityTimePeriod = new int[LoadNumber][MissionNumber][100];
+        int[][][] VisibilityTimePeriod = new int[LoadNumber][MissionNumber][200];
         int[][] TimePeriodNum = new int[LoadNumber][MissionNumber];
 
         //任务循环
         for (int i = 0; i < MissionNumber; i++) {
-            for (int k = 0; k < LoadNumber; k++) {
-                int Flag_tBefore = 0;
-                int Visibility_Flag = 0;
-                int Flag_t = 0;
-                int PeriodNum = 0;
-                //轨道数据循环
-                int OrbitalStepPlus = 10;
-                for (int j = 0; j < OrbitalDataNum; ) {
-                    Visibility_Flag = VisibilityJudgeAll(i, j, k, Time[j], SatPosition_LLA[j], SatPosition_GEI[j], SatVelocity_GEI[j]);
-                    Flag_tBefore = Flag_t;
-                    Flag_t = Visibility_Flag;
-                    //判定开始结束时间，精确判断
-                    if (j == 0 && Flag_tBefore == 0 && Flag_t == 1) {
-                        VisibilityTimePeriod[k][i][2 * PeriodNum] = j;
-                    } else if (j != 0 && Flag_tBefore == 0 && Flag_t == 1) {
-                        for (int l = j - OrbitalStepPlus; l <= j; l++) {
-                            Visibility_Flag = VisibilityJudgeAll(i, l, k, Time[l], SatPosition_LLA[l], SatPosition_GEI[l], SatVelocity_GEI[l]);
-                            if (Visibility_Flag == 1) {
-                                VisibilityTimePeriod[k][i][2 * PeriodNum] = l;
-                                break;
+            if (MissionWorkMode[i] == 0) {
+                for (int k = 0; k < LoadNumber; k++) {
+                    int Flag_tBefore = 0;
+                    int Visibility_Flag = 0;
+                    int Flag_t = 0;
+                    int PeriodNum = 0;
+                    //轨道数据循环
+                    int OrbitalStepPlus = 10;
+                    for (int j = 0; j < OrbitalDataNum; ) {
+                        Visibility_Flag = VisibilityJudgeAll(i, j, k, Time[j], SatPosition_LLA[j], SatPosition_GEI[j], SatVelocity_GEI[j]);
+                        Flag_tBefore = Flag_t;
+                        Flag_t = Visibility_Flag;
+                        //判定开始结束时间，精确判断
+                        if (j == 0 && Flag_tBefore == 0 && Flag_t == 1) {
+                            VisibilityTimePeriod[k][i][2 * PeriodNum] = j;
+                        } else if (j != 0 && Flag_tBefore == 0 && Flag_t == 1) {
+                            for (int l = j - OrbitalStepPlus; l <= j; l++) {
+                                Visibility_Flag = VisibilityJudgeAll(i, l, k, Time[l], SatPosition_LLA[l], SatPosition_GEI[l], SatVelocity_GEI[l]);
+                                if (Visibility_Flag == 1) {
+                                    VisibilityTimePeriod[k][i][2 * PeriodNum] = l;
+                                    break;
+                                }
                             }
-                        }
-                    } else if (Flag_tBefore == 1 && Flag_t == 0) {
-                        for (int l = j - OrbitalStepPlus; l <= j; l++) {
-                            Visibility_Flag = VisibilityJudgeAll(i, l, k, Time[l], SatPosition_LLA[l], SatPosition_GEI[l], SatVelocity_GEI[l]);
-                            if (Visibility_Flag == 0) {
-                                VisibilityTimePeriod[k][i][2 * PeriodNum + 1] = l - 1;
-                                PeriodNum = PeriodNum + 1;
-                                break;
+                        } else if (Flag_tBefore == 1 && Flag_t == 0) {
+                            for (int l = j - OrbitalStepPlus; l <= j; l++) {
+                                Visibility_Flag = VisibilityJudgeAll(i, l, k, Time[l], SatPosition_LLA[l], SatPosition_GEI[l], SatVelocity_GEI[l]);
+                                if (Visibility_Flag == 0) {
+                                    VisibilityTimePeriod[k][i][2 * PeriodNum + 1] = l - 1;
+                                    PeriodNum = PeriodNum + 1;
+                                    break;
+                                }
                             }
+                        } else if (j == OrbitalDataNum - 1 && Flag_t == 1) {
+                            VisibilityTimePeriod[k][i][2 * PeriodNum + 1] = j;
+                            PeriodNum = PeriodNum + 1;
                         }
-                    } else if (j == OrbitalDataNum - 1 && Flag_t == 1) {
-                        VisibilityTimePeriod[k][i][2 * PeriodNum + 1] = j;
-                        PeriodNum = PeriodNum + 1;
+                        j = j + OrbitalStepPlus;
                     }
-                    j = j + OrbitalStepPlus;
+                    TimePeriodNum[k][i] = PeriodNum;
                 }
-                TimePeriodNum[k][i] = PeriodNum;
+            }else{
+                for (int k = 0; k < LoadNumber; k++) {
+                    int Flag_tBefore = 0;
+                    int Visibility_Flag = 0;
+                    int Flag_t = 0;
+                    int PeriodNum = 0;
+                    //轨道数据循环
+                    int OrbitalStepPlus = 10;
+                    for (int j = 0; j < OrbitalDataNum; ) {
+                        int StationFlag=0;
+                        //判定地面站是否可见
+                        for (int l = 0; l < StationMissionNum; l++) {
+                            double NowTime_JD=JD(Time[j]);
+                            double StarTime_JD=JD(StationMissionStar[l]);
+                            double EndTime_JD=JD(StationMissionStop[l]);
+                            if (NowTime_JD >=StarTime_JD && NowTime_JD<=EndTime_JD) {
+                                double[] StationTarget_LLA=new double[3];
+                                StationTarget_LLA[0] = StationPosition[i][0];
+                                StationTarget_LLA[1] = StationPosition[i][1];
+                                StationTarget_LLA[2] = StationPosition[i][2] + Re;
+                                LLAToECEF(StationTarget_LLA, Target_ECEF);
+                                ECEFToICRS(NowTime_JD, Target_ECEF, Target_GEI);
+                                SatPositionRe_LLA[0] = SatPosition_LLA[j][0];
+                                SatPositionRe_LLA[1] = SatPosition_LLA[j][1];
+                                SatPositionRe_LLA[2] = SatPosition_LLA[j][2] + Re;
+                                LLAToECEF(SatPositionRe_LLA, SatPosition_ECEF);
+                                int Side_Flag = SideJudge(Target_ECEF, SatPosition_ECEF);
+                                if (Side_Flag == 1) {
+                                    StationFlag = StationVisibilityJudge(Target_ECEF, SatPosition_ECEF, StationPitch[i]);
+                                    if (StationFlag == 1) {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (StationFlag == 1) {
+                            Visibility_Flag = VisibilityJudgeAll(i, j, k, Time[j], SatPosition_LLA[j], SatPosition_GEI[j], SatVelocity_GEI[j]);
+                        }else {
+                            Visibility_Flag=0;
+                        }
+                        Flag_tBefore = Flag_t;
+                        Flag_t = Visibility_Flag;
+                        //判定开始结束时间，精确判断
+                        if (j == 0 && Flag_tBefore == 0 && Flag_t == 1) {
+                            VisibilityTimePeriod[k][i][2 * PeriodNum] = j;
+                        } else if (j != 0 && Flag_tBefore == 0 && Flag_t == 1) {
+                            for (int l = j - OrbitalStepPlus; l <= j; l++) {
+                                Visibility_Flag = VisibilityJudgeAll(i, l, k, Time[l], SatPosition_LLA[l], SatPosition_GEI[l], SatVelocity_GEI[l]);
+                                if (Visibility_Flag == 1) {
+                                    VisibilityTimePeriod[k][i][2 * PeriodNum] = l;
+                                    break;
+                                }
+                            }
+                        } else if (Flag_tBefore == 1 && Flag_t == 0) {
+                            for (int l = j - OrbitalStepPlus; l <= j; l++) {
+                                Visibility_Flag = VisibilityJudgeAll(i, l, k, Time[l], SatPosition_LLA[l], SatPosition_GEI[l], SatVelocity_GEI[l]);
+                                if (Visibility_Flag == 0) {
+                                    VisibilityTimePeriod[k][i][2 * PeriodNum + 1] = l - 1;
+                                    PeriodNum = PeriodNum + 1;
+                                    break;
+                                }
+                            }
+                        } else if (j == OrbitalDataNum - 1 && Flag_t == 1) {
+                            VisibilityTimePeriod[k][i][2 * PeriodNum + 1] = j;
+                            PeriodNum = PeriodNum + 1;
+                        }
+                        j = j + OrbitalStepPlus;
+                    }
+                    TimePeriodNum[k][i] = PeriodNum;
+                }
             }
         }
 
         //地面站可见弧段
-        int[][] StationVisibilityTimePeriod = new int[StationNumber][10];
+        int[][] StationVisibilityTimePeriod = new int[StationNumber][200];
         int[] StationTimePeriodNum = new int[StationNumber];
 
         for (int i = 0; i < StationNumber; i++) {
@@ -380,7 +517,7 @@ public class VisibilityCalculation {
 
         ArrayList<String> mission_numbers = new ArrayList<>();
 
-        String transmission_number = "tn_" + Instant.now().toEpochMilli();
+
         //数据传出
         for (int i = 0; i < MissionNumber; i++) {
             int WindowsNum = 0;
@@ -404,135 +541,140 @@ public class VisibilityCalculation {
             } else {
                 Missionjson.get(i).append("available_window", AvailWindowjsonArray);
             }
-            Missionjson.get(i).append("transmission_number", transmission_number);
-            mission_numbers.add(Missionjson.get(i).getString("mission_number"));
+
             Document modifiers = new Document();
             modifiers.append("$set", Missionjson.get(i));
             MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
-            image_mission.updateOne(new Document("_id", Missionjson.get(i).getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
+            image_mission.updateOne(new Document("mission_number", Missionjson.get(i).getString("mission_number")), modifiers, new UpdateOptions().upsert(true));
         }
 
 
-        MongoCollection<Document> transmission_misison = mongoDatabase.getCollection("transmission_mission");
+        if (StationMissionjson.size() == 0) {
+            mongoClient.close();
+            return null;
+        }else {
+            String transmission_number = "tn_" + Instant.now().toEpochMilli();
 
-        Document Transmissionjson = new Document();
-        Transmissionjson.append("transmission_number", transmission_number);
-        Transmissionjson.append("mission_numbers", mission_numbers);
+            MongoCollection<Document> transmission_misison = mongoDatabase.getCollection("transmission_mission");
 
-        ArrayList<Document> stationInfos = new ArrayList<>();
-        int WindowsNum = 0;
+            Document Transmissionjson = new Document();
+            Transmissionjson.append("transmission_number", transmission_number);
+            Transmissionjson.append("mission_numbers", mission_numbers);
 
-        for (int i = 0; i < StationNumber; i++) {
+            ArrayList<Document> stationInfos = new ArrayList<>();
+            int WindowsNum = 0;
 
-            Document stationInfo = new Document();
-            stationInfo.append("station_name", StationSerialNumber[i]);
+            for (int i = 0; i < StationNumber; i++) {
 
-//            JsonArray StationWindowjsonArray=new JsonArray();
-            ArrayList<Document> StationWindowjsonArray = new ArrayList<>();
-            for (int j = 0; j < StationTimePeriodNum[i]; j++) {
-//                JsonObject StationWindowjsonObject = new JsonObject();
-                Document StationWindowjsonObject = new Document();
-                StationWindowjsonObject.append("amount_window", StationTimePeriodNum[i]);
-                StationWindowjsonObject.append("window_number", j + 1);
-                StationWindowjsonObject.append("window_start_time", Time_Point[StationVisibilityTimePeriod[i][2 * j]]);
-                StationWindowjsonObject.append("window_end_time", Time_Point[StationVisibilityTimePeriod[i][2 * j + 1]]);
-                StationWindowjsonArray.add(StationWindowjsonObject);
-                WindowsNum = WindowsNum + 1;
+                Document stationInfo = new Document();
+                stationInfo.append("station_name", StationSerialNumber[i]);
+
+                ArrayList<Document> StationWindowjsonArray = new ArrayList<>();
+                for (int j = 0; j < StationTimePeriodNum[i]; j++) {
+                    Document StationWindowjsonObject = new Document();
+                    StationWindowjsonObject.append("amount_window", StationTimePeriodNum[i]);
+                    StationWindowjsonObject.append("window_number", j + 1);
+                    StationWindowjsonObject.append("window_start_time", Time_Point[StationVisibilityTimePeriod[i][2 * j]]);
+                    StationWindowjsonObject.append("window_end_time", Time_Point[StationVisibilityTimePeriod[i][2 * j + 1]]);
+                    ArrayList<String> StationMissionNumberArray=new ArrayList<>();
+                    for (int k = 0; k < StationMissionNum; k++) {
+                        StationMissionNumberArray.add(k,StationMissionNumber[k]);
+                    }
+                    StationWindowjsonObject.append("mission_number",StationMissionNumberArray);
+                    StationWindowjsonArray.add(StationWindowjsonObject);
+                    WindowsNum = WindowsNum + 1;
+                }
+
+                stationInfo.append("available_window", StationWindowjsonArray);
+                stationInfos.add(stationInfo);
+
             }
-
-            stationInfo.append("available_window", StationWindowjsonArray);
-            stationInfos.add(stationInfo);
-
+            if (WindowsNum == 0) {
+                Transmissionjson.append("fail_reason", "不可见");
+            } else {
+                Transmissionjson.append("fail_reason", "");
+            }
+            Transmissionjson.append("station_info", stationInfos);
+            transmission_misison.insertOne(Transmissionjson);
+            mongoClient.close();
+            return Transmissionjson;
         }
-        if (WindowsNum == 0) {
-            Transmissionjson.append("fail_reason", "不可见");
-        } else {
-            Transmissionjson.append("fail_reason", "");
-        }
-        Transmissionjson.append("station_info", stationInfos);
-        transmission_misison.insertOne(Transmissionjson);
-
-        return Transmissionjson;
-        //transmission_misison.insertOne(Transmissionjson);
-//        Document modifiers = new Document();
-
-
-//        modifiers.append("$set", Transmissionjson);
-
-        //       transmission_misison.updateOne(new Document("time_point", Transmissionjson.getDate("time_point")).append("station_number", Transmissionjson.getString("station_number")), modifiers, new UpdateOptions().upsert(true));
-    }
+   }
 
     //应急任务可见性计算
-    public static Map<String, Boolean> VisibilityCalculationEmergency(Document Satllitejson, FindIterable<Document> Orbitjson, long orbitDataCount, ArrayList<Document> GroundStationjson, ArrayList<Document> OrderMissionjson) throws ParseException {
+    public static Map<String, Boolean> VisibilityCalculationEmergency(Document Satllitejson, FindIterable<Document> Orbitjson, long orbitDataCount, ArrayList<Document> GroundStationjson, ArrayList<Document> OrderMissionjson, ArrayList<Document> StationMissionjson) throws ParseException {
         //载荷参数更新
-        ArrayList<Document> properties = (ArrayList<Document>) Satllitejson.get("properties");
-        int ii = 0;
-        for (Document document : properties) {
-
-            if (document.getString("key").equals("out_side_sight") && document.getString("group").equals("payload" + "1")) {
-                LoadViewAng[1 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("in_side_sight") && document.getString("group").equals("payload" + "1")) {
-                LoadViewAng[1 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("up_side_sight") && document.getString("group").equals("payload" + "1")) {
-                LoadViewAng[1 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("down_side_sight") && document.getString("group").equals("payload" + "1")) {
-                LoadViewAng[1 - 1][3] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Xaxis") && document.getString("group").equals("payload" + "1")) {
-                LoadInstall[1 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Yaxis") && document.getString("group").equals("payload" + "1")) {
-                LoadInstall[1 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Zaxis") && document.getString("group").equals("payload" + "1")) {
-                LoadInstall[1 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("out_side_sight") && document.getString("group").equals("payload" + "2")) {
-                LoadViewAng[2 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("in_side_sight") && document.getString("group").equals("payload" + "2")) {
-                LoadViewAng[2 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("up_side_sight") && document.getString("group").equals("payload" + "2")) {
-                LoadViewAng[2 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("down_side_sight") && document.getString("group").equals("payload" + "2")) {
-                LoadViewAng[2 - 1][3] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Xaxis") && document.getString("group").equals("payload" + "2")) {
-                LoadInstall[2 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Yaxis") && document.getString("group").equals("payload" + "2")) {
-                LoadInstall[2 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Zaxis") && document.getString("group").equals("payload" + "2")) {
-                LoadInstall[2 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("out_side_sight") && document.getString("group").equals("payload" + "3")) {
-                LoadViewAng[3 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("in_side_sight") && document.getString("group").equals("payload" + "3")) {
-                LoadViewAng[3 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("up_side_sight") && document.getString("group").equals("payload" + "3")) {
-                LoadViewAng[3 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("down_side_sight") && document.getString("group").equals("payload" + "3")) {
-                LoadViewAng[3 - 1][3] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Xaxis") && document.getString("group").equals("payload" + "3")) {
-                LoadInstall[3 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Yaxis") && document.getString("group").equals("payload" + "3")) {
-                LoadInstall[3 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Zaxis") && document.getString("group").equals("payload" + "3")) {
-                LoadInstall[3 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("out_side_sight") && document.getString("group").equals("payload" + "4")) {
-                LoadViewAng[4 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("in_side_sight") && document.getString("group").equals("payload" + "4")) {
-                LoadViewAng[4 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("up_side_sight") && document.getString("group").equals("payload" + "4")) {
-                LoadViewAng[4 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("down_side_sight") && document.getString("group").equals("payload" + "4")) {
-                LoadViewAng[4 - 1][3] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Xaxis") && document.getString("group").equals("payload" + "4")) {
-                LoadInstall[4 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Yaxis") && document.getString("group").equals("payload" + "4")) {
-                LoadInstall[4 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("angle_sight_Zaxis") && document.getString("group").equals("payload" + "4")) {
-                LoadInstall[4 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("roll_angle_max")) {
-                SatelliteManeuverEuler[0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("pitch_angle_max")) {
-                SatelliteManeuverEuler[1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else
-                continue;
-
+        if (Satllitejson.size() == 0) {
+            System.out.println("卫星资源数据为空");
+        } else {
+            ArrayList<Document> properties = (ArrayList<Document>) Satllitejson.get("properties");
+            for (Document document : properties) {
+                if (document.getString("key").equals("out_side_sight") && document.getString("group").equals("payload" + "1")) {
+                    LoadViewAng[1 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("in_side_sight") && document.getString("group").equals("payload" + "1")) {
+                    LoadViewAng[1 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("up_side_sight") && document.getString("group").equals("payload" + "1")) {
+                    LoadViewAng[1 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("down_side_sight") && document.getString("group").equals("payload" + "1")) {
+                    LoadViewAng[1 - 1][3] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Xaxis") && document.getString("group").equals("payload" + "1")) {
+                    LoadInstall[1 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Yaxis") && document.getString("group").equals("payload" + "1")) {
+                    LoadInstall[1 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Zaxis") && document.getString("group").equals("payload" + "1")) {
+                    LoadInstall[1 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("out_side_sight") && document.getString("group").equals("payload" + "2")) {
+                    LoadViewAng[2 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("in_side_sight") && document.getString("group").equals("payload" + "2")) {
+                    LoadViewAng[2 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("up_side_sight") && document.getString("group").equals("payload" + "2")) {
+                    LoadViewAng[2 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("down_side_sight") && document.getString("group").equals("payload" + "2")) {
+                    LoadViewAng[2 - 1][3] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Xaxis") && document.getString("group").equals("payload" + "2")) {
+                    LoadInstall[2 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Yaxis") && document.getString("group").equals("payload" + "2")) {
+                    LoadInstall[2 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Zaxis") && document.getString("group").equals("payload" + "2")) {
+                    LoadInstall[2 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("out_side_sight") && document.getString("group").equals("payload" + "3")) {
+                    LoadViewAng[3 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("in_side_sight") && document.getString("group").equals("payload" + "3")) {
+                    LoadViewAng[3 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("up_side_sight") && document.getString("group").equals("payload" + "3")) {
+                    LoadViewAng[3 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("down_side_sight") && document.getString("group").equals("payload" + "3")) {
+                    LoadViewAng[3 - 1][3] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Xaxis") && document.getString("group").equals("payload" + "3")) {
+                    LoadInstall[3 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Yaxis") && document.getString("group").equals("payload" + "3")) {
+                    LoadInstall[3 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Zaxis") && document.getString("group").equals("payload" + "3")) {
+                    LoadInstall[3 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("out_side_sight") && document.getString("group").equals("payload" + "4")) {
+                    LoadViewAng[4 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("in_side_sight") && document.getString("group").equals("payload" + "4")) {
+                    LoadViewAng[4 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("up_side_sight") && document.getString("group").equals("payload" + "4")) {
+                    LoadViewAng[4 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("down_side_sight") && document.getString("group").equals("payload" + "4")) {
+                    LoadViewAng[4 - 1][3] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Xaxis") && document.getString("group").equals("payload" + "4")) {
+                    LoadInstall[4 - 1][0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Yaxis") && document.getString("group").equals("payload" + "4")) {
+                    LoadInstall[4 - 1][1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("angle_sight_Zaxis") && document.getString("group").equals("payload" + "4")) {
+                    LoadInstall[4 - 1][2] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("roll_angle_max")) {
+                    SatelliteManeuverEuler[0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("pitch_angle_max")) {
+                    SatelliteManeuverEuler[1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else
+                    continue;
+            }
         }
+
+        //轨道数据
         String StringTime;
         double[][] Time = new double[(int) orbitDataCount][6];
         double[][] SatPosition_GEI = new double[(int) orbitDataCount][3];
@@ -570,13 +712,56 @@ public class VisibilityCalculation {
             OrbitalDataNum = OrbitalDataNum + 1;
         }
 
+        //数传任务读入
+        if (StationMissionjson.size() == 0) {
+            StationMissionStar = new double[1][6];
+            StationMissionStop = new double[1][6];
+            for (int i = 0; i < 6; i++) {
+                StationMissionStar[0][i]=Time[1][i];
+                StationMissionStop[0][i]=Time[0][i];
+            }
+            StationMissionNum = 1;
+        } else {
+            StationMissionStar = new double[StationMissionjson.size()][6];
+            StationMissionStop = new double[StationMissionjson.size()][6];
+            StationMissionNum = 0;
+            for (Document document : StationMissionjson) {
+                Date time_point = document.getDate("expected_start_time");
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(time_point);
+                cal.add(Calendar.HOUR_OF_DAY, -8);
+                StringTime = sdf.format(cal.getTime());
+                StationMissionStar[StationMissionNum][0] = Double.parseDouble(StringTime.substring(0, 4));
+                StationMissionStar[StationMissionNum][1] = Double.parseDouble(StringTime.substring(5, 7));
+                StationMissionStar[StationMissionNum][2] = Double.parseDouble(StringTime.substring(8, 10));
+                StationMissionStar[StationMissionNum][3] = Double.parseDouble(StringTime.substring(11, 13));
+                StationMissionStar[StationMissionNum][4] = Double.parseDouble(StringTime.substring(14, 16));
+                StationMissionStar[StationMissionNum][5] = Double.parseDouble(StringTime.substring(17, 19));
+                time_point = document.getDate("expected_end_time");
+                cal.setTime(time_point);
+                cal.add(Calendar.HOUR_OF_DAY, -8);
+                StringTime = sdf.format(cal.getTime());
+                StationMissionStop[StationMissionNum][0] = Double.parseDouble(StringTime.substring(0, 4));
+                StationMissionStop[StationMissionNum][1] = Double.parseDouble(StringTime.substring(5, 7));
+                StationMissionStop[StationMissionNum][2] = Double.parseDouble(StringTime.substring(8, 10));
+                StationMissionStop[StationMissionNum][3] = Double.parseDouble(StringTime.substring(11, 13));
+                StationMissionStop[StationMissionNum][4] = Double.parseDouble(StringTime.substring(14, 16));
+                StationMissionStop[StationMissionNum][5] = Double.parseDouble(StringTime.substring(17, 19));
+                StationMissionNum = StationMissionNum + 1;
+            }
+        }
+
         //任务读入
+        if (OrderMissionjson.size() == 0) {
+            System.out.println("无任务资源");
+        }
         MissionStarTime = new double[OrderMissionjson.size()][6];
         MissionStopTime = new double[OrderMissionjson.size()][6];
         MissionSerialNumber = new String[OrderMissionjson.size()];
         MissionImagingMode = new int[OrderMissionjson.size()];
         MissionTargetType = new int[OrderMissionjson.size()];
-        MissionTargetArea = new double[OrderMissionjson.size()][20];        //成像区域描述，格式：每行代表一个任务，每行格式[经度，纬度，经度，纬度，……]
+        MissionTargetArea = new double[OrderMissionjson.size()][200];        //成像区域描述，格式：每行代表一个任务，每行格式[经度，纬度，经度，纬度，……]
         MisssionTargetHeight = new double[OrderMissionjson.size()][2];
         MissionLoadType = new int[OrderMissionjson.size()][4];
         MissionNumber = 0;
@@ -664,15 +849,13 @@ public class VisibilityCalculation {
         double[] SatPositionRe_LLA = new double[3];
         double[] SatPosition_ECEF = new double[3];
         double Time_JD;
-        int[][][] VisibilityTimePeriod = new int[LoadNumber][MissionNumber][100];
+        int[][][] VisibilityTimePeriod = new int[LoadNumber][MissionNumber][200];
         int[][] TimePeriodNum = new int[LoadNumber][MissionNumber];
 
         //任务循环
         for (int i = 0; i < MissionNumber; i++) {
-            for (int k = 0; k < LoadNumber; k++) {
-                if (MissionLoadType[i][k] == 1) {
-                    int Side_Flag = 0;
-                    int High_Flag = 0;
+            if (MissionWorkMode[i] == 0) {
+                for (int k = 0; k < LoadNumber; k++) {
                     int Flag_tBefore = 0;
                     int Visibility_Flag = 0;
                     int Flag_t = 0;
@@ -684,9 +867,79 @@ public class VisibilityCalculation {
                         Flag_tBefore = Flag_t;
                         Flag_t = Visibility_Flag;
                         //判定开始结束时间，精确判断
-                        if (Flag_tBefore == 0 && Flag_t == 1 && j == 0) {
+                        if (j == 0 && Flag_tBefore == 0 && Flag_t == 1) {
                             VisibilityTimePeriod[k][i][2 * PeriodNum] = j;
-                        } else if (Flag_tBefore == 0 && Flag_t == 1 && j != 0) {
+                        } else if (j != 0 && Flag_tBefore == 0 && Flag_t == 1) {
+                            for (int l = j - OrbitalStepPlus; l <= j; l++) {
+                                Visibility_Flag = VisibilityJudgeAll(i, l, k, Time[l], SatPosition_LLA[l], SatPosition_GEI[l], SatVelocity_GEI[l]);
+                                if (Visibility_Flag == 1) {
+                                    VisibilityTimePeriod[k][i][2 * PeriodNum] = l;
+                                    break;
+                                }
+                            }
+                        } else if (Flag_tBefore == 1 && Flag_t == 0) {
+                            for (int l = j - OrbitalStepPlus; l <= j; l++) {
+                                Visibility_Flag = VisibilityJudgeAll(i, l, k, Time[l], SatPosition_LLA[l], SatPosition_GEI[l], SatVelocity_GEI[l]);
+                                if (Visibility_Flag == 0) {
+                                    VisibilityTimePeriod[k][i][2 * PeriodNum + 1] = l - 1;
+                                    PeriodNum = PeriodNum + 1;
+                                    break;
+                                }
+                            }
+                        } else if (j == OrbitalDataNum - 1 && Flag_t == 1) {
+                            VisibilityTimePeriod[k][i][2 * PeriodNum + 1] = j;
+                            PeriodNum = PeriodNum + 1;
+                        }
+                        j = j + OrbitalStepPlus;
+                    }
+                    TimePeriodNum[k][i] = PeriodNum;
+                }
+            }else{
+                for (int k = 0; k < LoadNumber; k++) {
+                    int Flag_tBefore = 0;
+                    int Visibility_Flag = 0;
+                    int Flag_t = 0;
+                    int PeriodNum = 0;
+                    //轨道数据循环
+                    int OrbitalStepPlus = 10;
+                    for (int j = 0; j < OrbitalDataNum; ) {
+                        int StationFlag=0;
+                        //判定地面站是否可见
+                        for (int l = 0; l < StationMissionNum; l++) {
+                            double NowTime_JD=JD(Time[j]);
+                            double StarTime_JD=JD(StationMissionStar[l]);
+                            double EndTime_JD=JD(StationMissionStop[l]);
+                            if (NowTime_JD >=StarTime_JD && NowTime_JD<=EndTime_JD) {
+                                double[] StationTarget_LLA=new double[3];
+                                StationTarget_LLA[0] = StationPosition[i][0];
+                                StationTarget_LLA[1] = StationPosition[i][1];
+                                StationTarget_LLA[2] = StationPosition[i][2] + Re;
+                                LLAToECEF(StationTarget_LLA, Target_ECEF);
+                                ECEFToICRS(NowTime_JD, Target_ECEF, Target_GEI);
+                                SatPositionRe_LLA[0] = SatPosition_LLA[j][0];
+                                SatPositionRe_LLA[1] = SatPosition_LLA[j][1];
+                                SatPositionRe_LLA[2] = SatPosition_LLA[j][2] + Re;
+                                LLAToECEF(SatPositionRe_LLA, SatPosition_ECEF);
+                                int Side_Flag = SideJudge(Target_ECEF, SatPosition_ECEF);
+                                if (Side_Flag == 1) {
+                                    StationFlag = StationVisibilityJudge(Target_ECEF, SatPosition_ECEF, StationPitch[i]);
+                                    if (StationFlag == 1) {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (StationFlag == 1) {
+                            Visibility_Flag = VisibilityJudgeAll(i, j, k, Time[j], SatPosition_LLA[j], SatPosition_GEI[j], SatVelocity_GEI[j]);
+                        }else {
+                            Visibility_Flag=0;
+                        }
+                        Flag_tBefore = Flag_t;
+                        Flag_t = Visibility_Flag;
+                        //判定开始结束时间，精确判断
+                        if (j == 0 && Flag_tBefore == 0 && Flag_t == 1) {
+                            VisibilityTimePeriod[k][i][2 * PeriodNum] = j;
+                        } else if (j != 0 && Flag_tBefore == 0 && Flag_t == 1) {
                             for (int l = j - OrbitalStepPlus; l <= j; l++) {
                                 Visibility_Flag = VisibilityJudgeAll(i, l, k, Time[l], SatPosition_LLA[l], SatPosition_GEI[l], SatVelocity_GEI[l]);
                                 if (Visibility_Flag == 1) {
