@@ -25,7 +25,8 @@ public class RedisPublish {
 
     public static void newRTOrbitGorecastTask(){
         Jedis jedis = RedisConnector.getJedis();
-        jedis.publish(Topic.CMD_RECV, "{\"Head\":{\"id\":\"MAG@1567477226774\",\"time\":1567477226775,\"type\":\"CHECK_QUERY\",\"from\":\"MAG\",\"to\":\"TSS\"},\"Data\":{\"name\":\"应急规划可见性检查指令\",\"tasktype\":\"REALTIME\",\"content\":\"20190903095709744\"}}");
+//        jedis.publish(Topic.CMD_RECV, "{\"Head\":{\"id\":\"MAG@1567477226774\",\"time\":1567477226775,\"type\":\"CHECK_QUERY\",\"from\":\"MAG\",\"to\":\"TSS\"},\"Data\":{\"name\":\"应急规划可见性检查指令\",\"tasktype\":\"REALTIME\",\"content\":\"20190903095709744\"}}");
+        jedis.publish(Topic.CMD_RECV, RedisDataEntity.GenNewTask());
         jedis.close();
     }
 

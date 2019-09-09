@@ -151,6 +151,7 @@ public class NewTaskSubscriber extends JedisPubSub {
                 Bson queryBson = Filters.and(Filters.gte("time_point", startTime), Filters.lte("time_point", endTime));
 
                 FindIterable<Document> D_orbitjson = Data_Orbitjson.find(Filters.and(queryBson));
+
                 long count = Data_Orbitjson.count(Filters.and(queryBson));
 
                 try {

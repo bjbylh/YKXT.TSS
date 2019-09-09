@@ -335,31 +335,39 @@ public class MissionPlanning {
                 }
             }
             ArrayList<Document> available_window = (ArrayList<Document>) document.get("available_window");
-            for (Document document1 : available_window) {
-                if (Integer.parseInt(document1.get("load_number").toString()) == 1) {
-                    TimePeriodNum[0][MissionNumber] = Integer.parseInt(document1.get("amount_window").toString());
-                    int a = Integer.parseInt(document1.get("window_number").toString()) - 1;
-                    VisibilityDatePeriod[0][MissionNumber][2 * a] = document1.getDate("window_start_time");
-                    VisibilityDatePeriod[0][MissionNumber][2 * a + 1] = document1.getDate("window_end_time");
-                } else if (Integer.parseInt(document1.get("load_number").toString()) == 2) {
-                    TimePeriodNum[1][MissionNumber] = Integer.parseInt(document1.get("amount_window").toString());
-                    int a = Integer.parseInt(document1.get("window_number").toString()) - 1;
-                    VisibilityDatePeriod[1][MissionNumber][2 * a] = document1.getDate("window_start_time");
-                    VisibilityDatePeriod[1][MissionNumber][2 * a + 1] = document1.getDate("window_end_time");
-                } else if (Integer.parseInt(document1.get("load_number").toString()) == 3) {
-                    TimePeriodNum[2][MissionNumber] = Integer.parseInt(document1.get("amount_window").toString());
-                    int a = Integer.parseInt(document1.get("window_number").toString()) - 1;
-                    VisibilityDatePeriod[2][MissionNumber][2 * a] = document1.getDate("window_start_time");
-                    VisibilityDatePeriod[2][MissionNumber][2 * a + 1] = document1.getDate("window_end_time");
-                } else if (Integer.parseInt(document1.get("load_number").toString()) == 4) {
-                    TimePeriodNum[3][MissionNumber] = Integer.parseInt(document1.get("amount_window").toString());
-                    int a = Integer.parseInt(document1.get("window_number").toString()) - 1;
-                    VisibilityDatePeriod[3][MissionNumber][2 * a] = document1.getDate("window_start_time");
-                    VisibilityDatePeriod[3][MissionNumber][2 * a + 1] = document1.getDate("window_end_time");
-                } else {
-                    continue;
+            if (available_window == null) {
+                TimePeriodNum[0][MissionNumber]=0;
+                TimePeriodNum[1][MissionNumber]=0;
+                TimePeriodNum[2][MissionNumber]=0;
+                TimePeriodNum[3][MissionNumber]=0;
+            }else {
+                for (Document document1 : available_window) {
+                    if (Integer.parseInt(document1.get("load_number").toString()) == 1) {
+                        TimePeriodNum[0][MissionNumber] = Integer.parseInt(document1.get("amount_window").toString());
+                        int a = Integer.parseInt(document1.get("window_number").toString()) - 1;
+                        VisibilityDatePeriod[0][MissionNumber][2 * a] = document1.getDate("window_start_time");
+                        VisibilityDatePeriod[0][MissionNumber][2 * a + 1] = document1.getDate("window_end_time");
+                    } else if (Integer.parseInt(document1.get("load_number").toString()) == 2) {
+                        TimePeriodNum[1][MissionNumber] = Integer.parseInt(document1.get("amount_window").toString());
+                        int a = Integer.parseInt(document1.get("window_number").toString()) - 1;
+                        VisibilityDatePeriod[1][MissionNumber][2 * a] = document1.getDate("window_start_time");
+                        VisibilityDatePeriod[1][MissionNumber][2 * a + 1] = document1.getDate("window_end_time");
+                    } else if (Integer.parseInt(document1.get("load_number").toString()) == 3) {
+                        TimePeriodNum[2][MissionNumber] = Integer.parseInt(document1.get("amount_window").toString());
+                        int a = Integer.parseInt(document1.get("window_number").toString()) - 1;
+                        VisibilityDatePeriod[2][MissionNumber][2 * a] = document1.getDate("window_start_time");
+                        VisibilityDatePeriod[2][MissionNumber][2 * a + 1] = document1.getDate("window_end_time");
+                    } else if (Integer.parseInt(document1.get("load_number").toString()) == 4) {
+                        TimePeriodNum[3][MissionNumber] = Integer.parseInt(document1.get("amount_window").toString());
+                        int a = Integer.parseInt(document1.get("window_number").toString()) - 1;
+                        VisibilityDatePeriod[3][MissionNumber][2 * a] = document1.getDate("window_start_time");
+                        VisibilityDatePeriod[3][MissionNumber][2 * a + 1] = document1.getDate("window_end_time");
+                    } else {
+                        continue;
+                    }
                 }
             }
+
             for (int i = 0; i < LoadNumber; i++) {
                 for (int j = 0; j < TimePeriodNum[i][MissionNumber]; j++) {
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -411,10 +419,6 @@ public class MissionPlanning {
                 MissionTargetType[MissionNumber] = 2;
             }
             MissionNumber = MissionNumber + 1;
-
-            if (MissionNumber == 1) {
-                break;
-            }
         }
 
         //为任务分配载荷

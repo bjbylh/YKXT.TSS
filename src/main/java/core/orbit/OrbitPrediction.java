@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Date;
 
 import static java.lang.Math.acos;
@@ -768,6 +769,10 @@ class OrbitPrediction {
         double[][] Orbital_Subpotion = new double[OrbitalDataNum][3];
         double[][] Orbital_ViewArea = new double[OrbitalDataNum][4 * ViewNum];
 
+        ArrayList<Document> os = new ArrayList<>();
+
+        System.out.println("计算轨道数据中...");
+
         while (x < xmax) {
             JsonObject jsonObject = new JsonObject();
             if (h > (xmax - x)) {
@@ -854,31 +859,35 @@ class OrbitPrediction {
 //            modifiers.append("$set", doc);
 ////
 //            orbitDB.updateOne(new Document("time_point", doc.getDate("time_point")), modifiers, new UpdateOptions().upsert(true));
-//
-            orbitDB.insertOne(doc);
+
+//            orbitDB.insertOne(doc);
+            os.add(doc);
             j++;
         }
+        System.out.println("计算完毕，开始入库，待入库条数：" + j);
 
+        orbitDB.insertMany(os);
+        os.clear();
         mongoClient.close();
 
         //阳光规避计算及输出
-        JsonArray avoidance_sunlight=new JsonArray();
-        int[] SunAvoidTimePeriod=new int[10];
-        int SunAvoidTimePeriodNum=AvoidSunshineIITest( Orbital_Time,Orbital_SatPosition,SunAvoidTimePeriod);
-        for (int i = 0; i < SunAvoidTimePeriodNum; i++) {
-            LocalDateTime SunAvoidStar=start;
-            SunAvoidStar=SunAvoidStar.plusSeconds((long) (h*SunAvoidTimePeriod[2*i]));
-            String Startime_point=df.format(SunAvoidStar.plusHours(-8));
-            LocalDateTime SunAvoidEnd=start;
-            SunAvoidEnd=SunAvoidEnd.plusSeconds((long) (h*SunAvoidTimePeriod[2*i+1]));
-            String Endtime_point=df.format(SunAvoidEnd.plusHours(-8));
-            JsonObject SunAvoidjsonObject=new JsonObject();
-            SunAvoidjsonObject.addProperty("amount_window",SunAvoidTimePeriodNum);
-            SunAvoidjsonObject.addProperty("window_number",i+1);
-            SunAvoidjsonObject.addProperty("start_time",Startime_point);
-            SunAvoidjsonObject.addProperty("end_time",Endtime_point);
-            avoidance_sunlight.add(SunAvoidjsonObject);
-        }
+//        JsonArray avoidance_sunlight=new JsonArray();
+//        int[] SunAvoidTimePeriod=new int[10];
+//        int SunAvoidTimePeriodNum=AvoidSunshineIITest( Orbital_Time,Orbital_SatPosition,SunAvoidTimePeriod);
+//        for (int i = 0; i < SunAvoidTimePeriodNum; i++) {
+//            LocalDateTime SunAvoidStar=start;
+//            SunAvoidStar=SunAvoidStar.plusSeconds((long) (h*SunAvoidTimePeriod[2*i]));
+//            String Startime_point=df.format(SunAvoidStar.plusHours(-8));
+//            LocalDateTime SunAvoidEnd=start;
+//            SunAvoidEnd=SunAvoidEnd.plusSeconds((long) (h*SunAvoidTimePeriod[2*i+1]));
+//            String Endtime_point=df.format(SunAvoidEnd.plusHours(-8));
+//            JsonObject SunAvoidjsonObject=new JsonObject();
+//            SunAvoidjsonObject.addProperty("amount_window",SunAvoidTimePeriodNum);
+//            SunAvoidjsonObject.addProperty("window_number",i+1);
+//            SunAvoidjsonObject.addProperty("start_time",Startime_point);
+//            SunAvoidjsonObject.addProperty("end_time",Endtime_point);
+//            avoidance_sunlight.add(SunAvoidjsonObject);
+//        }
 
 
     }

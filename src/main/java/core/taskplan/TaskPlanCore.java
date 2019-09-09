@@ -45,7 +45,7 @@ public class TaskPlanCore {
         private String id;
         private String[] subList;
         private ArrayList<String> mission_numbners;
-        private ArrayList<String> station_mission_numbers;
+        private ArrayList<String> station_mission_numbers = new ArrayList<>();
         private String Transmission_number;
 
         private MongoClient mongoClient;
@@ -91,23 +91,29 @@ public class TaskPlanCore {
 
             RedisPublish.dbRefresh(id);
 
+            System.out.println("[" + Instant.now().toString() + "] " + "需求统筹");
             //需求统筹
             if (MOD_ORDER_OVERALL_PLAN(subList[0])) return;
 
             initOrbit();
 
+            System.out.println("[" + Instant.now().toString() + "] " + "可见性分析");
             //可见性分析
-            if (MOD_VISIBILITY_CALC(subList[1])) return;
+            if (MOD_VISIBILITY_CALC(subList[1], subList[0])) return;
 
+            System.out.println("[" + Instant.now().toString() + "] " + "时间分配");
             //时间分配
             if (MOD_MISSION_PLANNING(subList[2])) return;
 
+            System.out.println("[" + Instant.now().toString() + "] " + "姿态角计算");
             //姿态角计算
             if (MOD_ATTITUDE_CALCULATION(subList[3])) return;
 
+            System.out.println("[" + Instant.now().toString() + "] " + "资源平衡");
             //资源平衡
             if (MOD_ENERGY_CALCULATION(subList[4])) return;
 
+            System.out.println("[" + Instant.now().toString() + "] " + "Finished");
             if (TaskType.CRONTAB == taskType)
                 updateMainStatus(id, MainTaskStatus.SUSPEND);
             else
@@ -167,7 +173,7 @@ public class TaskPlanCore {
             return checkIfStopped(id, 0);
         }
 
-        private boolean MOD_VISIBILITY_CALC(String subid) {
+        private boolean MOD_VISIBILITY_CALC(String subid, String subid2) {
             updateSubStatus(subid, SubTaskStatus.RUNNING);
             RedisPublish.dbRefresh(id);
 
@@ -199,7 +205,7 @@ public class TaskPlanCore {
                 }
             } else {
                 Document condtion = new Document();
-                condtion.append("_id", new ObjectId(subid));
+                condtion.append("_id", new ObjectId(subid2));
                 MongoCollection<Document> sub_task = mongoDatabase.getCollection("sub_task");
 
                 Document first = sub_task.find(condtion).first();

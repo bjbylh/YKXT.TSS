@@ -218,18 +218,20 @@ public class VisibilityCalculation {
         if (StationMissionjson.size() == 0) {
             StationMissionStar = new double[1][6];
             StationMissionStop = new double[1][6];
-            StationMissionNumber[0]=null;
+            StationMissionNumber = new String[1];
+            StationMissionNumber[0] = null;
             for (int i = 0; i < 6; i++) {
-                StationMissionStar[0][i]=Time[1][i];
-                StationMissionStop[0][i]=Time[0][i];
+                StationMissionStar[0][i] = Time[1][i];
+                StationMissionStop[0][i] = Time[0][i];
             }
             StationMissionNum = 1;
         } else {
             StationMissionStar = new double[StationMissionjson.size()][6];
             StationMissionStop = new double[StationMissionjson.size()][6];
+            StationMissionNumber = new String[StationMissionjson.size()];
             StationMissionNum = 0;
             for (Document document : StationMissionjson) {
-                StationMissionNumber[StationMissionNum]=document.getString("mission_number");
+                StationMissionNumber[StationMissionNum] = document.getString("mission_number");
                 Date time_point = document.getDate("expected_start_time");
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 Calendar cal = Calendar.getInstance();
@@ -321,10 +323,10 @@ public class VisibilityCalculation {
             } else if (document.getString("image_type").equals("Polygon")) {
                 MissionTargetType[MissionNumber] = 2;
             }
-            if (document.getString("work_mode").equals("实传")){
-                MissionWorkMode[MissionNumber]=1;
-            }else {
-                MissionWorkMode[MissionNumber]=0;
+            if (document.getString("work_mode").equals("实传")) {
+                MissionWorkMode[MissionNumber] = 1;
+            } else {
+                MissionWorkMode[MissionNumber] = 0;
             }
             MisssionTargetHeight[MissionNumber][0] = Double.parseDouble(document.getString("min_height_orbit"));
             MisssionTargetHeight[MissionNumber][1] = Double.parseDouble(document.getString("max_height_orbit"));
@@ -383,7 +385,7 @@ public class VisibilityCalculation {
                     }
                     TimePeriodNum[k][i] = PeriodNum;
                 }
-            }else{
+            } else {
                 for (int k = 0; k < LoadNumber; k++) {
                     int Flag_tBefore = 0;
                     int Visibility_Flag = 0;
@@ -392,14 +394,14 @@ public class VisibilityCalculation {
                     //轨道数据循环
                     int OrbitalStepPlus = 10;
                     for (int j = 0; j < OrbitalDataNum; ) {
-                        int StationFlag=0;
+                        int StationFlag = 0;
                         //判定地面站是否可见
                         for (int l = 0; l < StationMissionNum; l++) {
-                            double NowTime_JD=JD(Time[j]);
-                            double StarTime_JD=JD(StationMissionStar[l]);
-                            double EndTime_JD=JD(StationMissionStop[l]);
-                            if (NowTime_JD >=StarTime_JD && NowTime_JD<=EndTime_JD) {
-                                double[] StationTarget_LLA=new double[3];
+                            double NowTime_JD = JD(Time[j]);
+                            double StarTime_JD = JD(StationMissionStar[l]);
+                            double EndTime_JD = JD(StationMissionStop[l]);
+                            if (NowTime_JD >= StarTime_JD && NowTime_JD <= EndTime_JD) {
+                                double[] StationTarget_LLA = new double[3];
                                 StationTarget_LLA[0] = StationPosition[i][0];
                                 StationTarget_LLA[1] = StationPosition[i][1];
                                 StationTarget_LLA[2] = StationPosition[i][2] + Re;
@@ -420,8 +422,8 @@ public class VisibilityCalculation {
                         }
                         if (StationFlag == 1) {
                             Visibility_Flag = VisibilityJudgeAll(i, j, k, Time[j], SatPosition_LLA[j], SatPosition_GEI[j], SatVelocity_GEI[j]);
-                        }else {
-                            Visibility_Flag=0;
+                        } else {
+                            Visibility_Flag = 0;
                         }
                         Flag_tBefore = Flag_t;
                         Flag_t = Visibility_Flag;
@@ -515,8 +517,6 @@ public class VisibilityCalculation {
         //MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
         MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
 
-        ArrayList<String> mission_numbers = new ArrayList<>();
-
 
         //数据传出
         for (int i = 0; i < MissionNumber; i++) {
@@ -552,8 +552,21 @@ public class VisibilityCalculation {
         if (StationMissionjson.size() == 0) {
             mongoClient.close();
             return null;
-        }else {
+        } else {
+            ArrayList<String> mission_numbers = new ArrayList<>();
             String transmission_number = "tn_" + Instant.now().toEpochMilli();
+
+            for (Document d : StationMissionjson) {
+                String mission_number = d.getString("mission_number");
+                mission_numbers.add(mission_number);
+                d.append("transmission_number", transmission_number);
+
+                Document modifiers = new Document();
+                modifiers.append("$set", d);
+                MongoCollection<Document> station_mission = mongoDatabase.getCollection("station_mission");
+                station_mission.updateOne(new Document("mission_number", d.getString("mission_number")), modifiers, new UpdateOptions().upsert(true));
+
+            }
 
             MongoCollection<Document> transmission_misison = mongoDatabase.getCollection("transmission_mission");
 
@@ -576,11 +589,11 @@ public class VisibilityCalculation {
                     StationWindowjsonObject.append("window_number", j + 1);
                     StationWindowjsonObject.append("window_start_time", Time_Point[StationVisibilityTimePeriod[i][2 * j]]);
                     StationWindowjsonObject.append("window_end_time", Time_Point[StationVisibilityTimePeriod[i][2 * j + 1]]);
-                    ArrayList<String> StationMissionNumberArray=new ArrayList<>();
+                    ArrayList<String> StationMissionNumberArray = new ArrayList<>();
                     for (int k = 0; k < StationMissionNum; k++) {
-                        StationMissionNumberArray.add(k,StationMissionNumber[k]);
+                        StationMissionNumberArray.add(k, StationMissionNumber[k]);
                     }
-                    StationWindowjsonObject.append("mission_number",StationMissionNumberArray);
+                    StationWindowjsonObject.append("mission_number", StationMissionNumberArray);
                     StationWindowjsonArray.add(StationWindowjsonObject);
                     WindowsNum = WindowsNum + 1;
                 }
@@ -599,7 +612,7 @@ public class VisibilityCalculation {
             mongoClient.close();
             return Transmissionjson;
         }
-   }
+    }
 
     //应急任务可见性计算
     public static Map<String, Boolean> VisibilityCalculationEmergency(Document Satllitejson, FindIterable<Document> Orbitjson, long orbitDataCount, ArrayList<Document> GroundStationjson, ArrayList<Document> OrderMissionjson, ArrayList<Document> StationMissionjson) throws ParseException {
@@ -717,8 +730,8 @@ public class VisibilityCalculation {
             StationMissionStar = new double[1][6];
             StationMissionStop = new double[1][6];
             for (int i = 0; i < 6; i++) {
-                StationMissionStar[0][i]=Time[1][i];
-                StationMissionStop[0][i]=Time[0][i];
+                StationMissionStar[0][i] = Time[1][i];
+                StationMissionStop[0][i] = Time[0][i];
             }
             StationMissionNum = 1;
         } else {
@@ -764,6 +777,7 @@ public class VisibilityCalculation {
         MissionTargetArea = new double[OrderMissionjson.size()][200];        //成像区域描述，格式：每行代表一个任务，每行格式[经度，纬度，经度，纬度，……]
         MisssionTargetHeight = new double[OrderMissionjson.size()][2];
         MissionLoadType = new int[OrderMissionjson.size()][4];
+        MissionWorkMode = new int[OrderMissionjson.size()];
         MissionNumber = 0;
         TargetNum = new int[OrderMissionjson.size()];
         for (Document document : OrderMissionjson) {
@@ -837,6 +851,11 @@ public class VisibilityCalculation {
             } else if (document.getString("image_type").equals("Polygon")) {
                 MissionTargetType[MissionNumber] = 2;
             }
+            if (document.getString("work_mode").equals("实传")) {
+                MissionWorkMode[MissionNumber] = 1;
+            } else {
+                MissionWorkMode[MissionNumber] = 0;
+            }
             MisssionTargetHeight[MissionNumber][0] = Double.parseDouble(document.get("min_height_orbit").toString());
             MisssionTargetHeight[MissionNumber][1] = Double.parseDouble(document.get("max_height_orbit").toString());
             MissionNumber = MissionNumber + 1;
@@ -894,7 +913,7 @@ public class VisibilityCalculation {
                     }
                     TimePeriodNum[k][i] = PeriodNum;
                 }
-            }else{
+            } else {
                 for (int k = 0; k < LoadNumber; k++) {
                     int Flag_tBefore = 0;
                     int Visibility_Flag = 0;
@@ -903,14 +922,14 @@ public class VisibilityCalculation {
                     //轨道数据循环
                     int OrbitalStepPlus = 10;
                     for (int j = 0; j < OrbitalDataNum; ) {
-                        int StationFlag=0;
+                        int StationFlag = 0;
                         //判定地面站是否可见
                         for (int l = 0; l < StationMissionNum; l++) {
-                            double NowTime_JD=JD(Time[j]);
-                            double StarTime_JD=JD(StationMissionStar[l]);
-                            double EndTime_JD=JD(StationMissionStop[l]);
-                            if (NowTime_JD >=StarTime_JD && NowTime_JD<=EndTime_JD) {
-                                double[] StationTarget_LLA=new double[3];
+                            double NowTime_JD = JD(Time[j]);
+                            double StarTime_JD = JD(StationMissionStar[l]);
+                            double EndTime_JD = JD(StationMissionStop[l]);
+                            if (NowTime_JD >= StarTime_JD && NowTime_JD <= EndTime_JD) {
+                                double[] StationTarget_LLA = new double[3];
                                 StationTarget_LLA[0] = StationPosition[i][0];
                                 StationTarget_LLA[1] = StationPosition[i][1];
                                 StationTarget_LLA[2] = StationPosition[i][2] + Re;
@@ -931,8 +950,8 @@ public class VisibilityCalculation {
                         }
                         if (StationFlag == 1) {
                             Visibility_Flag = VisibilityJudgeAll(i, j, k, Time[j], SatPosition_LLA[j], SatPosition_GEI[j], SatVelocity_GEI[j]);
-                        }else {
-                            Visibility_Flag=0;
+                        } else {
+                            Visibility_Flag = 0;
                         }
                         Flag_tBefore = Flag_t;
                         Flag_t = Visibility_Flag;

@@ -68,7 +68,7 @@ public class TaskMonitor {
                 if (document.getString("status").equals(MainTaskStatus.NEW.name())) {
                     if (document.getString("type").equals(TaskType.REALTIME.name())) {
 
-                        System.out.println("Found a new REALTIME TASK, Task Info:");
+                        System.out.println("Found a new REALTIME TASK, Task Info:" + document.toString());
 
                         Instant instant_ft = Instant.now();
                         Date nt_str = Date.from(instant_ft);
@@ -90,7 +90,7 @@ public class TaskMonitor {
 
 
                     } else if (document.getString("type").equals(TaskType.CRONTAB.name())) {
-
+                        System.out.println("Found a new CRONTAB TASK, Task Info:" + document.toString());
                         JsonParser parse = new JsonParser();  //创建json解析器
                         JsonObject json = (JsonObject) parse.parse(document.toJson());
                         Date date = ((Document) document.get("cron_core")).getDate("first_time");
@@ -122,6 +122,7 @@ public class TaskMonitor {
                     }
                 } else if (document.getString("status").equals(MainTaskStatus.SUSPEND.name())) {
                     if (document.getString("type").equals(TaskType.CRONTAB.name())) {
+
                         JsonParser parse = new JsonParser();  //创建json解析器
                         JsonObject json = (JsonObject) parse.parse(document.toJson());
                         Date date = ((Document) document.get("cron_core")).getDate("first_time");
@@ -129,8 +130,8 @@ public class TaskMonitor {
                         Instant instant_ft = date.toInstant();
                         long nt = instant_ft.toEpochMilli() + 1000 * Integer.parseInt(json.get("cron_core").getAsJsonObject().get("cycle").getAsString());
                         if (Instant.now().isAfter(instant_ft)) {
-                            System.out.println("Found a SUSPEND CRONTAB TASK, Task Info:");
-                            System.out.println(document.toString());
+                            System.out.println("Found a SUSPEND CRONTAB TASK, Task Info:" + document.toString());
+
                             tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("status", MainTaskStatus.RUNNING.name())));
                             tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("cron_core.first_time", Date.from(Instant.ofEpochMilli(nt)))));
 

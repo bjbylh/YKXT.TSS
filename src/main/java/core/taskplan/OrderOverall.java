@@ -3,6 +3,7 @@ package core.taskplan;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.UpdateOptions;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
@@ -19,7 +20,11 @@ public class OrderOverall {
     public static ArrayList<String> OrderOverallII(ArrayList<Document> ImageOrderjson) {
         ArrayList<String> missions = new ArrayList<>();
         //订单任务读取
-        ArrayList<Document> ImageOrderjsonCopy = ImageOrderjson;
+        ArrayList<Document> ImageOrderjsonCopy = new ArrayList<>();
+        for(Document d : ImageOrderjson){
+            Document copy = Document.parse(d.toJson());
+            ImageOrderjsonCopy.add(copy);
+        }
         ArrayList<Object> ImageRegion = new ArrayList<>();
         ArrayList<Object> Region = new ArrayList<>();
         ArrayList<Object> Name = new ArrayList<>();
@@ -172,11 +177,11 @@ public class OrderOverall {
         //获取名为"temp"的数据库
         MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
 
-
+        MongoCollection<Document> image_order = mongoDatabase.getCollection("image_order");
         for (int i = 0; i < OrderMissionNum; i++) {
             if (OverallResult[i] != 0) {
                 Document ImageMissionjson = new Document();
-                String mission_number = "im_" + Instant.now().toString();
+                String mission_number = "im_" + Instant.now().toEpochMilli();
                 ImageMissionjson.append("image_region", ImageRegion.get(i));
                 ImageMissionjson.append("region", Region.get(i));
                 ImageMissionjson.append("name", Name.get(i));
@@ -196,6 +201,12 @@ public class OrderOverall {
                 ArrayList<Object> OrderNumber_List = new ArrayList<>();
                 for (int j = 0; j < OverallResult[i]; j++) {
                     OrderNumber_List.add(OrderNumber.get(OverallMissionNum[i][j]));
+                    ImageOrderjson.get(OverallMissionNum[i][j]).append("mission_number",mission_number);
+                    ImageOrderjson.get(OverallMissionNum[i][j]).append("order_state","待规划");
+                    Document modifiers = new Document();
+                    modifiers.append("$set", ImageOrderjson.get(OverallMissionNum[i][j]));
+//
+                    image_order.updateOne(new Document("order_number", ImageOrderjson.get(OverallMissionNum[i][j]).getString("order_number")), modifiers, new UpdateOptions().upsert(true));
                 }
                 ImageMissionjson.append("order_numbers", OrderNumber_List);
                 MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");

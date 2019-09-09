@@ -270,6 +270,7 @@ public class ReviewReset {
         DataStatus[0] = MemorySpace;
         FalseMissionNum = 0;
         for (int j = 1; j < OrbitalDataNum; j++) {
+            //System.out.println(j);
             //计算太阳帆板充电量
             int i = j - 1;
             double Time_JD = JD(Orbital_Time[i]);
@@ -364,9 +365,11 @@ public class ReviewReset {
             if (PowerStatus[j] > PowerCapacity * 42 * 60 * 60) {
                 PowerStatus[j] = PowerCapacity * 42 * 60 * 60;
             }
+            PowerStatus[j] = PowerCapacity * 42 * 60 * 60;
             if (DataStatus[j] > MemoryStorageCapacity) {
                 DataStatus[j] = MemoryStorageCapacity;
             }
+            DataStatus[j] = MemoryStorageCapacity;
 
             //姿态复核
             if (j < AttitudeDataNum) {
