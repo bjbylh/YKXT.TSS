@@ -5,6 +5,7 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.UpdateOptions;
+import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
@@ -184,6 +185,9 @@ public class VisibilityCalculation {
             SatPosition_LLA[OrbitalDataNum][2] = Double.parseDouble(document.get("H").toString());
 
             OrbitalDataNum = OrbitalDataNum + 1;
+
+            if(OrbitalDataNum >= orbitDataCount)
+                break;
         }
 
         //地面站资源读入
@@ -515,7 +519,7 @@ public class VisibilityCalculation {
         MongoClient mongoClient = MangoDBConnector.getClient();
         //获取名为"temp"的数据库
         //MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
 
         //数据传出
@@ -545,6 +549,7 @@ public class VisibilityCalculation {
             Document modifiers = new Document();
             modifiers.append("$set", Missionjson.get(i));
             MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
+            System.out.println(Missionjson.get(i).toString());
             image_mission.updateOne(new Document("mission_number", Missionjson.get(i).getString("mission_number")), modifiers, new UpdateOptions().upsert(true));
         }
 

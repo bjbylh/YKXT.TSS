@@ -6,6 +6,7 @@ import com.google.gson.JsonParser;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import common.ConfigManager;
 import common.def.TaskType;
 import common.def.TempletType;
 import common.mongo.DbDefine;
@@ -33,7 +34,7 @@ public class TaskInit {
 
     public static void initRTTaskForOrbitForecast(String taskname) throws IOException {
 
-        String path = TaskInit.class.getClassLoader().getResource("maintask.json").getPath();
+        String path = ConfigManager.getInstance().fetchJsonPath();
         File file = new File(path);
         FileInputStream inputStream = new FileInputStream(file);
         BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
@@ -67,7 +68,7 @@ public class TaskInit {
 
     public static void initCronTaskForOrbitForecast(String taskname, String first, String cycle, String count) throws IOException {
 
-        String path = TaskInit.class.getClassLoader().getResource("maintask.json").getPath();
+        String path = ConfigManager.getInstance().fetchJsonPath();
         File file = new File(path);
         FileInputStream inputStream = new FileInputStream(file);
         BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
@@ -110,7 +111,8 @@ public class TaskInit {
 
     public static void initCronTaskForTaskPlan(String taskname, String first, String cycle, String count) throws IOException {
 
-        String path = TaskInit.class.getClassLoader().getResource("maintask.json").getPath();
+        String path = ConfigManager.getInstance().fetchJsonPath();
+
         File file = new File(path);
         FileInputStream inputStream = new FileInputStream(file);
         BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
@@ -128,7 +130,7 @@ public class TaskInit {
         json.addProperty("templet", TempletType.TASK_PLAN.name());
 
 
-        List<String> list = initTaskPlanSubTask(new ArrayList<>(),new ArrayList<>());
+        List<String> list = initTaskPlanSubTask(new ArrayList<>(), new ArrayList<>(), "");
         for (int i = 0; i < subtaskname.length; i++) {
             json.get("tp_info").getAsJsonObject().get("sub_tasks").getAsJsonArray().get(i).getAsJsonObject().addProperty("sub_taskid", list.get(i));
         }
@@ -157,7 +159,7 @@ public class TaskInit {
 
     }
 
-    private static List<String> initTaskPlanSubTask(ArrayList<String> params,ArrayList<String> params2) throws IOException {
+    private static List<String> initTaskPlanSubTask(ArrayList<String> params, ArrayList<String> params2, String param3) throws IOException {
         List<String> ids = Lists.newLinkedList();
 
         MongoClient mongoClient = MangoDBConnector.getClient();
@@ -171,13 +173,15 @@ public class TaskInit {
             ids.add(pId.toString());
             parse1.append("name", subtaskname[i]);
 
-            if(i == 0) {
+            if (i == 0) {
                 parse1.append("param", params);
                 parse1.append("param2", params2);
-            }
-            else
+                parse1.append("param3", param3);
+            } else {
                 parse1.append("param", new ArrayList<String>());
-
+                parse1.append("param2", new ArrayList<String>());
+                parse1.append("param3", "");
+            }
             ArrayList<Document> historys = new ArrayList<>();
 
             Document history = new Document();
@@ -199,11 +203,12 @@ public class TaskInit {
         initCronTaskForTaskPlan("task_" + Instant.now().toEpochMilli(), Instant.now().toString(), "60000", "0");
     }
 
-    public static void initRTTaskForTaskPlan(String taskname, String content,String content2) throws IOException {
+    public static void initRTTaskForTaskPlan(String taskname, String content, String content2, String content3) throws IOException {
         String[] order_numbers = content.split(",");
         String[] station_numbers = content2.split(",");
 
-        String path = TaskInit.class.getClassLoader().getResource("maintask.json").getPath();
+        String path = ConfigManager.getInstance().fetchJsonPath();
+
         File file = new File(path);
         FileInputStream inputStream = new FileInputStream(file);
         BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
@@ -225,16 +230,16 @@ public class TaskInit {
             ArrayList<String> params2 = new ArrayList<>();
             List<String> list;
             if (order_numbers.length > 0) {
-                for(String order_number : order_numbers)
+                for (String order_number : order_numbers)
                     params.add(order_number);
             }
 
             if (station_numbers.length > 0) {
-                for(String station_number : station_numbers)
+                for (String station_number : station_numbers)
                     params2.add(station_number);
             }
 
-            list = initTaskPlanSubTask(params,params2);
+            list = initTaskPlanSubTask(params, params2, content3);
             for (int i = 0; i < subtaskname.length; i++) {
                 json.get("tp_info").getAsJsonObject().get("sub_tasks").getAsJsonArray().get(i).getAsJsonObject().addProperty("sub_taskid", list.get(i));
             }

@@ -5,6 +5,7 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.UpdateOptions;
+import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
@@ -233,6 +234,9 @@ public class MissionPlanning {
             Orbital_SatPositionLLA[OrbitalDataNum][2] = Double.parseDouble(document.get("H").toString());
 
             OrbitalDataNum = OrbitalDataNum + 1;
+
+            if(OrbitalDataNum >= OrbitDataCount)
+                break;
         }
 
         //地面站任务读入
@@ -767,7 +771,7 @@ public class MissionPlanning {
         //数据传出
         MongoClient mongoClient = MangoDBConnector.getClient();
         //获取名为"temp"的数据库
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
         String transmission_number = "tn_" + Instant.now().toEpochMilli();
         //任务规划结果数据传出
         for (int i = 0; i < MissionNumber; i++) {

@@ -1,5 +1,6 @@
 package common.redis;
 
+import common.ConfigManager;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
@@ -9,7 +10,9 @@ import redis.clients.jedis.JedisPoolConfig;
  */
 public class RedisConnector {
     //Redis服务器IP
-    private static String RSIP = "39.98.93.230";
+    private static String RSIP = ConfigManager.getInstance().fetchRedisAddress();
+//    private static String RSIP = "192.168.71.211";
+
     //Redis的端口
     private final static int RSPORT = 6379;
     //访问密码

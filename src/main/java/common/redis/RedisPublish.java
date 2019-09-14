@@ -3,6 +3,7 @@ package common.redis;
 import common.def.Topic;
 import redis.clients.jedis.Jedis;
 
+import java.util.ArrayList;
 import java.util.Map;
 
 /**
@@ -17,29 +18,36 @@ public class RedisPublish {
         jedis.close();
     }
 
-    public static void heartbeat(){
+    public static void heartbeat() {
         Jedis jedis = RedisConnector.getJedis();
         jedis.publish(Topic.CMD_KEEP_ALIVE, RedisDataEntity.GenHeartBeatData());
         jedis.close();
     }
 
-    public static void newRTOrbitGorecastTask(){
+    public static void newRTOrbitGorecastTask() {
         Jedis jedis = RedisConnector.getJedis();
-//        jedis.publish(Topic.CMD_RECV, "{\"Head\":{\"id\":\"MAG@1567477226774\",\"time\":1567477226775,\"type\":\"CHECK_QUERY\",\"from\":\"MAG\",\"to\":\"TSS\"},\"Data\":{\"name\":\"应急规划可见性检查指令\",\"tasktype\":\"REALTIME\",\"content\":\"20190903095709744\"}}");
+        jedis.publish(Topic.CMD_RECV, "{\"Head\":{\"id\":\"MAG@1568621868746\",\"time\":1568621868746,\"type\":\"CHECK_QUERY\",\"from\":\"MAG\",\"to\":\"TSS\"},\"Data\":{\"imageorder\":\"20190916092906121,20190916133404353\",\"stationmission\":\"11,1111\"}}");
+//        jedis.publish(Topic.CMD_RECV, RedisDataEntity.GenNewTask());
+        jedis.close();
+    }
+
+    public static void newCronOrbitGorecastTask() {
+        Jedis jedis = RedisConnector.getJedis();
         jedis.publish(Topic.CMD_RECV, RedisDataEntity.GenNewTask());
         jedis.close();
     }
 
-    public static void newCronOrbitGorecastTask(){
+    public static void checkResult(String id, Map<String, Boolean> trueorfasle) {
         Jedis jedis = RedisConnector.getJedis();
-        jedis.publish(Topic.CMD_RECV, RedisDataEntity.GenNewTask());
+        String ret = RedisDataEntity.GenCheckResult(id, trueorfasle);
+        System.out.println(ret);
+        jedis.publish(Topic.CMD_RET, ret);
         jedis.close();
     }
 
-    public static void checkResult(Map<String,Boolean> trueorfasle){
-        System.out.println("Send a message...");
+    public static void taskPlanFinished(String id, ArrayList<String> orderlist) {
         Jedis jedis = RedisConnector.getJedis();
-        jedis.publish(Topic.CMD_RET, RedisDataEntity.GenCheckResult(trueorfasle));
+        jedis.publish(Topic.CMD_RET, RedisDataEntity.GenFinishedInform(id, orderlist));
         jedis.close();
     }
 

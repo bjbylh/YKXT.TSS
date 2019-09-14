@@ -8,5 +8,7 @@ public enum MsgType {
     NEW_TASK,
     TASK_STATUS_CHANGE,
     KEEP_ALIVE,
-    CHECK_QUERY
+    CHECK_QUERY,
+    CHECK_RESULT,
+    TP_FINISHED
 }

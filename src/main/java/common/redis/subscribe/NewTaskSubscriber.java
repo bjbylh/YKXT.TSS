@@ -45,6 +45,7 @@ public class NewTaskSubscriber extends JedisPubSub {
             JsonObject msg = (JsonObject) parse.parse(message);
 
             String asString = msg.getAsJsonObject("Head").get("type").getAsString();
+            String id = msg.getAsJsonObject("Head").get("id").getAsString();
 
             JsonObject json = msg.getAsJsonObject("Data");
 
@@ -59,7 +60,7 @@ public class NewTaskSubscriber extends JedisPubSub {
                         String imageorder = json.get("imageorder").getAsString();
                         String stationmission = json.get("stationmission").getAsString();
 
-                        TaskInit.initRTTaskForTaskPlan(json.get("name").getAsString(), imageorder, stationmission);
+                        TaskInit.initRTTaskForTaskPlan(json.get("name").getAsString(), imageorder, stationmission, id);
                     } else if (json.get("tasktype").getAsString().equals(TaskType.CRONTAB.name()) && json.get("templet").getAsString().equals(TempletType.ORBIT_FORECAST.name()))
                         TaskInit.initCronTaskForOrbitForecast(json.get("name").getAsString(), json.get("firsttime").getAsString(), json.get("cycle").getAsString(), json.get("count").getAsString());
 
@@ -156,7 +157,7 @@ public class NewTaskSubscriber extends JedisPubSub {
 
                 try {
                     Map<String, Boolean> stringBooleanMap = VisibilityCalculation.VisibilityCalculationEmergency(Satllitejson, D_orbitjson, count, GroundStationjson, Missionjson, StationMissionjson);
-                    RedisPublish.checkResult(stringBooleanMap);
+                    RedisPublish.checkResult(id, stringBooleanMap);
                 } catch (ParseException e) {
                     e.printStackTrace();
                 }

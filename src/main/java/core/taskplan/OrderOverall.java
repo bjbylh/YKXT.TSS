@@ -4,6 +4,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.UpdateOptions;
+import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
@@ -175,7 +176,7 @@ public class OrderOverall {
         //数据传出
         MongoClient mongoClient = MangoDBConnector.getClient();
         //获取名为"temp"的数据库
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
         MongoCollection<Document> image_order = mongoDatabase.getCollection("image_order");
         for (int i = 0; i < OrderMissionNum; i++) {

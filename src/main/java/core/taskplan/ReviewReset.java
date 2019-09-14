@@ -5,6 +5,7 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.UpdateOptions;
+import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
@@ -147,6 +148,9 @@ public class ReviewReset {
             Orbital_SatPositionLLA[OrbitalDataNum][2] = Double.parseDouble(document.get("H").toString());
 
             OrbitalDataNum = OrbitalDataNum + 1;
+
+            if(OrbitalDataNum >= OrbitDataCount)
+                break;
         }
 
         //姿态数据读入
@@ -162,6 +166,9 @@ public class ReviewReset {
             Attitude_AngVel[AttitudeDataNum][2] = Double.parseDouble(document.get("V_yaw_angle").toString());
 
             AttitudeDataNum = AttitudeDataNum + 1;
+
+            if(AttitudeDataNum >= AttitudeDataCount)
+                break;
         }
 
         //成像任务读入
@@ -222,8 +229,9 @@ public class ReviewReset {
         }
 
         //传输任务读入
+        int StationMissionNumber=0;
         try {
-            MissionNumber = 0;
+            StationMissionNumber = 0;
             ArrayList<Document> TransmissionWindowArray = new ArrayList<>();
             TransmissionWindowArray = (ArrayList<Document>) TransmissionMissionJson.get("transmission_window");
             for (Document document : TransmissionWindowArray) {
@@ -256,9 +264,9 @@ public class ReviewReset {
                 for (int i = MissionStar_Number; i <= MissionEnd_Number; i++) {
                     StationMissionStatus[i] = MissionNumber;
                 }
-                MissionNumber = MissionNumber + 1;
+                StationMissionNumber = StationMissionNumber + 1;
             }
-        } catch (NumberFormatException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -424,7 +432,7 @@ public class ReviewReset {
         //数据传出
         MongoClient mongoClient = MangoDBConnector.getClient();
         //获取名为"temp"的数据库
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
         String transmission_number = "tn_" + Instant.now().toEpochMilli();
         for (int i = 0; i < MissionNumber; i++) {
             if (FalseMission[i] == 0) {

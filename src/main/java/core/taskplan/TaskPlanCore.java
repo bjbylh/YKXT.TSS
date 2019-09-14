@@ -57,6 +57,9 @@ public class TaskPlanCore {
         private Instant now = Instant.now();
         private Date startTime = Date.from(Instant.now().plusSeconds(24 * 60 * 60 * 10000));
         private Date endTime = Date.from(Instant.now().minusSeconds(24 * 60 * 60 * 10000));
+        private String msgid = "";
+
+        ArrayList<String> params2 = new ArrayList<>();
 
         private ArrayList<String> orderList;
 
@@ -95,11 +98,9 @@ public class TaskPlanCore {
             //需求统筹
             if (MOD_ORDER_OVERALL_PLAN(subList[0])) return;
 
-            initOrbit();
-
             System.out.println("[" + Instant.now().toString() + "] " + "可见性分析");
             //可见性分析
-            if (MOD_VISIBILITY_CALC(subList[1], subList[0])) return;
+            if (MOD_VISIBILITY_CALC(subList[1])) return;
 
             System.out.println("[" + Instant.now().toString() + "] " + "时间分配");
             //时间分配
@@ -119,6 +120,8 @@ public class TaskPlanCore {
             else
                 updateMainStatus(id, MainTaskStatus.FINISHED);
             RedisPublish.dbRefresh(id);
+
+            RedisPublish.taskPlanFinished(msgid, orderList);
 
             mongoClient.close();
         }
@@ -157,6 +160,17 @@ public class TaskPlanCore {
                 }
             }
 
+            if (taskType == TaskType.REALTIME) {
+                Document condtion = new Document();
+                condtion.append("_id", new ObjectId(subid));
+                MongoCollection<Document> sub_task = mongoDatabase.getCollection("sub_task");
+
+                Document first = sub_task.find(condtion).first();
+
+                params2 = (ArrayList<String>) first.get("param2");
+                msgid = first.getString("param3");
+            }
+
             this.mission_numbners = OrderOverall.OrderOverallII(orders);
 
             for (Document order : documents) {
@@ -168,12 +182,14 @@ public class TaskPlanCore {
                 }
             }
 
+            initOrbit();
+
             updateSubStatus(subid, SubTaskStatus.SUSPEND);
             RedisPublish.dbRefresh(id);
             return checkIfStopped(id, 0);
         }
 
-        private boolean MOD_VISIBILITY_CALC(String subid, String subid2) {
+        private boolean MOD_VISIBILITY_CALC(String subid) {
             updateSubStatus(subid, SubTaskStatus.RUNNING);
             RedisPublish.dbRefresh(id);
 
@@ -204,13 +220,6 @@ public class TaskPlanCore {
                     station_missions.add(d);
                 }
             } else {
-                Document condtion = new Document();
-                condtion.append("_id", new ObjectId(subid2));
-                MongoCollection<Document> sub_task = mongoDatabase.getCollection("sub_task");
-
-                Document first = sub_task.find(condtion).first();
-
-                ArrayList<String> params2 = (ArrayList<String>) first.get("param2");
 
                 FindIterable<Document> documents = station_mission.find();
 
