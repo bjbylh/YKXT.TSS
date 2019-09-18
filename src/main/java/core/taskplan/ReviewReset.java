@@ -229,47 +229,48 @@ public class ReviewReset {
         }
 
         //传输任务读入
-        int StationMissionNumber=0;
-        try {
-            StationMissionNumber = 0;
-            ArrayList<Document> TransmissionWindowArray = new ArrayList<>();
-            TransmissionWindowArray = (ArrayList<Document>) TransmissionMissionJson.get("transmission_window");
-            for (Document document : TransmissionWindowArray) {
-                Date time_point = document.getDate("start_time");
-                //时间转换为doubule型
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                String StringTime;
-                Calendar cal = Calendar.getInstance();
-                cal.setTime(time_point);
-                cal.add(Calendar.HOUR_OF_DAY, -8);
-                StringTime = sdf.format(cal.getTime());
-                double[] MissionStar_Time = {Double.parseDouble(StringTime.substring(0, 4)),
-                        Double.parseDouble(StringTime.substring(5, 7)),
-                        Double.parseDouble(StringTime.substring(8, 10)),
-                        Double.parseDouble(StringTime.substring(11, 13)),
-                        Double.parseDouble(StringTime.substring(14, 16)),
-                        Double.parseDouble(StringTime.substring(17, 19))};
-                time_point = document.getDate("end_time");
-                cal.setTime(time_point);
-                cal.add(Calendar.HOUR_OF_DAY, -8);
-                StringTime = sdf.format(cal.getTime());
-                double[] MissionEnd_Time = {Double.parseDouble(StringTime.substring(0, 4)),
-                        Double.parseDouble(StringTime.substring(5, 7)),
-                        Double.parseDouble(StringTime.substring(8, 10)),
-                        Double.parseDouble(StringTime.substring(11, 13)),
-                        Double.parseDouble(StringTime.substring(14, 16)),
-                        Double.parseDouble(StringTime.substring(17, 19))};
-                int MissionStar_Number = (int) ((JD(MissionStar_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
-                int MissionEnd_Number = (int) ((JD(MissionEnd_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
-                for (int i = MissionStar_Number; i <= MissionEnd_Number; i++) {
-                    StationMissionStatus[i] = MissionNumber;
+        if(TransmissionMissionJson != null) {
+            int StationMissionNumber = 0;
+            try {
+                StationMissionNumber = 0;
+                ArrayList<Document> TransmissionWindowArray = new ArrayList<>();
+                TransmissionWindowArray = (ArrayList<Document>) TransmissionMissionJson.get("transmission_window");
+                for (Document document : TransmissionWindowArray) {
+                    Date time_point = document.getDate("start_time");
+                    //时间转换为doubule型
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    String StringTime;
+                    Calendar cal = Calendar.getInstance();
+                    cal.setTime(time_point);
+                    cal.add(Calendar.HOUR_OF_DAY, -8);
+                    StringTime = sdf.format(cal.getTime());
+                    double[] MissionStar_Time = {Double.parseDouble(StringTime.substring(0, 4)),
+                            Double.parseDouble(StringTime.substring(5, 7)),
+                            Double.parseDouble(StringTime.substring(8, 10)),
+                            Double.parseDouble(StringTime.substring(11, 13)),
+                            Double.parseDouble(StringTime.substring(14, 16)),
+                            Double.parseDouble(StringTime.substring(17, 19))};
+                    time_point = document.getDate("end_time");
+                    cal.setTime(time_point);
+                    cal.add(Calendar.HOUR_OF_DAY, -8);
+                    StringTime = sdf.format(cal.getTime());
+                    double[] MissionEnd_Time = {Double.parseDouble(StringTime.substring(0, 4)),
+                            Double.parseDouble(StringTime.substring(5, 7)),
+                            Double.parseDouble(StringTime.substring(8, 10)),
+                            Double.parseDouble(StringTime.substring(11, 13)),
+                            Double.parseDouble(StringTime.substring(14, 16)),
+                            Double.parseDouble(StringTime.substring(17, 19))};
+                    int MissionStar_Number = (int) ((JD(MissionStar_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
+                    int MissionEnd_Number = (int) ((JD(MissionEnd_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
+                    for (int i = MissionStar_Number; i <= MissionEnd_Number; i++) {
+                        StationMissionStatus[i] = MissionNumber;
+                    }
+                    StationMissionNumber = StationMissionNumber + 1;
                 }
-                StationMissionNumber = StationMissionNumber + 1;
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
-
 
         //将能量单位统一为瓦
         double BatteryCapacity = PowerCapacity * 42 * 60 * 60;      //蓄电池电量

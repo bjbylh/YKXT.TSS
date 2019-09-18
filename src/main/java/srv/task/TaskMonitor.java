@@ -2,6 +2,8 @@ package srv.task;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -62,7 +64,18 @@ public class TaskMonitor {
 
             MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
 
+            BasicDBObject query = new BasicDBObject();
+            BasicDBList saleChannel = new BasicDBList();
+            saleChannel.add(MainTaskStatus.NEW.name());
+            saleChannel.add(MainTaskStatus.SUSPEND.name());
+            query.put("status", new BasicDBObject("$in", saleChannel));
+
+
             FindIterable<Document> main_task = tasks.find();
+
+//            for(Document d : main_task){
+//                System.out.println(d.toString());
+//            }
 
             for (Document document : main_task) {
                 if (document.getString("status").equals(MainTaskStatus.NEW.name())) {

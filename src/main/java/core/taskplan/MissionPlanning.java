@@ -5,7 +5,6 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.UpdateOptions;
-import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
@@ -17,6 +16,9 @@ import java.util.Calendar;
 import java.util.Date;
 
 import static java.lang.Math.*;
+
+//import common.mongo.DbDefine;
+//import common.mongo.MangoDBConnector;
 
 //import common.mongo.MangoDBConnector;
 
@@ -407,15 +409,19 @@ public class MissionPlanning {
                     VisibilityTimePeriod[i][MissionNumber][2 * j + 1] = (int) ((JD(EndTime) - JD(ZeroTime)) * (24 * 60 * 60));
                 }
             }
-            MissionStareTime[MissionNumber] = Double.parseDouble(document.getString("mission_interval_min"));
+
+            MissionStareTime[MissionNumber] = Double.parseDouble(document.getString("min_stare_time"));
             MissionPriority[MissionNumber] = Integer.parseInt(document.getString("priority"));
             MissionSerialNumber[MissionNumber] = document.getString("mission_number");
             if (document.getString("image_mode").equals("常规")) {
                 MissionImagingMode[MissionNumber] = 1;
+                MissionStareTime[MissionNumber]=10;
             } else if (document.getString("image_mode").equals("凝视")) {
                 MissionImagingMode[MissionNumber] = 2;
+                MissionStareTime[MissionNumber] = Double.parseDouble(document.getString("min_stare_time"));
             } else if (document.getString("image_mode").equals("定标")) {
                 MissionImagingMode[MissionNumber] = 3;
+                MissionStareTime[MissionNumber]=10;
             }
             if (document.getString("image_type").equals("Point")) {
                 MissionTargetType[MissionNumber] = 1;
@@ -771,7 +777,7 @@ public class MissionPlanning {
         //数据传出
         MongoClient mongoClient = MangoDBConnector.getClient();
         //获取名为"temp"的数据库
-        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
         String transmission_number = "tn_" + Instant.now().toEpochMilli();
         //任务规划结果数据传出
         for (int i = 0; i < MissionNumber; i++) {
@@ -818,32 +824,35 @@ public class MissionPlanning {
         }
 
         //传输任务数据传出
-        ArrayList<Document> TranWindowjsonArry = new ArrayList<>();
-        for (int i = 0; i < PlanningTransNum; i++) {
-            Document TranWindowjsonObject = new Document();
-            for (int j = 0; j < StationNumber; j++) {
-                if (PlanningTransStation[i] == j) {
-                    TranWindowjsonObject.append("station_name", StationSerialNumber[j]);
+        if(TransmissionMissionJson != null) {
+            ArrayList<Document> TranWindowjsonArry = new ArrayList<>();
+            for (int i = 0; i < PlanningTransNum; i++) {
+                Document TranWindowjsonObject = new Document();
+                for (int j = 0; j < StationNumber; j++) {
+                    if (PlanningTransStation[i] == j) {
+                        TranWindowjsonObject.append("station_name", StationSerialNumber[j]);
+                    }
                 }
+                TranWindowjsonObject.append("start_time", Time_Point[PlanningTransTimePeriod[i][0]]);
+                TranWindowjsonObject.append("end_time", Time_Point[PlanningTransTimePeriod[i][1]]);
+                TranWindowjsonArry.add(TranWindowjsonObject);
             }
-            TranWindowjsonObject.append("start_time", Time_Point[PlanningTransTimePeriod[i][0]]);
-            TranWindowjsonObject.append("end_time", Time_Point[PlanningTransTimePeriod[i][1]]);
-            TranWindowjsonArry.add(TranWindowjsonObject);
-        }
-        if (PlanningTransNum == 0) {
-            Document TranWindowjsonObject = new Document();
-            TranWindowjsonObject.append("station_name", "");
-            TranWindowjsonObject.append("start_time", "");
-            TranWindowjsonObject.append("end_time", "");
-            TranWindowjsonArry.add(TranWindowjsonObject);
-        }
-        //地面站，传输任务更新？？？？
-        TransmissionMissionJson.append("transmission_window", TranWindowjsonArry);
+            if (PlanningTransNum == 0) {
+                Document TranWindowjsonObject = new Document();
+                TranWindowjsonObject.append("station_name", "");
+                TranWindowjsonObject.append("start_time", "");
+                TranWindowjsonObject.append("end_time", "");
+                TranWindowjsonArry.add(TranWindowjsonObject);
+            }
+            //地面站，传输任务更新？？？？
+            TransmissionMissionJson.append("transmission_window", TranWindowjsonArry);
 
-        MongoCollection<Document> transmission_mission = mongoDatabase.getCollection("transmission_mission");
-        Document modifiers = new Document();
-        modifiers.append("$set", TransmissionMissionJson);
-        transmission_mission.updateOne(new Document("_id", TransmissionMissionJson.getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
+            MongoCollection<Document> transmission_mission = mongoDatabase.getCollection("transmission_mission");
+            Document modifiers = new Document();
+            modifiers.append("$set", TransmissionMissionJson);
+            transmission_mission.updateOne(new Document("_id", TransmissionMissionJson.getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
+
+        }
         mongoClient.close();
     }
 

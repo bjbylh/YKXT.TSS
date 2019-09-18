@@ -55,6 +55,13 @@ public class AttitudeCalculation {
     private static double Re = 6371393;                  //地球半径，单位为：米
     private static double Step = 1;                        //数据步长
 
+    /**
+     *
+     * @param Satllitejson
+     * @param Orbitjson
+     * @param OrbitDataCount
+     * @param ImageMissionjson
+     */
     public static void AttitudeCalculationII(Document Satllitejson, FindIterable<Document> Orbitjson, long OrbitDataCount, ArrayList<Document> ImageMissionjson) {
         //载荷参数更新
         ArrayList<Document> properties = (ArrayList<Document>) Satllitejson.get("properties");

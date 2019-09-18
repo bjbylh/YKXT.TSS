@@ -24,7 +24,7 @@ public class RedisSubscribe extends Thread {
         Jedis jedis = null;
         try {
             jedis = RedisConnector.getJedis();   //取出一个连接
-            jedis.subscribe(jedisPubSub, channel);    //通过subscribe 的api去订阅，入参是订阅者和频道名
+            jedis.subscribe(jedisPubSub, channel);    //通过subscribe的api去订阅，入参是订阅者和频道名
         } catch (Exception e) {
             System.out.println(String.format("subsrcribe channel error, %s", e));
         } finally {

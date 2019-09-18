@@ -40,7 +40,7 @@ public class RedisDataEntity {
         JsonObject ret = new JsonObject();
         JsonObject head = GenHead(MsgType.NEW_TASK, "MAG", "TSS", "");
         JsonObject data = new JsonObject();
-        data.addProperty("name", "TASK_PLAN");
+        data.addProperty("name", "ORBIT_FORECAST");
         data.addProperty("tasktype", TaskType.REALTIME.name());
         data.addProperty("templet", TempletType.ORBIT_FORECAST.name());
 //        data.addProperty("firsttime", Instant.now().toString());

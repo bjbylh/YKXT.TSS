@@ -235,7 +235,9 @@ public class TaskPlanCore {
 
             try {
                 Document Transmissionjson = VisibilityCalculation.VisibilityCalculationII(Satllitejson, D_orbitjson, count, GroundStationjson, Missionjson, station_missions);
-                Transmission_number = Transmissionjson.getString("transmission_number");
+
+                if (Transmissionjson != null)
+                    Transmission_number = Transmissionjson.getString("transmission_number");
             } catch (ParseException e) {
                 e.printStackTrace();
             }
