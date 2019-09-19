@@ -820,7 +820,7 @@ public class MissionPlanning {
             Document modifiers = new Document();
             modifiers.append("$set", ImageMissionjson.get(i));
             MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
-            image_mission.updateOne(new Document("_id", ImageMissionjson.get(i).getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
+            image_mission.updateOne(new Document("mission_number", ImageMissionjson.get(i).getString("mission_number")), modifiers, new UpdateOptions().upsert(true));
         }
 
         //传输任务数据传出
@@ -847,10 +847,12 @@ public class MissionPlanning {
             //地面站，传输任务更新？？？？
             TransmissionMissionJson.append("transmission_window", TranWindowjsonArry);
 
+            if(TransmissionMissionJson.containsKey("_id"))
+                TransmissionMissionJson.remove("_id");
             MongoCollection<Document> transmission_mission = mongoDatabase.getCollection("transmission_mission");
             Document modifiers = new Document();
             modifiers.append("$set", TransmissionMissionJson);
-            transmission_mission.updateOne(new Document("_id", TransmissionMissionJson.getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
+            transmission_mission.updateOne(new Document("transmission_number", TransmissionMissionJson.getString("transmission_number")), modifiers, new UpdateOptions().upsert(true));
 
         }
         mongoClient.close();

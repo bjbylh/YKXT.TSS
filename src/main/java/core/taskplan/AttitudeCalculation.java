@@ -56,7 +56,6 @@ public class AttitudeCalculation {
     private static double Step = 1;                        //数据步长
 
     /**
-     *
      * @param Satllitejson
      * @param Orbitjson
      * @param OrbitDataCount
@@ -174,7 +173,7 @@ public class AttitudeCalculation {
 
             OrbitalDataNum = OrbitalDataNum + 1;
 
-            if(OrbitalDataNum >= OrbitDataCount)
+            if (OrbitalDataNum >= OrbitDataCount)
                 break;
         }
 
@@ -218,7 +217,7 @@ public class AttitudeCalculation {
                 MissionStopTime[MissionNumber][3] = Time[0][3];
                 MissionStopTime[MissionNumber][4] = Time[0][4];
                 MissionStopTime[MissionNumber][5] = Time[0][5];
-            }else {
+            } else {
                 for (Document document1 : image_window) {
                     PlanningMissionLoad[MissionNumber] = Integer.parseInt(document1.get("load_number").toString());
                     Date start_time = document1.getDate("start_time");
@@ -263,13 +262,17 @@ public class AttitudeCalculation {
         double[][] SatAttitud = new double[(int) OrbitDataCount][3];
         double[][] SatAttitudVel = new double[(int) OrbitalDataNum][3];
 
+
+        ArrayList<Document> os = new ArrayList<>();
+
         MongoClient mongoClient = MangoDBConnector.getClient();
         //获取名为"temp"的数据库
         //MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
         MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
         MongoCollection<Document> normal_attitude = mongoDatabase.getCollection("normal_attitude");
-        ArrayList<Document> os = new ArrayList<>();
+
+        long cnt = 0;
 
         for (int i = 0; i < OrbitalDataNum; i++) {
             boolean MissionFlag = false;
@@ -361,9 +364,18 @@ public class AttitudeCalculation {
 
                 os.add(jsonObject);
             }
+            cnt++;
+
+            if (os.size() > 10000) {
+                normal_attitude.insertMany(os);
+                os.clear();
+                cnt = 0;
+            }
         }
-        normal_attitude.insertMany(os);
-        os.clear();
+        if (os.size() > 0) {
+            normal_attitude.insertMany(os);
+            os.clear();
+        }
         mongoClient.close();
     }
 

@@ -186,7 +186,7 @@ public class VisibilityCalculation {
 
             OrbitalDataNum = OrbitalDataNum + 1;
 
-            if(OrbitalDataNum >= orbitDataCount)
+            if (OrbitalDataNum >= orbitDataCount)
                 break;
         }
 
@@ -545,7 +545,8 @@ public class VisibilityCalculation {
             } else {
                 Missionjson.get(i).append("available_window", AvailWindowjsonArray);
             }
-
+            if(Missionjson.get(i).containsKey("_id"))
+                Missionjson.get(i).remove("_id");
             Document modifiers = new Document();
             modifiers.append("$set", Missionjson.get(i));
             MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
@@ -562,6 +563,8 @@ public class VisibilityCalculation {
             String transmission_number = "tn_" + Instant.now().toEpochMilli();
 
             for (Document d : StationMissionjson) {
+                if(d.containsKey("_id"))
+                    d.remove("_id");
                 String mission_number = d.getString("mission_number");
                 mission_numbers.add(mission_number);
                 d.append("transmission_number", transmission_number);

@@ -157,6 +157,13 @@ public class TaskPlanCore {
                         endTime = expected_end_time;
 
                     orders.add(order);
+
+                    if(order.getString("mission_number") != null){
+                        MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
+                        Document filter = new Document();
+                        filter.append("mission_number", order.getString("mission_number"));
+                        image_mission.deleteOne(filter);
+                    }
                 }
             }
 
@@ -175,6 +182,8 @@ public class TaskPlanCore {
 
             for (Document order : documents) {
                 if (orderList.contains(order.getString("order_number"))) {
+                    if(order.containsKey("_id"))
+                        order.remove("_id");
                     order.append("order_state", "待规划");
                     Document modifiers = new Document();
                     modifiers.append("$set", order);
@@ -230,6 +239,12 @@ public class TaskPlanCore {
             }
 
             for (Document d : station_missions) {
+                if(d.getString("transmission_number") != null){
+                    MongoCollection<Document> transmission_mission = mongoDatabase.getCollection("transmission_mission");
+                    Document filter = new Document();
+                    filter.append("transmission_number", d.getString("transmission_number"));
+                    transmission_mission.deleteOne(filter);
+                }
                 station_mission_numbers.add(d.getString("mission_number"));
             }
 
@@ -312,6 +327,8 @@ public class TaskPlanCore {
             FindIterable<Document> documents = image_order.find();
             for (Document order : documents) {
                 if (orderList.contains(order.getString("order_number"))) {
+                    if(order.containsKey("_id"))
+                        order.remove("_id");
                     order.append("order_state", "待执行");
                     Document modifiers = new Document();
                     modifiers.append("$set", order);
@@ -321,6 +338,8 @@ public class TaskPlanCore {
 
             for (Document mission : image_mission.find()) {
                 if (mission_numbners.contains(mission.getString("mission_number"))) {
+                    if(mission.containsKey("_id"))
+                        mission.remove("_id");
                     mission.append("mission_state", "待执行");
                     Document modifiers = new Document();
                     modifiers.append("$set", mission);

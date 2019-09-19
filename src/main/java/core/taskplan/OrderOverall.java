@@ -201,6 +201,8 @@ public class OrderOverall {
                 ImageMissionjson.append("mission_interval_min", "40");
                 ArrayList<Object> OrderNumber_List = new ArrayList<>();
                 for (int j = 0; j < OverallResult[i]; j++) {
+                    if(ImageOrderjson.get(OverallMissionNum[i][j]).containsKey("_id"))
+                        ImageOrderjson.get(OverallMissionNum[i][j]).remove("_id");
                     OrderNumber_List.add(OrderNumber.get(OverallMissionNum[i][j]));
                     ImageOrderjson.get(OverallMissionNum[i][j]).append("mission_number",mission_number);
                     ImageOrderjson.get(OverallMissionNum[i][j]).append("order_state","待规划");
