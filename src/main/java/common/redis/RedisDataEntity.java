@@ -69,16 +69,43 @@ public class RedisDataEntity {
         return ret.toString();
     }
 
-    public static String GenCheckResult(String id, Map<String, Boolean> trueorfalse) {
+    public static String GenCheckResult(String id, Map<Integer, Map<String, Boolean>> trueorfalse) {
         JsonObject ret = new JsonObject();
         JsonObject head = GenHead(MsgType.CHECK_RESULT, "TSS", "MAG", id);
         JsonObject data = new JsonObject();
 
         JsonArray jsonArray = new JsonArray();
-        for (String mission_number : trueorfalse.keySet()) {
+//        for (String mission_number : trueorfalse.keySet()) {
+//            JsonObject jsonObject = new JsonObject();
+//            jsonObject.addProperty("order_number", mission_number);
+//            jsonObject.addProperty("return", trueorfalse.get(mission_number).toString());
+//            jsonArray.add(jsonObject);
+//        }
+
+        if (trueorfalse.size() == 2) {
+            for (String mission_number : trueorfalse.get(0).keySet()) {
+                JsonObject jsonObject = new JsonObject();
+                jsonObject.addProperty("order_number", mission_number);
+                jsonObject.addProperty("return", trueorfalse.get(0).get(mission_number).toString());
+                jsonArray.add(jsonObject);
+            }
+            for (String mission_number : trueorfalse.get(1).keySet()) {
+                JsonObject jsonObject = new JsonObject();
+                jsonObject.addProperty("mission_number", mission_number);
+                jsonObject.addProperty("return", trueorfalse.get(1).get(mission_number).toString());
+                jsonArray.add(jsonObject);
+            }
+        } else if (trueorfalse.size() == 1) {
+            for (String mission_number : trueorfalse.get(0).keySet()) {
+                JsonObject jsonObject = new JsonObject();
+                jsonObject.addProperty("order_number", mission_number);
+                jsonObject.addProperty("return", trueorfalse.get(0).get(mission_number).toString());
+                jsonArray.add(jsonObject);
+            }
+        } else {
             JsonObject jsonObject = new JsonObject();
-            jsonObject.addProperty("order_number", mission_number);
-            jsonObject.addProperty("return", trueorfalse.get(mission_number).toString());
+            jsonObject.addProperty("order_number", "");
+            jsonObject.addProperty("return", "");
             jsonArray.add(jsonObject);
         }
         data.addProperty("content", jsonArray.toString());

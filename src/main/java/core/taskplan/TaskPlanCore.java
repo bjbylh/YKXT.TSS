@@ -46,7 +46,7 @@ public class TaskPlanCore {
         private String[] subList;
         private ArrayList<String> mission_numbners;
         private ArrayList<String> station_mission_numbers = new ArrayList<>();
-        private String Transmission_number;
+        private String Transmission_number = "";
 
         private MongoClient mongoClient;
         private MongoDatabase mongoDatabase;
@@ -288,12 +288,14 @@ public class TaskPlanCore {
 
             Document Transmissionjson = null;
 
-            for (Document mission : transmission_misison.find()) {
-                if (Transmission_number.equals(mission.getString("transmission_number"))) {
-                    Transmissionjson = mission;
-                    break;
-                }
+            if(Transmission_number != "") {
+                for (Document mission : transmission_misison.find()) {
+                    if (Transmission_number.equals(mission.getString("transmission_number"))) {
+                        Transmissionjson = mission;
+                        break;
+                    }
 
+                }
             }
 
             MissionPlanning.MissionPlanningII(this.Satllitejson, this.GroundStationjson, this.D_orbitjson, this.count, Missionjson, Transmissionjson, station_missions);
@@ -323,29 +325,29 @@ public class TaskPlanCore {
 
             AttitudeCalculation.AttitudeCalculationII(this.Satllitejson, this.D_orbitjson, this.count, Missionjson);
 
-            MongoCollection<Document> image_order = mongoDatabase.getCollection("image_order");
-            FindIterable<Document> documents = image_order.find();
-            for (Document order : documents) {
-                if (orderList.contains(order.getString("order_number"))) {
-                    if(order.containsKey("_id"))
-                        order.remove("_id");
-                    order.append("order_state", "待执行");
-                    Document modifiers = new Document();
-                    modifiers.append("$set", order);
-                    image_order.updateOne(new Document("order_number", order.getString("order_number")), modifiers, new UpdateOptions().upsert(true));
-                }
-            }
-
-            for (Document mission : image_mission.find()) {
-                if (mission_numbners.contains(mission.getString("mission_number"))) {
-                    if(mission.containsKey("_id"))
-                        mission.remove("_id");
-                    mission.append("mission_state", "待执行");
-                    Document modifiers = new Document();
-                    modifiers.append("$set", mission);
-                    image_mission.updateOne(new Document("mission_number", mission.getString("mission_number")), modifiers, new UpdateOptions().upsert(true));
-                }
-            }
+//            MongoCollection<Document> image_order = mongoDatabase.getCollection("image_order");
+//            FindIterable<Document> documents = image_order.find();
+//            for (Document order : documents) {
+//                if (orderList.contains(order.getString("order_number"))) {
+//                    if(order.containsKey("_id"))
+//                        order.remove("_id");
+//                    order.append("order_state", "待执行");
+//                    Document modifiers = new Document();
+//                    modifiers.append("$set", order);
+//                    image_order.updateOne(new Document("order_number", order.getString("order_number")), modifiers, new UpdateOptions().upsert(true));
+//                }
+//            }
+//
+//            for (Document mission : image_mission.find()) {
+//                if (mission_numbners.contains(mission.getString("mission_number"))) {
+//                    if(mission.containsKey("_id"))
+//                        mission.remove("_id");
+//                    mission.append("mission_state", "待执行");
+//                    Document modifiers = new Document();
+//                    modifiers.append("$set", mission);
+//                    image_mission.updateOne(new Document("mission_number", mission.getString("mission_number")), modifiers, new UpdateOptions().upsert(true));
+//                }
+//            }
 
             updateSubStatus(subid, SubTaskStatus.SUSPEND);
             RedisPublish.dbRefresh(id);

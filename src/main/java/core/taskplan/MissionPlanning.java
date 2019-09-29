@@ -5,17 +5,19 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.UpdateOptions;
+import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
 import javax.swing.*;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 
 import static java.lang.Math.*;
+
+//import common.mongo.MangoDBConnector;
 
 //import common.mongo.DbDefine;
 //import common.mongo.MangoDBConnector;
@@ -241,6 +243,9 @@ public class MissionPlanning {
                 break;
         }
 
+        ArrayList<String> StationMissionTransmissionNumList=new ArrayList<>();
+        ArrayList<String> StationMissionStationNameList=new ArrayList<>();
+        ArrayList<String> StationMissionNumberList=new ArrayList<>();
         //地面站任务读入
         if (StationMissionJson.size()==0){
             StationMissionNum = 1;
@@ -255,30 +260,42 @@ public class MissionPlanning {
             StationMissionEndTime=new double[StationMissionJson.size()][6];
             StationMissionNum = 0;
             for (Document document : StationMissionJson) {
-                Date time_point=document.getDate("expected_start_time");
-                String StringTime;
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                Calendar cal = Calendar.getInstance();
-                cal.setTime(time_point);
-                cal.add(Calendar.HOUR_OF_DAY, -8);
-                StringTime = sdf.format(cal.getTime());
-                StationMissionStarTime[StationMissionNum][0] = Double.parseDouble(StringTime.substring(0, 4));
-                StationMissionStarTime[StationMissionNum][1] = Double.parseDouble(StringTime.substring(5, 7));
-                StationMissionStarTime[StationMissionNum][2] = Double.parseDouble(StringTime.substring(8, 10));
-                StationMissionStarTime[StationMissionNum][3] = Double.parseDouble(StringTime.substring(11, 13));
-                StationMissionStarTime[StationMissionNum][4] = Double.parseDouble(StringTime.substring(14, 16));
-                StationMissionStarTime[StationMissionNum][5] = Double.parseDouble(StringTime.substring(17, 19));
-                time_point=document.getDate("expected_end_time");
-                cal.setTime(time_point);
-                cal.add(Calendar.HOUR_OF_DAY, -8);
-                StringTime = sdf.format(cal.getTime());
-                StationMissionEndTime[StationMissionNum][0] = Double.parseDouble(StringTime.substring(0, 4));
-                StationMissionEndTime[StationMissionNum][1] = Double.parseDouble(StringTime.substring(5, 7));
-                StationMissionEndTime[StationMissionNum][2] = Double.parseDouble(StringTime.substring(8, 10));
-                StationMissionEndTime[StationMissionNum][3] = Double.parseDouble(StringTime.substring(11, 13));
-                StationMissionEndTime[StationMissionNum][4] = Double.parseDouble(StringTime.substring(14, 16));
-                StationMissionEndTime[StationMissionNum][5] = Double.parseDouble(StringTime.substring(17, 19));
-                StationMissionNum=StationMissionNum+1;
+                try {
+                    Date time_point=document.getDate("expected_start_time");
+                    String StringTime;
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    Calendar cal = Calendar.getInstance();
+                    cal.setTime(time_point);
+                    cal.add(Calendar.HOUR_OF_DAY, -8);
+                    StringTime = sdf.format(cal.getTime());
+                    StationMissionStarTime[StationMissionNum][0] = Double.parseDouble(StringTime.substring(0, 4));
+                    StationMissionStarTime[StationMissionNum][1] = Double.parseDouble(StringTime.substring(5, 7));
+                    StationMissionStarTime[StationMissionNum][2] = Double.parseDouble(StringTime.substring(8, 10));
+                    StationMissionStarTime[StationMissionNum][3] = Double.parseDouble(StringTime.substring(11, 13));
+                    StationMissionStarTime[StationMissionNum][4] = Double.parseDouble(StringTime.substring(14, 16));
+                    StationMissionStarTime[StationMissionNum][5] = Double.parseDouble(StringTime.substring(17, 19));
+                    time_point=document.getDate("expected_end_time");
+                    cal.setTime(time_point);
+                    cal.add(Calendar.HOUR_OF_DAY, -8);
+                    StringTime = sdf.format(cal.getTime());
+                    StationMissionEndTime[StationMissionNum][0] = Double.parseDouble(StringTime.substring(0, 4));
+                    StationMissionEndTime[StationMissionNum][1] = Double.parseDouble(StringTime.substring(5, 7));
+                    StationMissionEndTime[StationMissionNum][2] = Double.parseDouble(StringTime.substring(8, 10));
+                    StationMissionEndTime[StationMissionNum][3] = Double.parseDouble(StringTime.substring(11, 13));
+                    StationMissionEndTime[StationMissionNum][4] = Double.parseDouble(StringTime.substring(14, 16));
+                    StationMissionEndTime[StationMissionNum][5] = Double.parseDouble(StringTime.substring(17, 19));
+
+                    //String TransmissionNumber= document.get("transmission_number").toString();
+                    //StationMissionTransmissionNumList.add(StationMissionNum,TransmissionNumber);
+                    String StationName=document.get("station_number").toString();
+                    StationMissionStationNameList.add(StationMissionNum,StationName);
+                    String StationmissionNumber_iList=document.get("mission_number").toString();
+                    StationMissionNumberList.add(StationMissionNum,StationmissionNumber_iList);
+                    StationMissionNum=StationMissionNum+1;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    continue;
+                }
             }
         }
 
@@ -306,129 +323,175 @@ public class MissionPlanning {
             }
         }
 
+        ArrayList<ArrayList<String>> MissionForOrderNumbers=new ArrayList<>();
         MissionNumber = 0;
         for (Document document : ImageMissionjson) {
-            Document target_region = (Document) document.get("image_region");
-            ArrayList<Document> features = (ArrayList<Document>) target_region.get("features");
-            for (Document document1 : features) {
-                Document geometry = (Document) document1.get("geometry");
-                ArrayList<ArrayList<Double>> coordinates = (ArrayList<ArrayList<Double>>) geometry.get("coordinates");
-                int i = 0;
-                for (ArrayList<Double> document2 : coordinates) {
-                    MissionTargetArea[MissionNumber][2 * i] = document2.get(0);
-                    MissionTargetArea[MissionNumber][2 * i + 1] = document2.get(1);
-                    i = i + 1;
+            if (document.get("mission_state").equals("被退回")) {
+                continue;
+            }else{
+                Document target_region = (Document) document.get("image_region");
+                //读取目标区域
+                ArrayList<double[]> MissionTargetArea_iList = new ArrayList<double[]>();
+                MissionTargetArea_iList = GetRegionPoint(target_region);
+                MissionTargetNum[MissionNumber] = MissionTargetArea_iList.size();
+                if (MissionTargetNum[MissionNumber] > 90) {
+                    MissionTargetNum[MissionNumber] = 90;
                 }
-                MissionTargetNum[MissionNumber] = coordinates.size();
-            }
-            ArrayList<Document> expected_cam = (ArrayList<Document>) document.get("expected_cam");
-            if (expected_cam.size() == 0) {
-                MissionLoadType[MissionNumber][0] = 1;
-                MissionLoadType[MissionNumber][1] = 1;
-                MissionLoadType[MissionNumber][2] = 1;
-                MissionLoadType[MissionNumber][3] = 1;
-            }else {
-                for (Document document1 : expected_cam) {
-                    if (document1.getString("sensor_name").equals("高分相机1")) {
+                for (int i = 0; i < MissionTargetNum[MissionNumber]; i++) {
+                    MissionTargetArea[MissionNumber][2 * i] = MissionTargetArea_iList.get(i)[0];
+                    MissionTargetArea[MissionNumber][2 * i + 1] = MissionTargetArea_iList.get(i)[1];
+                }
+                ArrayList<Document> expected_cam = (ArrayList<Document>) document.get("expected_cam");
+                if (expected_cam.size() == 0) {
+                    MissionLoadType[MissionNumber][0] = 1;
+                    MissionLoadType[MissionNumber][1] = 1;
+                    MissionLoadType[MissionNumber][2] = 1;
+                    MissionLoadType[MissionNumber][3] = 1;
+                }else {
+                    try {
+                        for (Document document1 : expected_cam) {
+                            if (document1 != null) {
+                                ArrayList<Document> sensors= (ArrayList<Document>) document1.get("sensors");
+                                for (Document document2: sensors){
+                                    if (document1.getString("name").equals("高分相机1")) {
+                                        MissionLoadType[MissionNumber][0] = 1;
+                                    } else if (document1.getString("name").equals("高分相机2")) {
+                                        MissionLoadType[MissionNumber][1] = 1;
+                                    } else if (document1.getString("name").equals("多光谱相机1")) {
+                                        MissionLoadType[MissionNumber][2] = 1;
+                                    } else if (document1.getString("name").equals("多光谱相机2")) {
+                                        MissionLoadType[MissionNumber][3] = 1;
+                                    }
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
                         MissionLoadType[MissionNumber][0] = 1;
-                    } else if (document1.getString("sensor_name").equals("高分相机2")) {
                         MissionLoadType[MissionNumber][1] = 1;
-                    } else if (document1.getString("sensor_name").equals("多光谱相机1")) {
                         MissionLoadType[MissionNumber][2] = 1;
-                    } else if (document1.getString("sensor_name").equals("多光谱相机2")) {
                         MissionLoadType[MissionNumber][3] = 1;
                     }
                 }
-            }
-            ArrayList<Document> available_window = (ArrayList<Document>) document.get("available_window");
-            if (available_window == null) {
-                TimePeriodNum[0][MissionNumber]=0;
-                TimePeriodNum[1][MissionNumber]=0;
-                TimePeriodNum[2][MissionNumber]=0;
-                TimePeriodNum[3][MissionNumber]=0;
-            }else {
-                for (Document document1 : available_window) {
-                    if (Integer.parseInt(document1.get("load_number").toString()) == 1) {
-                        TimePeriodNum[0][MissionNumber] = Integer.parseInt(document1.get("amount_window").toString());
-                        int a = Integer.parseInt(document1.get("window_number").toString()) - 1;
-                        VisibilityDatePeriod[0][MissionNumber][2 * a] = document1.getDate("window_start_time");
-                        VisibilityDatePeriod[0][MissionNumber][2 * a + 1] = document1.getDate("window_end_time");
-                    } else if (Integer.parseInt(document1.get("load_number").toString()) == 2) {
-                        TimePeriodNum[1][MissionNumber] = Integer.parseInt(document1.get("amount_window").toString());
-                        int a = Integer.parseInt(document1.get("window_number").toString()) - 1;
-                        VisibilityDatePeriod[1][MissionNumber][2 * a] = document1.getDate("window_start_time");
-                        VisibilityDatePeriod[1][MissionNumber][2 * a + 1] = document1.getDate("window_end_time");
-                    } else if (Integer.parseInt(document1.get("load_number").toString()) == 3) {
-                        TimePeriodNum[2][MissionNumber] = Integer.parseInt(document1.get("amount_window").toString());
-                        int a = Integer.parseInt(document1.get("window_number").toString()) - 1;
-                        VisibilityDatePeriod[2][MissionNumber][2 * a] = document1.getDate("window_start_time");
-                        VisibilityDatePeriod[2][MissionNumber][2 * a + 1] = document1.getDate("window_end_time");
-                    } else if (Integer.parseInt(document1.get("load_number").toString()) == 4) {
-                        TimePeriodNum[3][MissionNumber] = Integer.parseInt(document1.get("amount_window").toString());
-                        int a = Integer.parseInt(document1.get("window_number").toString()) - 1;
-                        VisibilityDatePeriod[3][MissionNumber][2 * a] = document1.getDate("window_start_time");
-                        VisibilityDatePeriod[3][MissionNumber][2 * a + 1] = document1.getDate("window_end_time");
-                    } else {
-                        continue;
+                ArrayList<Document> available_window = (ArrayList<Document>) document.get("available_window");
+                if (available_window == null) {
+                    TimePeriodNum[0][MissionNumber]=0;
+                    TimePeriodNum[1][MissionNumber]=0;
+                    TimePeriodNum[2][MissionNumber]=0;
+                    TimePeriodNum[3][MissionNumber]=0;
+                }else {
+                    try {
+                        for (Document document1 : available_window) {
+                            if (Integer.parseInt(document1.get("load_number").toString()) == 1) {
+                                TimePeriodNum[0][MissionNumber] = Integer.parseInt(document1.get("amount_window").toString());
+                                int a = Integer.parseInt(document1.get("window_number").toString()) - 1;
+                                if (a > 90 || TimePeriodNum[0][MissionNumber]>90) {
+                                    a=90;
+                                    TimePeriodNum[0][MissionNumber]=90;
+                                }
+                                VisibilityDatePeriod[0][MissionNumber][2 * a] = document1.getDate("window_start_time");
+                                VisibilityDatePeriod[0][MissionNumber][2 * a + 1] = document1.getDate("window_end_time");
+                            } else if (Integer.parseInt(document1.get("load_number").toString()) == 2) {
+                                TimePeriodNum[1][MissionNumber] = Integer.parseInt(document1.get("amount_window").toString());
+                                int a = Integer.parseInt(document1.get("window_number").toString()) - 1;
+                                if (a > 90 || TimePeriodNum[1][MissionNumber]>90) {
+                                    a=90;
+                                    TimePeriodNum[1][MissionNumber]=90;
+                                }
+                                VisibilityDatePeriod[1][MissionNumber][2 * a] = document1.getDate("window_start_time");
+                                VisibilityDatePeriod[1][MissionNumber][2 * a + 1] = document1.getDate("window_end_time");
+                            } else if (Integer.parseInt(document1.get("load_number").toString()) == 3) {
+                                TimePeriodNum[2][MissionNumber] = Integer.parseInt(document1.get("amount_window").toString());
+                                int a = Integer.parseInt(document1.get("window_number").toString()) - 1;
+                                if (a > 90 || TimePeriodNum[2][MissionNumber]>90) {
+                                    a=90;
+                                    TimePeriodNum[2][MissionNumber]=90;
+                                }
+                                VisibilityDatePeriod[2][MissionNumber][2 * a] = document1.getDate("window_start_time");
+                                VisibilityDatePeriod[2][MissionNumber][2 * a + 1] = document1.getDate("window_end_time");
+                            } else if (Integer.parseInt(document1.get("load_number").toString()) == 4) {
+                                TimePeriodNum[3][MissionNumber] = Integer.parseInt(document1.get("amount_window").toString());
+                                int a = Integer.parseInt(document1.get("window_number").toString()) - 1;
+                                if (a > 90 || TimePeriodNum[3][MissionNumber]>90) {
+                                    a=90;
+                                    TimePeriodNum[3][MissionNumber]=90;
+                                }
+                                VisibilityDatePeriod[3][MissionNumber][2 * a] = document1.getDate("window_start_time");
+                                VisibilityDatePeriod[3][MissionNumber][2 * a + 1] = document1.getDate("window_end_time");
+                            } else {
+                                continue;
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        TimePeriodNum[0][MissionNumber]=0;
+                        TimePeriodNum[1][MissionNumber]=0;
+                        TimePeriodNum[2][MissionNumber]=0;
+                        TimePeriodNum[3][MissionNumber]=0;
                     }
                 }
-            }
 
-            for (int i = 0; i < LoadNumber; i++) {
-                for (int j = 0; j < TimePeriodNum[i][MissionNumber]; j++) {
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                    Calendar cal = Calendar.getInstance();
-                    cal.setTime(VisibilityDatePeriod[i][MissionNumber][2 * j]);
-                    cal.add(Calendar.HOUR_OF_DAY, -8);
-                    String StringTime = sdf.format(cal.getTime());
-                    double[] StarTime = {Double.parseDouble(StringTime.substring(0, 4)),
-                            Double.parseDouble(StringTime.substring(5, 7)),
-                            Double.parseDouble(StringTime.substring(8, 10)),
-                            Double.parseDouble(StringTime.substring(11, 13)),
-                            Double.parseDouble(StringTime.substring(14, 16)),
-                            Double.parseDouble(StringTime.substring(17, 19))};
-                    cal.setTime(VisibilityDatePeriod[i][MissionNumber][2 * j + 1]);
-                    cal.add(Calendar.HOUR_OF_DAY, -8);
-                    StringTime = sdf.format(cal.getTime());
-                    double[] EndTime = {Double.parseDouble(StringTime.substring(0, 4)),
-                            Double.parseDouble(StringTime.substring(5, 7)),
-                            Double.parseDouble(StringTime.substring(8, 10)),
-                            Double.parseDouble(StringTime.substring(11, 13)),
-                            Double.parseDouble(StringTime.substring(14, 16)),
-                            Double.parseDouble(StringTime.substring(17, 19))};
-                    cal.setTime(Time_Point[0]);
-                    cal.add(Calendar.HOUR_OF_DAY, -8);
-                    StringTime = sdf.format(cal.getTime());
-                    double[] ZeroTime = {Double.parseDouble(StringTime.substring(0, 4)),
-                            Double.parseDouble(StringTime.substring(5, 7)),
-                            Double.parseDouble(StringTime.substring(8, 10)),
-                            Double.parseDouble(StringTime.substring(11, 13)),
-                            Double.parseDouble(StringTime.substring(14, 16)),
-                            Double.parseDouble(StringTime.substring(17, 19))};
-                    VisibilityTimePeriod[i][MissionNumber][2 * j] = (int) ((JD(StarTime) - JD(ZeroTime)) * (24 * 60 * 60));
-                    VisibilityTimePeriod[i][MissionNumber][2 * j + 1] = (int) ((JD(EndTime) - JD(ZeroTime)) * (24 * 60 * 60));
+                for (int i = 0; i < LoadNumber; i++) {
+                    for (int j = 0; j < TimePeriodNum[i][MissionNumber]; j++) {
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                        Calendar cal = Calendar.getInstance();
+                        cal.setTime(VisibilityDatePeriod[i][MissionNumber][2 * j]);
+                        cal.add(Calendar.HOUR_OF_DAY, -8);
+                        String StringTime = sdf.format(cal.getTime());
+                        double[] StarTime = {Double.parseDouble(StringTime.substring(0, 4)),
+                                Double.parseDouble(StringTime.substring(5, 7)),
+                                Double.parseDouble(StringTime.substring(8, 10)),
+                                Double.parseDouble(StringTime.substring(11, 13)),
+                                Double.parseDouble(StringTime.substring(14, 16)),
+                                Double.parseDouble(StringTime.substring(17, 19))};
+                        cal.setTime(VisibilityDatePeriod[i][MissionNumber][2 * j + 1]);
+                        cal.add(Calendar.HOUR_OF_DAY, -8);
+                        StringTime = sdf.format(cal.getTime());
+                        double[] EndTime = {Double.parseDouble(StringTime.substring(0, 4)),
+                                Double.parseDouble(StringTime.substring(5, 7)),
+                                Double.parseDouble(StringTime.substring(8, 10)),
+                                Double.parseDouble(StringTime.substring(11, 13)),
+                                Double.parseDouble(StringTime.substring(14, 16)),
+                                Double.parseDouble(StringTime.substring(17, 19))};
+                        cal.setTime(Time_Point[0]);
+                        cal.add(Calendar.HOUR_OF_DAY, -8);
+                        StringTime = sdf.format(cal.getTime());
+                        double[] ZeroTime = {Double.parseDouble(StringTime.substring(0, 4)),
+                                Double.parseDouble(StringTime.substring(5, 7)),
+                                Double.parseDouble(StringTime.substring(8, 10)),
+                                Double.parseDouble(StringTime.substring(11, 13)),
+                                Double.parseDouble(StringTime.substring(14, 16)),
+                                Double.parseDouble(StringTime.substring(17, 19))};
+                        VisibilityTimePeriod[i][MissionNumber][2 * j] = (int) ((JD(StarTime) - JD(ZeroTime)) * (24 * 60 * 60));
+                        VisibilityTimePeriod[i][MissionNumber][2 * j + 1] = (int) ((JD(EndTime) - JD(ZeroTime)) * (24 * 60 * 60));
+                    }
                 }
-            }
 
-            MissionStareTime[MissionNumber] = Double.parseDouble(document.getString("min_stare_time"));
-            MissionPriority[MissionNumber] = Integer.parseInt(document.getString("priority"));
-            MissionSerialNumber[MissionNumber] = document.getString("mission_number");
-            if (document.getString("image_mode").equals("常规")) {
-                MissionImagingMode[MissionNumber] = 1;
-                MissionStareTime[MissionNumber]=10;
-            } else if (document.getString("image_mode").equals("凝视")) {
-                MissionImagingMode[MissionNumber] = 2;
                 MissionStareTime[MissionNumber] = Double.parseDouble(document.getString("min_stare_time"));
-            } else if (document.getString("image_mode").equals("定标")) {
-                MissionImagingMode[MissionNumber] = 3;
-                MissionStareTime[MissionNumber]=10;
+                MissionPriority[MissionNumber] = Integer.parseInt(document.getString("priority"));
+                MissionSerialNumber[MissionNumber] = document.getString("mission_number");
+                if (document.getString("image_mode").equals("常规")) {
+                    MissionImagingMode[MissionNumber] = 1;
+                    MissionStareTime[MissionNumber]=10;
+                } else if (document.getString("image_mode").equals("凝视")) {
+                    MissionImagingMode[MissionNumber] = 2;
+                    MissionStareTime[MissionNumber] = Double.parseDouble(document.getString("min_stare_time"));
+                } else if (document.getString("image_mode").equals("定标")) {
+                    MissionImagingMode[MissionNumber] = 3;
+                    MissionStareTime[MissionNumber]=10;
+                }
+                if (document.getString("image_type").equals("Point")) {
+                    MissionTargetType[MissionNumber] = 1;
+                } else if (document.getString("image_type").equals("Polygon")) {
+                    MissionTargetType[MissionNumber] = 2;
+                }
+
+                //读取订单编号
+                ArrayList<String> MissionForOrderNumbers_i=new ArrayList<>();
+                MissionForOrderNumbers_i= (ArrayList<String>) document.get("order_numbers");
+                MissionForOrderNumbers.add(MissionNumber,MissionForOrderNumbers_i);
+                MissionNumber = MissionNumber + 1;
             }
-            if (document.getString("image_type").equals("Point")) {
-                MissionTargetType[MissionNumber] = 1;
-            } else if (document.getString("image_type").equals("Polygon")) {
-                MissionTargetType[MissionNumber] = 2;
-            }
-            MissionNumber = MissionNumber + 1;
         }
 
         //为任务分配载荷
@@ -710,30 +773,29 @@ public class MissionPlanning {
         }
 
         //传输任务分配
-        int[][] MissionPeriodAll = new int[100][2];
-        PlanningTransNum = 0;
+        ArrayList<int[][]> PlanningTransTimePeriodList=new ArrayList<>();
+        ArrayList<Integer> PlanningTransNumList=new ArrayList<>();
+        int MissionPeriodAll = 0;
         StationNumber = 1;
-        for (int j = 0; j < StationNumber; j++) {
+        for (int j = 0; j < StationMissionNum; j++) {
+            PlanningTransNum = 0;
             int Side_Flag = 0;
             int Flag_tBefore = 0;
             int Visibility_Flag = 0;
             int Flag_t = 0;
             double[] Target_LLA = new double[3];
             double[] Target_ECEF = new double[3];
-            Target_LLA[0] = StationPosition[j][0];
-            Target_LLA[1] = StationPosition[j][1];
-            Target_LLA[2] = StationPosition[j][2] + Re;
+            Target_LLA[0] = StationPosition[StationNumber][0];
+            Target_LLA[1] = StationPosition[StationNumber][1];
+            Target_LLA[2] = StationPosition[StationNumber][2] + Re;
             LLAToECEF(Target_LLA, Target_ECEF);
             for (int k = 0; k < (int) OrbitDataCount; k++) {
                 double Time_JD = JD(Orbital_Time[k]);
                 int Flag_StationTime=0;
-                for (int i = 0; i < StationMissionNum; i++) {
-                    double StationStarTime_JD=JD(StationMissionStarTime[i]);
-                    double StationEndTime_JD=JD(StationMissionEndTime[i]);
-                    if (Time_JD >= StationStarTime_JD && Time_JD<=StationEndTime_JD) {
-                        Flag_StationTime=1;
-                        break;
-                    }
+                double StationStarTime_JD=JD(StationMissionStarTime[j]);
+                double StationEndTime_JD=JD(StationMissionEndTime[j]);
+                if (Time_JD >= StationStarTime_JD && Time_JD<=StationEndTime_JD) {
+                    Flag_StationTime=1;
                 }
                 if (Flag_StationTime == 1) {
                     double[] Target_GEI = new double[3];
@@ -746,7 +808,7 @@ public class MissionPlanning {
                     LLAToECEF(SatPositionRe_LLA, SatPosition_ECEF);
                     Side_Flag = 1;
                     if (Side_Flag == 1) {
-                        Visibility_Flag = StationVisibilityJudge(Target_ECEF, SatPosition_ECEF, StationPitch[j]);
+                        Visibility_Flag = StationVisibilityJudge(Target_ECEF, SatPosition_ECEF, StationPitch[StationNumber]);
                         Flag_tBefore = Flag_t;
                         Flag_t = Visibility_Flag;
                     } else {
@@ -762,7 +824,7 @@ public class MissionPlanning {
 
                 if (Flag_tBefore == 0 && Flag_t == 1) {
                     PlanningTransTimePeriod[PlanningTransNum][0] = k;
-                    PlanningTransStation[PlanningTransNum] = j;
+                    PlanningTransStation[PlanningTransNum] = StationNumber;
                 } else if (Flag_tBefore == 1 && Flag_t == 0) {
                     PlanningTransTimePeriod[PlanningTransNum][1] = k - 1;
                     PlanningTransNum = PlanningTransNum + 1;
@@ -772,13 +834,19 @@ public class MissionPlanning {
                     PlanningTransNum = PlanningTransNum + 1;
                 }
             }
+
+            MissionPeriodAll=MissionPeriodAll+PlanningTransNum;
+            int[][] PlanningTransTimePeriod_iList=PlanningTransTimePeriod;
+            int PlanningTransNum_iList=PlanningTransNum;
+            PlanningTransTimePeriodList.add(j,PlanningTransTimePeriod_iList);
+            PlanningTransNumList.add(j,PlanningTransNum_iList);
         }
 
         //数据传出
         MongoClient mongoClient = MangoDBConnector.getClient();
         //获取名为"temp"的数据库
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
-        String transmission_number = "tn_" + Instant.now().toEpochMilli();
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+//        String transmission_number = "tn_" + Instant.now().toEpochMilli();
         //任务规划结果数据传出
         for (int i = 0; i < MissionNumber; i++) {
             ArrayList<Document> ImageWindowjsonArry = new ArrayList<>();
@@ -798,6 +866,25 @@ public class MissionPlanning {
                 ImageWindowjsonArry.add(ImageWindowjsonObject);
                 ImageMissionjson.get(i).append("mission_state", "待执行");
                 ImageMissionjson.get(i).append("image_window", ImageWindowjsonArry);
+
+                //回溯订单
+                ArrayList<String> MissionForOrderNumbers_i=MissionForOrderNumbers.get(i);
+                for (String OrderNumber:MissionForOrderNumbers_i) {
+                    MongoCollection<Document> Data_ImageOrderjson=mongoDatabase.getCollection("image_order");
+                    FindIterable<Document> D_ImageOrderjson=Data_ImageOrderjson.find();
+                    ArrayList<Document> ImageOrderjson =new ArrayList<>();
+                    for (Document document:D_ImageOrderjson) {
+                        if (document.get("order_number").equals(OrderNumber)) {
+                            document.append("order_state","待执行");
+                            if(document.containsKey("_id"))
+                                document.remove("_id");
+                            Document modifiers_mid=new Document();
+                            modifiers_mid.append("$set",document);
+                            Data_ImageOrderjson.updateOne(new Document("order_number",OrderNumber),modifiers_mid,new UpdateOptions().upsert(true));
+                        }
+                    }
+                }
+
             } else if (PlanningMissionFailReason[i] == 2) {
                 Document ImageWindowjsonObject = new Document();
                 ImageWindowjsonObject.append("load_number", "");
@@ -807,6 +894,25 @@ public class MissionPlanning {
                 ImageMissionjson.get(i).append("mission_state", "被退回");
                 ImageMissionjson.get(i).append("fail_reason", "不可见");
                 ImageMissionjson.get(i).append("image_window", ImageWindowjsonArry);
+
+                //回溯订单
+                ArrayList<String> MissionForOrderNumbers_i=MissionForOrderNumbers.get(i);
+                for (String OrderNumber:MissionForOrderNumbers_i) {
+                    MongoCollection<Document> Data_ImageOrderjson=mongoDatabase.getCollection("image_order");
+                    FindIterable<Document> D_ImageOrderjson=Data_ImageOrderjson.find();
+                    ArrayList<Document> ImageOrderjson =new ArrayList<>();
+                    for (Document document:D_ImageOrderjson) {
+                        if (document.get("order_number").equals(OrderNumber)) {
+                            document.append("order_state","被退回");
+                            if(document.containsKey("_id"))
+                                document.remove("_id");
+                            Document modifiers_mid=new Document();
+                            modifiers_mid.append("$set",document);
+                            Data_ImageOrderjson.updateOne(new Document("order_number",OrderNumber),modifiers_mid,new UpdateOptions().upsert(true));
+                        }
+                    }
+                }
+
             } else if (PlanningMissionFailReason[i] == 3) {
                 Document ImageWindowjsonObject = new Document();
                 ImageWindowjsonObject.append("load_number", "");
@@ -816,6 +922,25 @@ public class MissionPlanning {
                 ImageMissionjson.get(i).append("mission_state", "被退回");
                 ImageMissionjson.get(i).append("fail_reason", "任务冲突");
                 ImageMissionjson.get(i).append("image_window", ImageWindowjsonArry);
+
+
+                //回溯订单
+                ArrayList<String> MissionForOrderNumbers_i=MissionForOrderNumbers.get(i);
+                for (String OrderNumber:MissionForOrderNumbers_i) {
+                    MongoCollection<Document> Data_ImageOrderjson=mongoDatabase.getCollection("image_order");
+                    FindIterable<Document> D_ImageOrderjson=Data_ImageOrderjson.find();
+                    ArrayList<Document> ImageOrderjson =new ArrayList<>();
+                    for (Document document:D_ImageOrderjson) {
+                        if (document.get("order_number").equals(OrderNumber)) {
+                            document.append("order_state","被退回");
+                            if(document.containsKey("_id"))
+                                document.remove("_id");
+                            Document modifiers_mid=new Document();
+                            modifiers_mid.append("$set",document);
+                            Data_ImageOrderjson.updateOne(new Document("order_number",OrderNumber),modifiers_mid,new UpdateOptions().upsert(true));
+                        }
+                    }
+                }
             }
             Document modifiers = new Document();
             modifiers.append("$set", ImageMissionjson.get(i));
@@ -826,18 +951,35 @@ public class MissionPlanning {
         //传输任务数据传出
         if(TransmissionMissionJson != null) {
             ArrayList<Document> TranWindowjsonArry = new ArrayList<>();
-            for (int i = 0; i < PlanningTransNum; i++) {
-                Document TranWindowjsonObject = new Document();
-                for (int j = 0; j < StationNumber; j++) {
-                    if (PlanningTransStation[i] == j) {
-                        TranWindowjsonObject.append("station_name", StationSerialNumber[j]);
-                    }
+            for (int i = 0; i < StationMissionNum; i++) {
+                for (int j = 0; j < PlanningTransNumList.get(i); j++) {
+                    Document TranWindowjsonObject = new Document();
+                    TranWindowjsonObject.append("station_name", StationSerialNumber[1]);
+                    TranWindowjsonObject.append("start_time", Time_Point[PlanningTransTimePeriodList.get(i)[j][0]]);
+                    TranWindowjsonObject.append("end_time", Time_Point[PlanningTransTimePeriodList.get(i)[j][1]]);
+                    TranWindowjsonArry.add(TranWindowjsonObject);
                 }
-                TranWindowjsonObject.append("start_time", Time_Point[PlanningTransTimePeriod[i][0]]);
-                TranWindowjsonObject.append("end_time", Time_Point[PlanningTransTimePeriod[i][1]]);
-                TranWindowjsonArry.add(TranWindowjsonObject);
+                if (PlanningTransNumList.get(i) == 0) {
+                    Document d=StationMissionJson.get(i);
+                    if (d.containsKey("_id"))
+                        d.remove("_id");
+                    d.append("tag","被退回");
+                    Document modifiers = new Document();
+                    modifiers.append("$set", d);
+                    MongoCollection<Document> station_mission = mongoDatabase.getCollection("station_mission");
+                    station_mission.updateOne(new Document("mission_number", d.getString("mission_number")), modifiers, new UpdateOptions().upsert(true));
+                }else{
+                    Document d=StationMissionJson.get(i);
+                    if (d.containsKey("_id"))
+                        d.remove("_id");
+                    d.append("tag","待执行");
+                    Document modifiers = new Document();
+                    modifiers.append("$set", d);
+                    MongoCollection<Document> station_mission = mongoDatabase.getCollection("station_mission");
+                    station_mission.updateOne(new Document("mission_number", d.getString("mission_number")), modifiers, new UpdateOptions().upsert(true));
+                }
             }
-            if (PlanningTransNum == 0) {
+            if (MissionPeriodAll == 0) {
                 Document TranWindowjsonObject = new Document();
                 TranWindowjsonObject.append("station_name", "");
                 TranWindowjsonObject.append("start_time", "");
@@ -1234,4 +1376,99 @@ public class MissionPlanning {
 
         return Result;
     }
+
+    //读取任务区域目标点
+    private static ArrayList<double[]> GetRegionPoint(Document target_region) {
+        ArrayList<double[]> CoordinatesList = new ArrayList<double[]>();
+        Document geomety = new Document();
+        if (target_region.get("type").equals("Feature")) {
+            geomety = (Document) target_region.get("geometry");
+            CoordinatesList = GetGeometryPoint(geomety);
+        } else if (target_region.get("type").equals("FeatureCollection")) {
+            ArrayList<Document> features = (ArrayList<Document>) target_region.get("features");
+            for (Document subfeatures : features) {
+                geomety = (Document) subfeatures.get("geometry");
+                ArrayList<double[]> subCoordinatesList = new ArrayList<double[]>();
+                subCoordinatesList = GetGeometryPoint(geomety);
+                for (double[] subsubCoordinatesList : subCoordinatesList) {
+                    CoordinatesList.add(subsubCoordinatesList);
+                }
+            }
+        } else if (target_region.get("type").equals("GeometryCollection")) {
+            ArrayList<Document> geometries = (ArrayList<Document>) target_region.get("geometries");
+            for (Document subgeometries : geometries) {
+                ArrayList<double[]> subCoordinatesList = new ArrayList<double[]>();
+                subCoordinatesList = GetGeometryPoint(subgeometries);
+                for (double[] subsubCoordinatesList : subCoordinatesList) {
+                    CoordinatesList.add(subsubCoordinatesList);
+                }
+            }
+        } else {
+
+        }
+
+        return CoordinatesList;
+    }
+
+    private static ArrayList<double[]> GetGeometryPoint(Document geometry) {
+        ArrayList<double[]> CoordinatesList = new ArrayList<double[]>();
+        if (geometry.get("type").equals("Point")) {
+            ArrayList<Double> coordinates = (ArrayList<Double>) geometry.get("coordinates");
+            double[] Target = new double[2];
+            Target[0] = coordinates.get(0);
+            Target[1] = coordinates.get(1);
+            CoordinatesList.add(Target);
+        } else if (geometry.get("type").equals("LineString")) {
+            ArrayList<ArrayList<Double>> coordinates = (ArrayList<ArrayList<Double>>) geometry.get("coordinates");
+            for (ArrayList<Double> document : coordinates) {
+                double[] Target = new double[2];
+                Target[0] = document.get(0);
+                Target[1] = document.get(1);
+                CoordinatesList.add(Target);
+            }
+        } else if (geometry.get("type").equals("Polygon")) {
+            ArrayList<ArrayList<ArrayList<Double>>> coordinates = (ArrayList<ArrayList<ArrayList<Double>>>) geometry.get("coordinates");
+            for (ArrayList<ArrayList<Double>> subcoordinates : coordinates) {
+                for (ArrayList<Double> subsubcoordinates : subcoordinates) {
+                    double[] Target = new double[2];
+                    Target[0] = subsubcoordinates.get(0);
+                    Target[1] = subsubcoordinates.get(1);
+                    CoordinatesList.add(Target);
+                }
+            }
+        } else if (geometry.get("type").equals("MultiPoint")) {
+            ArrayList<ArrayList<Double>> coordinates = (ArrayList<ArrayList<Double>>) geometry.get("coordinates");
+            for (ArrayList<Double> document : coordinates) {
+                double[] Target = new double[2];
+                Target[0] = document.get(0);
+                Target[1] = document.get(1);
+                CoordinatesList.add(Target);
+            }
+        } else if (geometry.get("type").equals("MultiLineString")) {
+            ArrayList<ArrayList<ArrayList<Double>>> coordinates = (ArrayList<ArrayList<ArrayList<Double>>>) geometry.get("coordinates");
+            for (ArrayList<ArrayList<Double>> subcoordinates : coordinates) {
+                for (ArrayList<Double> subsubcoordinates : subcoordinates) {
+                    double[] Target = new double[2];
+                    Target[0] = subsubcoordinates.get(0);
+                    Target[1] = subsubcoordinates.get(1);
+                    CoordinatesList.add(Target);
+                }
+            }
+        } else if (geometry.get("type").equals("MultiPolygon")) {
+            ArrayList<ArrayList<ArrayList<ArrayList<Double>>>> coordinates = (ArrayList<ArrayList<ArrayList<ArrayList<Double>>>>) geometry.get("coordinates");
+            for (ArrayList<ArrayList<ArrayList<Double>>> subcoordinates : coordinates) {
+                for (ArrayList<ArrayList<Double>> subsubcoordinates : subcoordinates) {
+                    for (ArrayList<Double> subsubsubcoordinates : subsubcoordinates) {
+                        double[] Target = new double[2];
+                        Target[0] = subsubsubcoordinates.get(0);
+                        Target[1] = subsubsubcoordinates.get(1);
+                        CoordinatesList.add(Target);
+                    }
+                }
+            }
+        }
+
+        return CoordinatesList;
+    }
+
 }

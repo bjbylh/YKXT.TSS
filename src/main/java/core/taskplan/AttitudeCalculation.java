@@ -16,6 +16,12 @@ import java.util.Date;
 
 import static java.lang.Math.*;
 
+//import common.mongo.DbDefine;
+//import common.mongo.MangoDBConnector;
+
+//import common.mongo.DbDefine;
+//import common.mongo.MangoDBConnector;
+
 //import common.mongo.MangoDBConnector;
 
 //import common.mongo.DbDefine;
@@ -55,12 +61,6 @@ public class AttitudeCalculation {
     private static double Re = 6371393;                  //地球半径，单位为：米
     private static double Step = 1;                        //数据步长
 
-    /**
-     * @param Satllitejson
-     * @param Orbitjson
-     * @param OrbitDataCount
-     * @param ImageMissionjson
-     */
     public static void AttitudeCalculationII(Document Satllitejson, FindIterable<Document> Orbitjson, long OrbitDataCount, ArrayList<Document> ImageMissionjson) {
         //载荷参数更新
         ArrayList<Document> properties = (ArrayList<Document>) Satllitejson.get("properties");
@@ -173,7 +173,7 @@ public class AttitudeCalculation {
 
             OrbitalDataNum = OrbitalDataNum + 1;
 
-            if (OrbitalDataNum >= OrbitDataCount)
+            if(OrbitalDataNum >= OrbitDataCount)
                 break;
         }
 
@@ -189,91 +189,88 @@ public class AttitudeCalculation {
         MissionNumber = 0;
         int[] TargetNum = new int[ImageMissionjson.size()];
         for (Document document : ImageMissionjson) {
-            Document target_region = (Document) document.get("image_region");
-            ArrayList<Document> features = (ArrayList<Document>) target_region.get("features");
-            for (Document document1 : features) {
+            try {
+                Document target_region = (Document) document.get("image_region");
 
-                Document geometry = (Document) document1.get("geometry");
-                ArrayList<ArrayList<Double>> coordinates = (ArrayList<ArrayList<Double>>) geometry.get("coordinates");
-                int i = 0;
-                for (ArrayList<Double> document2 : coordinates) {
-                    MissionTargetArea[MissionNumber][2 * i] = document2.get(0);
-                    MissionTargetArea[MissionNumber][2 * i + 1] = document2.get(1);
-                    i = i + 1;
+                //读取目标区域
+                ArrayList<double[]> MissionTargetArea_iList = new ArrayList<double[]>();
+                MissionTargetArea_iList = GetRegionPoint(target_region);
+                TargetNum[MissionNumber] = MissionTargetArea_iList.size();
+                for (int i = 0; i < TargetNum[MissionNumber]; i++) {
+                    MissionTargetArea[MissionNumber][2 * i] = MissionTargetArea_iList.get(i)[0];
+                    MissionTargetArea[MissionNumber][2 * i + 1] = MissionTargetArea_iList.get(i)[1];
                 }
-                TargetNum[MissionNumber] = coordinates.size();
-            }
-            ArrayList<Document> image_window = (ArrayList<Document>) document.get("image_window");
-            if (image_window == null) {
-                MissionStarTime[MissionNumber][0] = Time[1][0];
-                MissionStarTime[MissionNumber][1] = Time[1][1];
-                MissionStarTime[MissionNumber][2] = Time[1][2];
-                MissionStarTime[MissionNumber][3] = Time[1][3];
-                MissionStarTime[MissionNumber][4] = Time[1][4];
-                MissionStarTime[MissionNumber][5] = Time[1][5];
-                MissionStopTime[MissionNumber][0] = Time[0][0];
-                MissionStopTime[MissionNumber][1] = Time[0][1];
-                MissionStopTime[MissionNumber][2] = Time[0][2];
-                MissionStopTime[MissionNumber][3] = Time[0][3];
-                MissionStopTime[MissionNumber][4] = Time[0][4];
-                MissionStopTime[MissionNumber][5] = Time[0][5];
-            } else {
-                for (Document document1 : image_window) {
-                    PlanningMissionLoad[MissionNumber] = Integer.parseInt(document1.get("load_number").toString());
-                    Date start_time = document1.getDate("start_time");
-                    //时间转换为doubule型
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                    Calendar cal = Calendar.getInstance();
-                    cal.setTime(start_time);
-                    cal.add(Calendar.HOUR_OF_DAY, -8);
-                    StringTime = sdf.format(cal.getTime());
-                    MissionStarTime[MissionNumber][0] = Double.parseDouble(StringTime.substring(0, 4));
-                    MissionStarTime[MissionNumber][1] = Double.parseDouble(StringTime.substring(5, 7));
-                    MissionStarTime[MissionNumber][2] = Double.parseDouble(StringTime.substring(8, 10));
-                    MissionStarTime[MissionNumber][3] = Double.parseDouble(StringTime.substring(11, 13));
-                    MissionStarTime[MissionNumber][4] = Double.parseDouble(StringTime.substring(14, 16));
-                    MissionStarTime[MissionNumber][5] = Double.parseDouble(StringTime.substring(17, 19));
-                    Date end_time = document1.getDate("end_time");
-                    //时间转换为doubule型
-                    cal.setTime(end_time);
-                    cal.add(Calendar.HOUR_OF_DAY, -8);
-                    StringTime = sdf.format(cal.getTime());
-                    MissionStopTime[MissionNumber][0] = Double.parseDouble(StringTime.substring(0, 4));
-                    MissionStopTime[MissionNumber][1] = Double.parseDouble(StringTime.substring(5, 7));
-                    MissionStopTime[MissionNumber][2] = Double.parseDouble(StringTime.substring(8, 10));
-                    MissionStopTime[MissionNumber][3] = Double.parseDouble(StringTime.substring(11, 13));
-                    MissionStopTime[MissionNumber][4] = Double.parseDouble(StringTime.substring(14, 16));
-                    MissionStopTime[MissionNumber][5] = Double.parseDouble(StringTime.substring(17, 19));
+                ArrayList<Document> image_window = (ArrayList<Document>) document.get("image_window");
+                if (image_window == null || document.get("mission_state").equals("待执行")==false) {
+                    MissionStarTime[MissionNumber][0] = Time[1][0];
+                    MissionStarTime[MissionNumber][1] = Time[1][1];
+                    MissionStarTime[MissionNumber][2] = Time[1][2];
+                    MissionStarTime[MissionNumber][3] = Time[1][3];
+                    MissionStarTime[MissionNumber][4] = Time[1][4];
+                    MissionStarTime[MissionNumber][5] = Time[1][5];
+                    MissionStopTime[MissionNumber][0] = Time[0][0];
+                    MissionStopTime[MissionNumber][1] = Time[0][1];
+                    MissionStopTime[MissionNumber][2] = Time[0][2];
+                    MissionStopTime[MissionNumber][3] = Time[0][3];
+                    MissionStopTime[MissionNumber][4] = Time[0][4];
+                    MissionStopTime[MissionNumber][5] = Time[0][5];
+                }else {
+                    for (Document document1 : image_window) {
+                        PlanningMissionLoad[MissionNumber] = Integer.parseInt(document1.get("load_number").toString());
+                        Date start_time = document1.getDate("start_time");
+                        //时间转换为doubule型
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                        Calendar cal = Calendar.getInstance();
+                        cal.setTime(start_time);
+                        cal.add(Calendar.HOUR_OF_DAY, -8);
+                        StringTime = sdf.format(cal.getTime());
+                        MissionStarTime[MissionNumber][0] = Double.parseDouble(StringTime.substring(0, 4));
+                        MissionStarTime[MissionNumber][1] = Double.parseDouble(StringTime.substring(5, 7));
+                        MissionStarTime[MissionNumber][2] = Double.parseDouble(StringTime.substring(8, 10));
+                        MissionStarTime[MissionNumber][3] = Double.parseDouble(StringTime.substring(11, 13));
+                        MissionStarTime[MissionNumber][4] = Double.parseDouble(StringTime.substring(14, 16));
+                        MissionStarTime[MissionNumber][5] = Double.parseDouble(StringTime.substring(17, 19));
+                        Date end_time = document1.getDate("end_time");
+                        //时间转换为doubule型
+                        cal.setTime(end_time);
+                        cal.add(Calendar.HOUR_OF_DAY, -8);
+                        StringTime = sdf.format(cal.getTime());
+                        MissionStopTime[MissionNumber][0] = Double.parseDouble(StringTime.substring(0, 4));
+                        MissionStopTime[MissionNumber][1] = Double.parseDouble(StringTime.substring(5, 7));
+                        MissionStopTime[MissionNumber][2] = Double.parseDouble(StringTime.substring(8, 10));
+                        MissionStopTime[MissionNumber][3] = Double.parseDouble(StringTime.substring(11, 13));
+                        MissionStopTime[MissionNumber][4] = Double.parseDouble(StringTime.substring(14, 16));
+                        MissionStopTime[MissionNumber][5] = Double.parseDouble(StringTime.substring(17, 19));
+                    }
                 }
+                MissionSerialNumber[MissionNumber] = document.getString("mission_number");
+                if (document.getString("image_mode").equals("常规")) {
+                    MissionImagingMode[MissionNumber] = 1;
+                }
+                if (document.getString("image_type").equals("Point")) {
+                    MissionTargetType[MissionNumber] = 1;
+                }
+                MisssionTargetHeight[MissionNumber][0] = Double.parseDouble(document.getString("min_height_orbit"));
+                MisssionTargetHeight[MissionNumber][1] = Double.parseDouble(document.getString("max_height_orbit"));
+                MissionNumber = MissionNumber + 1;
+            } catch (Exception e) {
+                e.printStackTrace();
+                continue;
             }
-            MissionSerialNumber[MissionNumber] = document.getString("mission_number");
-            if (document.getString("image_mode").equals("常规")) {
-                MissionImagingMode[MissionNumber] = 1;
-            }
-            if (document.getString("image_type").equals("Point")) {
-                MissionTargetType[MissionNumber] = 1;
-            }
-            MisssionTargetHeight[MissionNumber][0] = Double.parseDouble(document.getString("min_height_orbit"));
-            MisssionTargetHeight[MissionNumber][1] = Double.parseDouble(document.getString("max_height_orbit"));
-            MissionNumber = MissionNumber + 1;
         }
 
         //姿态计算，欧拉角1-2-3转序
         double[][] SatAttitud = new double[(int) OrbitDataCount][3];
         double[][] SatAttitudVel = new double[(int) OrbitalDataNum][3];
 
-
-        ArrayList<Document> os = new ArrayList<>();
-
         MongoClient mongoClient = MangoDBConnector.getClient();
         //获取名为"temp"的数据库
-        //MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
         MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+//        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
 
         MongoCollection<Document> normal_attitude = mongoDatabase.getCollection("normal_attitude");
-
+        ArrayList<Document> os = new ArrayList<>();
         long cnt = 0;
-
         for (int i = 0; i < OrbitalDataNum; i++) {
             boolean MissionFlag = false;
             int LoadNum = 0;
@@ -376,6 +373,7 @@ public class AttitudeCalculation {
             normal_attitude.insertMany(os);
             os.clear();
         }
+
         mongoClient.close();
     }
 
@@ -701,6 +699,100 @@ public class AttitudeCalculation {
         Result[2] = A[0] * B[1] - A[1] * B[0];
 
         return Result;
+    }
+
+    //读取任务区域目标点
+    private static ArrayList<double[]> GetRegionPoint(Document target_region) {
+        ArrayList<double[]> CoordinatesList = new ArrayList<double[]>();
+        Document geomety = new Document();
+        if (target_region.get("type").equals("Feature")) {
+            geomety = (Document) target_region.get("geometry");
+            CoordinatesList = GetGeometryPoint(geomety);
+        } else if (target_region.get("type").equals("FeatureCollection")) {
+            ArrayList<Document> features = (ArrayList<Document>) target_region.get("features");
+            for (Document subfeatures : features) {
+                geomety = (Document) subfeatures.get("geometry");
+                ArrayList<double[]> subCoordinatesList = new ArrayList<double[]>();
+                subCoordinatesList = GetGeometryPoint(geomety);
+                for (double[] subsubCoordinatesList : subCoordinatesList) {
+                    CoordinatesList.add(subsubCoordinatesList);
+                }
+            }
+        } else if (target_region.get("type").equals("GeometryCollection")) {
+            ArrayList<Document> geometries = (ArrayList<Document>) target_region.get("geometries");
+            for (Document subgeometries : geometries) {
+                ArrayList<double[]> subCoordinatesList = new ArrayList<double[]>();
+                subCoordinatesList = GetGeometryPoint(subgeometries);
+                for (double[] subsubCoordinatesList : subCoordinatesList) {
+                    CoordinatesList.add(subsubCoordinatesList);
+                }
+            }
+        } else {
+
+        }
+
+        return CoordinatesList;
+    }
+
+    private static ArrayList<double[]> GetGeometryPoint(Document geometry) {
+        ArrayList<double[]> CoordinatesList = new ArrayList<double[]>();
+        if (geometry.get("type").equals("Point")) {
+            ArrayList<Double> coordinates = (ArrayList<Double>) geometry.get("coordinates");
+            double[] Target = new double[2];
+            Target[0] = coordinates.get(0);
+            Target[1] = coordinates.get(1);
+            CoordinatesList.add(Target);
+        } else if (geometry.get("type").equals("LineString")) {
+            ArrayList<ArrayList<Double>> coordinates = (ArrayList<ArrayList<Double>>) geometry.get("coordinates");
+            for (ArrayList<Double> document : coordinates) {
+                double[] Target = new double[2];
+                Target[0] = document.get(0);
+                Target[1] = document.get(1);
+                CoordinatesList.add(Target);
+            }
+        } else if (geometry.get("type").equals("Polygon")) {
+            ArrayList<ArrayList<ArrayList<Double>>> coordinates = (ArrayList<ArrayList<ArrayList<Double>>>) geometry.get("coordinates");
+            for (ArrayList<ArrayList<Double>> subcoordinates : coordinates) {
+                for (ArrayList<Double> subsubcoordinates : subcoordinates) {
+                    double[] Target = new double[2];
+                    Target[0] = subsubcoordinates.get(0);
+                    Target[1] = subsubcoordinates.get(1);
+                    CoordinatesList.add(Target);
+                }
+            }
+        } else if (geometry.get("type").equals("MultiPoint")) {
+            ArrayList<ArrayList<Double>> coordinates = (ArrayList<ArrayList<Double>>) geometry.get("coordinates");
+            for (ArrayList<Double> document : coordinates) {
+                double[] Target = new double[2];
+                Target[0] = document.get(0);
+                Target[1] = document.get(1);
+                CoordinatesList.add(Target);
+            }
+        } else if (geometry.get("type").equals("MultiLineString")) {
+            ArrayList<ArrayList<ArrayList<Double>>> coordinates = (ArrayList<ArrayList<ArrayList<Double>>>) geometry.get("coordinates");
+            for (ArrayList<ArrayList<Double>> subcoordinates : coordinates) {
+                for (ArrayList<Double> subsubcoordinates : subcoordinates) {
+                    double[] Target = new double[2];
+                    Target[0] = subsubcoordinates.get(0);
+                    Target[1] = subsubcoordinates.get(1);
+                    CoordinatesList.add(Target);
+                }
+            }
+        } else if (geometry.get("type").equals("MultiPolygon")) {
+            ArrayList<ArrayList<ArrayList<ArrayList<Double>>>> coordinates = (ArrayList<ArrayList<ArrayList<ArrayList<Double>>>>) geometry.get("coordinates");
+            for (ArrayList<ArrayList<ArrayList<Double>>> subcoordinates : coordinates) {
+                for (ArrayList<ArrayList<Double>> subsubcoordinates : subcoordinates) {
+                    for (ArrayList<Double> subsubsubcoordinates : subsubcoordinates) {
+                        double[] Target = new double[2];
+                        Target[0] = subsubsubcoordinates.get(0);
+                        Target[1] = subsubsubcoordinates.get(1);
+                        CoordinatesList.add(Target);
+                    }
+                }
+            }
+        }
+
+        return CoordinatesList;
     }
 
 }

@@ -26,7 +26,7 @@ public class RedisPublish {
 
     public static void newRTOrbitGorecastTask() {
         Jedis jedis = RedisConnector.getJedis();
-        jedis.publish(Topic.CMD_RECV, "{\"Head\":{\"id\":\"MAG@1568796984537\",\"time\":1568796984537,\"type\":\"NEW_TASK\",\"from\":\"MAG\",\"to\":\"TSS\"},\"Data\":{\"name\":\"新建任务调度任务指令\",\"tasktype\":\"REALTIME\",\"templet\":\"TASK_PLAN\",\"imageorder\":\"20190917175543913\",\"stationmission\":\"2019091817583969\"}}");
+        jedis.publish(Topic.CMD_RECV, "{\"Head\":{\"id\":\"MAG@1569553316613\",\"time\":1569553316613,\"type\":\"CHECK_QUERY\",\"from\":\"MAG\",\"to\":\"TSS\"},\"Data\":{\"imageorder\":\"20190927105710220\",\"stationmission\":\"20190924120243292,20190924140138824\"}}");
                 //jedis.publish(Topic.CMD_RECV, RedisDataEntity.GenNewTask());
         jedis.close();
     }
@@ -37,7 +37,7 @@ public class RedisPublish {
         jedis.close();
     }
 
-    public static void checkResult(String id, Map<String, Boolean> trueorfasle) {
+    public static void checkResult(String id, Map<Integer, Map<String, Boolean>> trueorfasle) {
         Jedis jedis = RedisConnector.getJedis();
         String ret = RedisDataEntity.GenCheckResult(id, trueorfasle);
         System.out.println(ret);

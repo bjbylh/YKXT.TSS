@@ -19,6 +19,9 @@ import java.util.Date;
 import static java.lang.Math.acos;
 import static java.lang.Math.sqrt;
 
+//import common.mongo.DbDefine;
+//import common.mongo.MangoDBConnector;
+
 class OrbitPrediction {
     private static double GRAVP = 1;
     private static double MOON = 1;
@@ -628,7 +631,11 @@ class OrbitPrediction {
 
     //轨道外推
     public static void OrbitPredictorII(Instant timeRaw, LocalDateTime start, LocalDateTime end, double step, double[] orbit0, JsonObject json) {
+        MongoClient mongoClient = MangoDBConnector.getClient();
+//        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
+        MongoCollection<Document> orbitDB = mongoDatabase.getCollection("orbit_attitude");
         JsonArray properties = json.getAsJsonArray("properties");
         //载荷参数初始话
         int ViewNum = 4;
@@ -768,13 +775,11 @@ class OrbitPrediction {
         double[][] Orbital_ViewArea = new double[OrbitalDataNum][4 * ViewNum];
 
         ArrayList<Document> os = new ArrayList<>();
+        //每隔一定时间记录一次
+        ArrayList<Document> osInterval=new ArrayList<>();
 
         System.out.println("计算轨道数据中...");
 
-        MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
-        MongoCollection<Document> orbitDB = mongoDatabase.getCollection("orbit_attitude");
-        long cnt = 0;
         while (x < xmax) {
             JsonObject jsonObject = new JsonObject();
             if (h > (xmax - x)) {
@@ -845,7 +850,7 @@ class OrbitPrediction {
             for (int i = 0; i < ViewNum; i++) {
                 JsonObject jsonObject1 = new JsonObject();
                 jsonObject1.addProperty("load_amount", ViewNum);
-                jsonObject1.addProperty("load_number", i + 1);
+                jsonObject1.addProperty("load_number", i+1);
                 jsonObject1.addProperty("visible_left_lon", Orbital_ViewArea[j][4 * i + 0]);
                 jsonObject1.addProperty("visible_left_lat", Orbital_ViewArea[j][4 * i + 1]);
                 jsonObject1.addProperty("visible_right_lon", Orbital_ViewArea[j][4 * i + 2]);
@@ -859,21 +864,30 @@ class OrbitPrediction {
             doc.append("time_point", Date.from(timeRaw.plusMillis((long) (1000 * j * step))));
 
             os.add(doc);
-            cnt++;
 
-            if(os.size() > 10000){
+            if (os.size() > 10000) {
                 orbitDB.insertMany(os);
                 os.clear();
-                cnt = 0;
+            }
+
+            if (j%60 == 0) {
+                osInterval.add(doc);
             }
 
             j++;
         }
+        System.out.println("计算完毕，开始入库，待入库条数：" + j);
 
-        if(os.size() > 0) {
+        if (os.size() > 0) {
             orbitDB.insertMany(os);
             os.clear();
         }
+
+        //间隔记录
+        MongoCollection<Document> orbitDBInterval = mongoDatabase.getCollection("orbit_attitude_sample");
+        orbitDBInterval.insertMany(osInterval);
+        osInterval.clear();
+
         mongoClient.close();
 
         //阳光规避计算及输出
@@ -970,7 +984,7 @@ class OrbitPrediction {
         }
     }
 
-    private static int AvoidSunshineIITest(double[][] Orbital_Time, double[][] Orbital_SatPosition, int[] SunAvoidTimePeriod) {
+    private static int AvoidSunshineIITest( double[][] Orbital_Time,double[][] Orbital_SatPosition,int[] SunAvoidTimePeriod) {
         int Flag_tBefore = 0;
         int Avoid_Flag = 0;
         int Flag_t = 0;

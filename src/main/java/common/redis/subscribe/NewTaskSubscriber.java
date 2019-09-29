@@ -156,8 +156,9 @@ public class NewTaskSubscriber extends JedisPubSub {
                 long count = Data_Orbitjson.count(Filters.and(queryBson));
 
                 try {
-                    Map<String, Boolean> stringBooleanMap = VisibilityCalculation.VisibilityCalculationEmergency(Satllitejson, D_orbitjson, count, GroundStationjson, Missionjson, StationMissionjson);
-                    RedisPublish.checkResult(id, stringBooleanMap);
+                    Map<Integer, Map<String, Boolean>> integerMapMap = VisibilityCalculation.VisibilityCalculationEmergency(Satllitejson, D_orbitjson, count, GroundStationjson, Missionjson, StationMissionjson);
+                    RedisPublish.checkResult(id, integerMapMap);
+
                 } catch (ParseException e) {
                     e.printStackTrace();
                 }

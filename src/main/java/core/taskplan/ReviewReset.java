@@ -11,10 +11,12 @@ import org.bson.Document;
 
 import javax.swing.*;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
 import java.util.*;
 
 import static java.lang.Math.*;
+
+//import common.mongo.DbDefine;
+//import common.mongo.MangoDBConnector;
 
 public class ReviewReset {
     private static double AUtokm = 1.49597870e8;
@@ -177,52 +179,63 @@ public class ReviewReset {
         int[][] MissionStarEnd_Number = new int[ImageMissionjson.size()][2];
         int MissionChark_Number = 0;
         String[] MissionName = new String[ImageMissionjson.size()];
+
+        ArrayList<ArrayList<String>> MissionForOrderNumbers=new ArrayList<>();
+
         try {
             for (Document document : ImageMissionjson) {
-                if (document.getString("mission_state").equals("待执行")) {
-                    ArrayList<Document> available_window = (ArrayList<Document>) document.get("image_window");
-                    for (Document document1 : available_window) {
-                        Date time_point = document1.getDate("start_time");
-                        //时间转换为doubule型
-                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                        String StringTime;
-                        Calendar cal = Calendar.getInstance();
-                        cal.setTime(time_point);
-                        cal.add(Calendar.HOUR_OF_DAY, -8);
-                        StringTime = sdf.format(cal.getTime());
-                        double[] MissionStar_Time = {Double.parseDouble(StringTime.substring(0, 4)),
-                                Double.parseDouble(StringTime.substring(5, 7)),
-                                Double.parseDouble(StringTime.substring(8, 10)),
-                                Double.parseDouble(StringTime.substring(11, 13)),
-                                Double.parseDouble(StringTime.substring(14, 16)),
-                                Double.parseDouble(StringTime.substring(17, 19))};
-                        time_point = document1.getDate("end_time");
-                        cal.setTime(time_point);
-                        cal.add(Calendar.HOUR_OF_DAY, -8);
-                        StringTime = sdf.format(cal.getTime());
-                        double[] MissionEnd_Time = {Double.parseDouble(StringTime.substring(0, 4)),
-                                Double.parseDouble(StringTime.substring(5, 7)),
-                                Double.parseDouble(StringTime.substring(8, 10)),
-                                Double.parseDouble(StringTime.substring(11, 13)),
-                                Double.parseDouble(StringTime.substring(14, 16)),
-                                Double.parseDouble(StringTime.substring(17, 19))};
-                        int MissionStar_Number = (int) ((JD(MissionStar_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
-                        int MissionEnd_Number = (int) ((JD(MissionEnd_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
-                        MissionStarEnd_Number[MissionNumber][0] = MissionStar_Number;
-                        MissionStarEnd_Number[MissionNumber][1] = MissionEnd_Number;
-                        MissionChark_Number = MissionChark_Number + 1;
-                        for (int i = MissionStar_Number; i <= MissionEnd_Number; i++) {
-                            ImageMissionStatus[i] = MissionNumber + 1;
+                try {
+                    if (document.getString("mission_state").equals("待执行")) {
+                        ArrayList<Document> available_window = (ArrayList<Document>) document.get("image_window");
+                        for (Document document1 : available_window) {
+                            Date time_point = document1.getDate("start_time");
+                            //时间转换为doubule型
+                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                            String StringTime;
+                            Calendar cal = Calendar.getInstance();
+                            cal.setTime(time_point);
+                            cal.add(Calendar.HOUR_OF_DAY, -8);
+                            StringTime = sdf.format(cal.getTime());
+                            double[] MissionStar_Time = {Double.parseDouble(StringTime.substring(0, 4)),
+                                    Double.parseDouble(StringTime.substring(5, 7)),
+                                    Double.parseDouble(StringTime.substring(8, 10)),
+                                    Double.parseDouble(StringTime.substring(11, 13)),
+                                    Double.parseDouble(StringTime.substring(14, 16)),
+                                    Double.parseDouble(StringTime.substring(17, 19))};
+                            time_point = document1.getDate("end_time");
+                            cal.setTime(time_point);
+                            cal.add(Calendar.HOUR_OF_DAY, -8);
+                            StringTime = sdf.format(cal.getTime());
+                            double[] MissionEnd_Time = {Double.parseDouble(StringTime.substring(0, 4)),
+                                    Double.parseDouble(StringTime.substring(5, 7)),
+                                    Double.parseDouble(StringTime.substring(8, 10)),
+                                    Double.parseDouble(StringTime.substring(11, 13)),
+                                    Double.parseDouble(StringTime.substring(14, 16)),
+                                    Double.parseDouble(StringTime.substring(17, 19))};
+                            int MissionStar_Number = (int) ((JD(MissionStar_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
+                            int MissionEnd_Number = (int) ((JD(MissionEnd_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
+                            MissionStarEnd_Number[MissionNumber][0] = MissionStar_Number;
+                            MissionStarEnd_Number[MissionNumber][1] = MissionEnd_Number;
+                            MissionChark_Number = MissionChark_Number + 1;
+                            for (int i = MissionStar_Number; i <= MissionEnd_Number; i++) {
+                                ImageMissionStatus[i] = MissionNumber + 1;
+                            }
                         }
+                        ReviewResult.put(document.getString("mission_number"), true);
+                        FalseMission[MissionNumber] = 1;
+                    } else {
+                        ReviewResult.put(document.getString("mission_number"), false);
+                        FalseMission[MissionNumber] = 0;
                     }
-                    ReviewResult.put(document.getString("mission_number"), true);
-                    FalseMission[MissionNumber] = 1;
-                } else {
-                    ReviewResult.put(document.getString("mission_number"), false);
-                    FalseMission[MissionNumber] = 0;
+                    MissionName[MissionNumber] = document.getString("name");
+                    ArrayList<String> MissionForOrderNumbers_i=new ArrayList<>();
+                    MissionForOrderNumbers_i= (ArrayList<String>) document.get("order_numbers");
+                    MissionForOrderNumbers.add(MissionNumber,MissionForOrderNumbers_i);
+                    MissionNumber = MissionNumber + 1;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    continue;
                 }
-                MissionName[MissionNumber] = document.getString("name");
-                MissionNumber = MissionNumber + 1;
             }
         } catch (NumberFormatException e) {
             e.printStackTrace();
@@ -236,36 +249,51 @@ public class ReviewReset {
                 ArrayList<Document> TransmissionWindowArray = new ArrayList<>();
                 TransmissionWindowArray = (ArrayList<Document>) TransmissionMissionJson.get("transmission_window");
                 for (Document document : TransmissionWindowArray) {
-                    Date time_point = document.getDate("start_time");
-                    //时间转换为doubule型
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                    String StringTime;
-                    Calendar cal = Calendar.getInstance();
-                    cal.setTime(time_point);
-                    cal.add(Calendar.HOUR_OF_DAY, -8);
-                    StringTime = sdf.format(cal.getTime());
-                    double[] MissionStar_Time = {Double.parseDouble(StringTime.substring(0, 4)),
-                            Double.parseDouble(StringTime.substring(5, 7)),
-                            Double.parseDouble(StringTime.substring(8, 10)),
-                            Double.parseDouble(StringTime.substring(11, 13)),
-                            Double.parseDouble(StringTime.substring(14, 16)),
-                            Double.parseDouble(StringTime.substring(17, 19))};
-                    time_point = document.getDate("end_time");
-                    cal.setTime(time_point);
-                    cal.add(Calendar.HOUR_OF_DAY, -8);
-                    StringTime = sdf.format(cal.getTime());
-                    double[] MissionEnd_Time = {Double.parseDouble(StringTime.substring(0, 4)),
-                            Double.parseDouble(StringTime.substring(5, 7)),
-                            Double.parseDouble(StringTime.substring(8, 10)),
-                            Double.parseDouble(StringTime.substring(11, 13)),
-                            Double.parseDouble(StringTime.substring(14, 16)),
-                            Double.parseDouble(StringTime.substring(17, 19))};
-                    int MissionStar_Number = (int) ((JD(MissionStar_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
-                    int MissionEnd_Number = (int) ((JD(MissionEnd_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
-                    for (int i = MissionStar_Number; i <= MissionEnd_Number; i++) {
-                        StationMissionStatus[i] = MissionNumber;
+                    Boolean fail_reasonFlag=document.containsKey("fail_reason");
+                    if (fail_reasonFlag) {
+                        if (document.get("fail_reason").equals("不可见")) {
+                            fail_reasonFlag=true;
+                        }
                     }
-                    StationMissionNumber = StationMissionNumber + 1;
+                    if (fail_reasonFlag == false) {
+                        try {
+                            Date time_point = document.getDate("start_time");
+                            //时间转换为doubule型
+                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                            String StringTime;
+                            Calendar cal = Calendar.getInstance();
+                            cal.setTime(time_point);
+                            cal.add(Calendar.HOUR_OF_DAY, -8);
+                            StringTime = sdf.format(cal.getTime());
+                            double[] MissionStar_Time = {Double.parseDouble(StringTime.substring(0, 4)),
+                                    Double.parseDouble(StringTime.substring(5, 7)),
+                                    Double.parseDouble(StringTime.substring(8, 10)),
+                                    Double.parseDouble(StringTime.substring(11, 13)),
+                                    Double.parseDouble(StringTime.substring(14, 16)),
+                                    Double.parseDouble(StringTime.substring(17, 19))};
+                            time_point = document.getDate("end_time");
+                            cal.setTime(time_point);
+                            cal.add(Calendar.HOUR_OF_DAY, -8);
+                            StringTime = sdf.format(cal.getTime());
+                            double[] MissionEnd_Time = {Double.parseDouble(StringTime.substring(0, 4)),
+                                    Double.parseDouble(StringTime.substring(5, 7)),
+                                    Double.parseDouble(StringTime.substring(8, 10)),
+                                    Double.parseDouble(StringTime.substring(11, 13)),
+                                    Double.parseDouble(StringTime.substring(14, 16)),
+                                    Double.parseDouble(StringTime.substring(17, 19))};
+                            int MissionStar_Number = (int) ((JD(MissionStar_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
+                            int MissionEnd_Number = (int) ((JD(MissionEnd_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
+                            for (int i = MissionStar_Number; i <= MissionEnd_Number; i++) {
+                                StationMissionStatus[i] = MissionNumber;
+                            }
+                            StationMissionNumber = StationMissionNumber + 1;
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            continue;
+                        }
+                    }else {
+                        continue;
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -434,7 +462,7 @@ public class ReviewReset {
         MongoClient mongoClient = MangoDBConnector.getClient();
         //获取名为"temp"的数据库
         MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
-        String transmission_number = "tn_" + Instant.now().toEpochMilli();
+
         for (int i = 0; i < MissionNumber; i++) {
             if (FalseMission[i] == 0) {
                 ReviewResult.put(MissionName[i], false);
@@ -472,6 +500,28 @@ public class ReviewReset {
                 modifiers.append("$set", ImageMissionjson.get(i));
                 MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
                 image_mission.updateOne(new Document("_id", ImageMissionjson.get(i).getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
+
+                //回溯订单
+                ArrayList<String> MissionForOrderNumbers_i=new ArrayList<>();
+                MissionForOrderNumbers_i=MissionForOrderNumbers.get(i);
+                for (String OrderNumber:MissionForOrderNumbers_i) {
+                    MongoCollection<Document> Data_ImageOrderjson=mongoDatabase.getCollection("image_order");
+                    FindIterable<Document> D_ImageOrderjson=Data_ImageOrderjson.find();
+                    ArrayList<Document> ImageOrderjson =new ArrayList<>();
+                    for (Document document:D_ImageOrderjson) {
+                        if (document.get("order_number").equals(OrderNumber)) {
+                            document.append("order_state","被退回");
+                            if(document.containsKey("_id"))
+                                document.remove("_id");
+                            Document modifiers_mid=new Document();
+                            modifiers_mid.append("$set",document);
+                            Data_ImageOrderjson.updateOne(new Document("order_number",OrderNumber),modifiers_mid,new UpdateOptions().upsert(true));
+                        }
+                    }
+                }
+
+
+
             } else if (FalseMission[i] == 4) {
                 ReviewResult.put(MissionName[i], false);
 
@@ -488,6 +538,30 @@ public class ReviewReset {
                 modifiers.append("$set", ImageMissionjson.get(i));
                 MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
                 image_mission.updateOne(new Document("_id", ImageMissionjson.get(i).getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
+
+
+
+                //回溯订单
+                ArrayList<String> MissionForOrderNumbers_i=new ArrayList<>();
+                MissionForOrderNumbers_i=MissionForOrderNumbers.get(i);
+                for (String OrderNumber:MissionForOrderNumbers_i) {
+                    MongoCollection<Document> Data_ImageOrderjson=mongoDatabase.getCollection("image_order");
+                    FindIterable<Document> D_ImageOrderjson=Data_ImageOrderjson.find();
+                    ArrayList<Document> ImageOrderjson =new ArrayList<>();
+                    for (Document document:D_ImageOrderjson) {
+                        if (document.get("order_number").equals(OrderNumber)) {
+                            document.append("order_state","被退回");
+                            if(document.containsKey("_id"))
+                                document.remove("_id");
+                            Document modifiers_mid=new Document();
+                            modifiers_mid.append("$set",document);
+                            Data_ImageOrderjson.updateOne(new Document("order_number",OrderNumber),modifiers_mid,new UpdateOptions().upsert(true));
+                        }
+                    }
+                }
+
+
+
             }
         }
         mongoClient.close();

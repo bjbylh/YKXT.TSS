@@ -83,9 +83,11 @@ public class OrbitCore {
             JsonObject json = (JsonObject) parse.parse(first.toJson());
 
             MongoCollection<Document> orbit_attitude = mongoDatabase.getCollection("orbit_attitude");
+            MongoCollection<Document> orbit_attitude_sample = mongoDatabase.getCollection("orbit_attitude_sample");
 
             Bson queryBson = Filters.and(Filters.gte("time_point", Date.from(start)), Filters.lte("time_point", Date.from(end)));
             orbit_attitude.deleteMany(queryBson);
+            orbit_attitude_sample.deleteMany(queryBson);
 
             OrbitPrediction.OrbitPredictorII(start, OrbitPrediction.dateConvertToLocalDateTime(Date.from(start)), OrbitPrediction.dateConvertToLocalDateTime(Date.from(end)), 1, orbits, json);
 
