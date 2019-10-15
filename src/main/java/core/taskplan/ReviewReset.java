@@ -11,6 +11,7 @@ import org.bson.Document;
 
 import javax.swing.*;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.*;
 
 import static java.lang.Math.*;
@@ -122,55 +123,59 @@ public class ReviewReset {
         Time_Point = new Date[(int) OrbitDataCount];
         Orbital_SatPositionLLA = new double[(int) OrbitDataCount][3];
         OrbitalDataNum = 0;
-        for (Document document : Orbitjson) {
-            Date time_point = document.getDate("time_point");
-            //时间转换为doubule型
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            String StringTime;
-            Calendar cal = Calendar.getInstance();
-            cal.setTime(time_point);
-            cal.add(Calendar.HOUR_OF_DAY, -8);
-            StringTime = sdf.format(cal.getTime());
-            Time_Point[OrbitalDataNum] = time_point;
-            Orbital_Time[OrbitalDataNum][0] = Double.parseDouble(StringTime.substring(0, 4));
-            Orbital_Time[OrbitalDataNum][1] = Double.parseDouble(StringTime.substring(5, 7));
-            Orbital_Time[OrbitalDataNum][2] = Double.parseDouble(StringTime.substring(8, 10));
-            Orbital_Time[OrbitalDataNum][3] = Double.parseDouble(StringTime.substring(11, 13));
-            Orbital_Time[OrbitalDataNum][4] = Double.parseDouble(StringTime.substring(14, 16));
-            Orbital_Time[OrbitalDataNum][5] = Double.parseDouble(StringTime.substring(17, 19));
+        if (Orbitjson!=null) {
+            for (Document document : Orbitjson) {
+                Date time_point = document.getDate("time_point");
+                //时间转换为doubule型
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                String StringTime;
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(time_point);
+                cal.add(Calendar.HOUR_OF_DAY, -8);
+                StringTime = sdf.format(cal.getTime());
+                Time_Point[OrbitalDataNum] = time_point;
+                Orbital_Time[OrbitalDataNum][0] = Double.parseDouble(StringTime.substring(0, 4));
+                Orbital_Time[OrbitalDataNum][1] = Double.parseDouble(StringTime.substring(5, 7));
+                Orbital_Time[OrbitalDataNum][2] = Double.parseDouble(StringTime.substring(8, 10));
+                Orbital_Time[OrbitalDataNum][3] = Double.parseDouble(StringTime.substring(11, 13));
+                Orbital_Time[OrbitalDataNum][4] = Double.parseDouble(StringTime.substring(14, 16));
+                Orbital_Time[OrbitalDataNum][5] = Double.parseDouble(StringTime.substring(17, 19));
 
-            Orbital_SatPosition[OrbitalDataNum][0] = Double.parseDouble(document.get("P_x").toString());
-            Orbital_SatPosition[OrbitalDataNum][1] = Double.parseDouble(document.get("P_y").toString());
-            Orbital_SatPosition[OrbitalDataNum][2] = Double.parseDouble(document.get("P_z").toString());
-            Orbital_SatVelocity[OrbitalDataNum][0] = Double.parseDouble(document.get("Vx").toString());
-            Orbital_SatVelocity[OrbitalDataNum][1] = Double.parseDouble(document.get("Vy").toString());
-            Orbital_SatVelocity[OrbitalDataNum][2] = Double.parseDouble(document.get("Vz").toString());
-            Orbital_SatPositionLLA[OrbitalDataNum][0] = Double.parseDouble(document.get("lon").toString());
-            Orbital_SatPositionLLA[OrbitalDataNum][1] = Double.parseDouble(document.get("lat").toString());
-            Orbital_SatPositionLLA[OrbitalDataNum][2] = Double.parseDouble(document.get("H").toString());
+                Orbital_SatPosition[OrbitalDataNum][0] = Double.parseDouble(document.get("P_x").toString());
+                Orbital_SatPosition[OrbitalDataNum][1] = Double.parseDouble(document.get("P_y").toString());
+                Orbital_SatPosition[OrbitalDataNum][2] = Double.parseDouble(document.get("P_z").toString());
+                Orbital_SatVelocity[OrbitalDataNum][0] = Double.parseDouble(document.get("Vx").toString());
+                Orbital_SatVelocity[OrbitalDataNum][1] = Double.parseDouble(document.get("Vy").toString());
+                Orbital_SatVelocity[OrbitalDataNum][2] = Double.parseDouble(document.get("Vz").toString());
+                Orbital_SatPositionLLA[OrbitalDataNum][0] = Double.parseDouble(document.get("lon").toString());
+                Orbital_SatPositionLLA[OrbitalDataNum][1] = Double.parseDouble(document.get("lat").toString());
+                Orbital_SatPositionLLA[OrbitalDataNum][2] = Double.parseDouble(document.get("H").toString());
 
-            OrbitalDataNum = OrbitalDataNum + 1;
+                OrbitalDataNum = OrbitalDataNum + 1;
 
-            if(OrbitalDataNum >= OrbitDataCount)
-                break;
+                if(OrbitalDataNum >= OrbitDataCount)
+                    break;
+            }
         }
 
         //姿态数据读入
         Attitude_EulerAng = new double[(int) AttitudeDataCount][3];
         Attitude_AngVel = new double[(int) AttitudeDataCount][3];
         AttitudeDataNum = 0;
-        for (Document document : Attitudejson) {
-            Attitude_EulerAng[AttitudeDataNum][0] = Double.parseDouble(document.get("roll_angle").toString());
-            Attitude_EulerAng[AttitudeDataNum][1] = Double.parseDouble(document.get("pitch_angle").toString());
-            Attitude_EulerAng[AttitudeDataNum][2] = Double.parseDouble(document.get("yaw_angle").toString());
-            Attitude_AngVel[AttitudeDataNum][0] = Double.parseDouble(document.get("V_roll_angle").toString());
-            Attitude_AngVel[AttitudeDataNum][1] = Double.parseDouble(document.get("V_pitch_angle").toString());
-            Attitude_AngVel[AttitudeDataNum][2] = Double.parseDouble(document.get("V_yaw_angle").toString());
+        if (Attitudejson != null) {
+            for (Document document : Attitudejson) {
+                Attitude_EulerAng[AttitudeDataNum][0] = Double.parseDouble(document.get("roll_angle").toString());
+                Attitude_EulerAng[AttitudeDataNum][1] = Double.parseDouble(document.get("pitch_angle").toString());
+                Attitude_EulerAng[AttitudeDataNum][2] = Double.parseDouble(document.get("yaw_angle").toString());
+                Attitude_AngVel[AttitudeDataNum][0] = Double.parseDouble(document.get("V_roll_angle").toString());
+                Attitude_AngVel[AttitudeDataNum][1] = Double.parseDouble(document.get("V_pitch_angle").toString());
+                Attitude_AngVel[AttitudeDataNum][2] = Double.parseDouble(document.get("V_yaw_angle").toString());
 
-            AttitudeDataNum = AttitudeDataNum + 1;
+                AttitudeDataNum = AttitudeDataNum + 1;
 
-            if(AttitudeDataNum >= AttitudeDataCount)
-                break;
+                if(AttitudeDataNum >= AttitudeDataCount)
+                    break;
+            }
         }
 
         //成像任务读入
@@ -183,58 +188,60 @@ public class ReviewReset {
         ArrayList<ArrayList<String>> MissionForOrderNumbers=new ArrayList<>();
 
         try {
-            for (Document document : ImageMissionjson) {
-                try {
-                    if (document.getString("mission_state").equals("待执行")) {
-                        ArrayList<Document> available_window = (ArrayList<Document>) document.get("image_window");
-                        for (Document document1 : available_window) {
-                            Date time_point = document1.getDate("start_time");
-                            //时间转换为doubule型
-                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                            String StringTime;
-                            Calendar cal = Calendar.getInstance();
-                            cal.setTime(time_point);
-                            cal.add(Calendar.HOUR_OF_DAY, -8);
-                            StringTime = sdf.format(cal.getTime());
-                            double[] MissionStar_Time = {Double.parseDouble(StringTime.substring(0, 4)),
-                                    Double.parseDouble(StringTime.substring(5, 7)),
-                                    Double.parseDouble(StringTime.substring(8, 10)),
-                                    Double.parseDouble(StringTime.substring(11, 13)),
-                                    Double.parseDouble(StringTime.substring(14, 16)),
-                                    Double.parseDouble(StringTime.substring(17, 19))};
-                            time_point = document1.getDate("end_time");
-                            cal.setTime(time_point);
-                            cal.add(Calendar.HOUR_OF_DAY, -8);
-                            StringTime = sdf.format(cal.getTime());
-                            double[] MissionEnd_Time = {Double.parseDouble(StringTime.substring(0, 4)),
-                                    Double.parseDouble(StringTime.substring(5, 7)),
-                                    Double.parseDouble(StringTime.substring(8, 10)),
-                                    Double.parseDouble(StringTime.substring(11, 13)),
-                                    Double.parseDouble(StringTime.substring(14, 16)),
-                                    Double.parseDouble(StringTime.substring(17, 19))};
-                            int MissionStar_Number = (int) ((JD(MissionStar_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
-                            int MissionEnd_Number = (int) ((JD(MissionEnd_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
-                            MissionStarEnd_Number[MissionNumber][0] = MissionStar_Number;
-                            MissionStarEnd_Number[MissionNumber][1] = MissionEnd_Number;
-                            MissionChark_Number = MissionChark_Number + 1;
-                            for (int i = MissionStar_Number; i <= MissionEnd_Number; i++) {
-                                ImageMissionStatus[i] = MissionNumber + 1;
+            if (ImageMissionjson != null) {
+                for (Document document : ImageMissionjson) {
+                    try {
+                        if (document.getString("mission_state").equals("待执行")) {
+                            ArrayList<Document> available_window = (ArrayList<Document>) document.get("image_window");
+                            for (Document document1 : available_window) {
+                                Date time_point = document1.getDate("start_time");
+                                //时间转换为doubule型
+                                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                                String StringTime;
+                                Calendar cal = Calendar.getInstance();
+                                cal.setTime(time_point);
+                                cal.add(Calendar.HOUR_OF_DAY, -8);
+                                StringTime = sdf.format(cal.getTime());
+                                double[] MissionStar_Time = {Double.parseDouble(StringTime.substring(0, 4)),
+                                        Double.parseDouble(StringTime.substring(5, 7)),
+                                        Double.parseDouble(StringTime.substring(8, 10)),
+                                        Double.parseDouble(StringTime.substring(11, 13)),
+                                        Double.parseDouble(StringTime.substring(14, 16)),
+                                        Double.parseDouble(StringTime.substring(17, 19))};
+                                time_point = document1.getDate("end_time");
+                                cal.setTime(time_point);
+                                cal.add(Calendar.HOUR_OF_DAY, -8);
+                                StringTime = sdf.format(cal.getTime());
+                                double[] MissionEnd_Time = {Double.parseDouble(StringTime.substring(0, 4)),
+                                        Double.parseDouble(StringTime.substring(5, 7)),
+                                        Double.parseDouble(StringTime.substring(8, 10)),
+                                        Double.parseDouble(StringTime.substring(11, 13)),
+                                        Double.parseDouble(StringTime.substring(14, 16)),
+                                        Double.parseDouble(StringTime.substring(17, 19))};
+                                int MissionStar_Number = (int) ((JD(MissionStar_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
+                                int MissionEnd_Number = (int) ((JD(MissionEnd_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
+                                MissionStarEnd_Number[MissionNumber][0] = MissionStar_Number;
+                                MissionStarEnd_Number[MissionNumber][1] = MissionEnd_Number;
+                                MissionChark_Number = MissionChark_Number + 1;
+                                for (int i = MissionStar_Number; i <= MissionEnd_Number; i++) {
+                                    ImageMissionStatus[i] = MissionNumber + 1;
+                                }
                             }
+                            ReviewResult.put(document.getString("mission_number"), true);
+                            FalseMission[MissionNumber] = 1;
+                        } else {
+                            ReviewResult.put(document.getString("mission_number"), false);
+                            FalseMission[MissionNumber] = 0;
                         }
-                        ReviewResult.put(document.getString("mission_number"), true);
-                        FalseMission[MissionNumber] = 1;
-                    } else {
-                        ReviewResult.put(document.getString("mission_number"), false);
-                        FalseMission[MissionNumber] = 0;
+                        MissionName[MissionNumber] = document.getString("name");
+                        ArrayList<String> MissionForOrderNumbers_i=new ArrayList<>();
+                        MissionForOrderNumbers_i= (ArrayList<String>) document.get("order_numbers");
+                        MissionForOrderNumbers.add(MissionNumber,MissionForOrderNumbers_i);
+                        MissionNumber = MissionNumber + 1;
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        continue;
                     }
-                    MissionName[MissionNumber] = document.getString("name");
-                    ArrayList<String> MissionForOrderNumbers_i=new ArrayList<>();
-                    MissionForOrderNumbers_i= (ArrayList<String>) document.get("order_numbers");
-                    MissionForOrderNumbers.add(MissionNumber,MissionForOrderNumbers_i);
-                    MissionNumber = MissionNumber + 1;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    continue;
                 }
             }
         } catch (NumberFormatException e) {
@@ -246,16 +253,19 @@ public class ReviewReset {
             int StationMissionNumber = 0;
             try {
                 StationMissionNumber = 0;
-                ArrayList<Document> TransmissionWindowArray = new ArrayList<>();
-                TransmissionWindowArray = (ArrayList<Document>) TransmissionMissionJson.get("transmission_window");
-                for (Document document : TransmissionWindowArray) {
-                    Boolean fail_reasonFlag=document.containsKey("fail_reason");
-                    if (fail_reasonFlag) {
-                        if (document.get("fail_reason").equals("不可见")) {
-                            fail_reasonFlag=true;
-                        }
+                Boolean fail_reasonFlag=TransmissionMissionJson.containsKey("fail_reason");
+                if (fail_reasonFlag) {
+                    if (TransmissionMissionJson.get("fail_reason").equals("不可见")) {
+                        fail_reasonFlag=true;
                     }
-                    if (fail_reasonFlag == false) {
+                    else {
+                        fail_reasonFlag=false;
+                    }
+                }
+                if (fail_reasonFlag == false) {
+                    ArrayList<Document> TransmissionWindowArray = new ArrayList<>();
+                    TransmissionWindowArray = (ArrayList<Document>) TransmissionMissionJson.get("transmission_window");
+                    for (Document document : TransmissionWindowArray) {
                         try {
                             Date time_point = document.getDate("start_time");
                             //时间转换为doubule型
@@ -291,8 +301,6 @@ public class ReviewReset {
                             e.printStackTrace();
                             continue;
                         }
-                    }else {
-                        continue;
                     }
                 }
             } catch (Exception e) {
@@ -462,7 +470,7 @@ public class ReviewReset {
         MongoClient mongoClient = MangoDBConnector.getClient();
         //获取名为"temp"的数据库
         MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
-
+        String transmission_number = "tn_" + Instant.now().toEpochMilli();
         for (int i = 0; i < MissionNumber; i++) {
             if (FalseMission[i] == 0) {
                 ReviewResult.put(MissionName[i], false);
