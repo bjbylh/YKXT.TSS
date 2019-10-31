@@ -4,10 +4,10 @@
     <option name="serverConfigurations">
       <list>
         <ServerConfiguration>
-          <option name="label" value="local" />
+          <option name="label" value="aliyun" />
           <option name="serverUrls">
             <list>
-              <option value="localhost:27017" />
+              <option value="39.98.93.230:27017" />
             </list>
           </option>
           <option name="sshTunnelingConfiguration">

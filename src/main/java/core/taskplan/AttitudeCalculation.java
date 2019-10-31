@@ -4,7 +4,6 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
@@ -263,10 +262,22 @@ public class AttitudeCalculation {
         double[][] SatAttitud = new double[(int) OrbitDataCount][3];
         double[][] SatAttitudVel = new double[(int) OrbitalDataNum][3];
 
+        //姿态计算，欧拉角3-1-2转序，东南下
+        double[][] SatAttitud_ESD=new double[(int) OrbitDataCount][3];
+        double[][] SatAttitudVel_ESD=new double[(int) OrbitDataCount][3];
+
+        //姿态计算，欧拉角3-2-1转序，东南下
+        double[][] SatAttitud_ESD321=new double[(int) OrbitDataCount][3];
+        double[][] SatAttitudVel_ESD321=new double[(int) OrbitDataCount][3];
+
+        //姿态计算，欧拉角3-1-2转序，椭圆轨道坐标系
+        double[][] SatAttitud_ORF312=new double[(int) OrbitDataCount][3];
+        double[][] SatAttitudVel_ORF312=new double[(int) OrbitDataCount][3];
+
         MongoClient mongoClient = MangoDBConnector.getClient();
         //获取名为"temp"的数据库
-        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
-//        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
+        //MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
 
         MongoCollection<Document> normal_attitude = mongoDatabase.getCollection("normal_attitude");
         ArrayList<Document> os = new ArrayList<>();
@@ -284,7 +295,7 @@ public class AttitudeCalculation {
                     if (TargetNum[j] == 1) {
                         Target_LLA[0] = MissionTargetArea[j][0];
                         Target_LLA[1] = MissionTargetArea[j][1];
-                        Target_LLA[2] = Re;
+                        Target_LLA[2] = 0;
                         LoadNum = PlanningMissionLoad[j];
                         Mission_FLag = 1;
                         break;
@@ -297,7 +308,7 @@ public class AttitudeCalculation {
                         }
                         Target_LLA[0] = latSum / TargetNum[j];
                         Target_LLA[1] = lonSum / TargetNum[j];
-                        Target_LLA[2] = Re;
+                        Target_LLA[2] = 0;
                         LoadNum = PlanningMissionLoad[j];
                         Mission_FLag = 1;
                         break;
@@ -305,17 +316,49 @@ public class AttitudeCalculation {
                 }
             }
             if (Mission_FLag == 1) {
-                AttitudeCalculation(SatPosition_GEI[i], SatVelocity_GEI[i], Target_LLA, Time[i], LoadInstall[LoadNum - 1], SatAttitud[i]);
+                //AttitudeCalculation(SatPosition_GEI[i], SatVelocity_GEI[i], Target_LLA, Time[i], LoadInstall[LoadNum - 1], SatAttitud[i]);
+                //北东地1-2-3
+                AttitudeCalculationTest(SatPosition_LLA[i], Target_LLA, LoadInstall[LoadNum - 1], SatAttitud[i]);
+                //东南下3-1-2
+                AttitudeCalculationESD312(SatPosition_LLA[i], Target_LLA, LoadInstall[LoadNum - 1], SatAttitud_ESD[i]);
+                //东南下3-2-1
+                AttitudeCalculationESD321(SatPosition_LLA[i], Target_LLA, LoadInstall[LoadNum - 1], SatAttitud_ESD321[i]);
+                //椭圆轨道坐标系3-1-2
+                AttitudeCalculationORF312(SatPosition_GEI[i], SatVelocity_GEI[i], Target_LLA, Time[i], LoadInstall[LoadNum - 1], SatAttitud_ORF312[i]);
                 MissionFlag = true;
             } else {
                 SatAttitud[i][0] = 0;
                 SatAttitud[i][1] = 0;
                 SatAttitud[i][2] = 0;
+                //东南下3-1-2
+                SatAttitud_ESD[i][0] = 0;
+                SatAttitud_ESD[i][1] = 0;
+                SatAttitud_ESD[i][2] = 0;
+                //东南下3-2-1
+                SatAttitud_ESD321[i][0] = 0;
+                SatAttitud_ESD321[i][1] = 0;
+                SatAttitud_ESD321[i][2] = 0;
+                //椭圆轨道坐标系3-1-2
+                SatAttitud_ORF312[i][0] = 0;
+                SatAttitud_ORF312[i][1] = 0;
+                SatAttitud_ORF312[i][2] = 0;
             }
             if (i == 0) {
                 SatAttitudVel[i][0] = 0;
                 SatAttitudVel[i][1] = 0;
                 SatAttitudVel[i][2] = 0;
+                //东南下3-1-2
+                SatAttitudVel_ESD[i][0] = 0;
+                SatAttitudVel_ESD[i][1] = 0;
+                SatAttitudVel_ESD[i][2] = 0;
+                //东南下3-2-1
+                SatAttitudVel_ESD321[i][0] = 0;
+                SatAttitudVel_ESD321[i][1] = 0;
+                SatAttitudVel_ESD321[i][2] = 0;
+                //椭圆轨道坐标系3-1-2
+                SatAttitudVel_ORF312[i][0] = 0;
+                SatAttitudVel_ORF312[i][1] = 0;
+                SatAttitudVel_ORF312[i][2] = 0;
             } else {
                 double[][] AngRaid = {{(SatAttitud[i][0] - SatAttitud[i - 1][0]) / Step},
                         {(SatAttitud[i][1] - SatAttitud[i - 1][1]) / Step},
@@ -330,32 +373,229 @@ public class AttitudeCalculation {
                 SatAttitudVel[i][0] = Vel[0][0];
                 SatAttitudVel[i][1] = Vel[1][0];
                 SatAttitudVel[i][2] = Vel[2][0];
+                //东南下3-1-2
+                double[][] AngRaid_ESD = {{(SatAttitud_ESD[i][0] - SatAttitud_ESD[i - 1][0]) / Step},
+                        {(SatAttitud_ESD[i][1] - SatAttitud_ESD[i - 1][1]) / Step},
+                        {(SatAttitud_ESD[i][2] - SatAttitud_ESD[i - 1][2]) / Step}};
+                double theta1_ESD = SatAttitud_ESD[i][0];
+                double theta2_ESD = SatAttitud_ESD[i][1];
+                double theta3_ESD = SatAttitud_ESD[i][2];
+                double[][] Tran_ESD = {{1, 0, -sin(theta2_ESD)},
+                        {0, cos(theta1_ESD), sin(theta1_ESD) * cos(theta2_ESD)},
+                        {0, -sin(theta1_ESD), cos(theta1_ESD) * cos(theta2_ESD)}};
+                double[][] Vel_ESD = MatrixMultiplication(Tran_ESD, AngRaid_ESD);
+                SatAttitudVel_ESD[i][0] = Vel_ESD[0][0];
+                SatAttitudVel_ESD[i][1] = Vel_ESD[1][0];
+                SatAttitudVel_ESD[i][2] = Vel_ESD[2][0];
+                //东南下3-2-1
+                double[][] AngRaid_ESD321 = {{(SatAttitud_ESD321[i][0] - SatAttitud_ESD321[i - 1][0]) / Step},
+                        {(SatAttitud_ESD321[i][1] - SatAttitud_ESD321[i - 1][1]) / Step},
+                        {(SatAttitud_ESD321[i][2] - SatAttitud_ESD321[i - 1][2]) / Step}};
+                double theta1_ESD321 = SatAttitud_ESD321[i][0];
+                double theta2_ESD321 = SatAttitud_ESD321[i][1];
+                double theta3_ESD321 = SatAttitud_ESD321[i][2];
+                double[][] Tran_ESD321 = {{1, 0, -sin(theta2_ESD321)},
+                        {0, cos(theta1_ESD321), sin(theta1_ESD321) * cos(theta2_ESD321)},
+                        {0, -sin(theta1_ESD321), cos(theta1_ESD321) * cos(theta2_ESD321)}};
+                double[][] Vel_ESD321 = MatrixMultiplication(Tran_ESD321, AngRaid_ESD321);
+                SatAttitudVel_ESD321[i][0] = Vel_ESD321[0][0];
+                SatAttitudVel_ESD321[i][1] = Vel_ESD321[1][0];
+                SatAttitudVel_ESD321[i][2] = Vel_ESD321[2][0];
+                //轨道坐标系3-1-2
+                double[][] AngRaid_ORF312 = {{(SatAttitud_ORF312[i][0] - SatAttitud_ORF312[i - 1][0]) / Step},
+                        {(SatAttitud_ORF312[i][1] - SatAttitud_ORF312[i - 1][1]) / Step},
+                        {(SatAttitud_ORF312[i][2] - SatAttitud_ORF312[i - 1][2]) / Step}};
+                double theta1_ORF312 = SatAttitud_ORF312[i][0];
+                double theta2_ORF312 = SatAttitud_ORF312[i][1];
+                double theta3_ORF312 = SatAttitud_ORF312[i][2];
+                double[][] Tran_ORF312 = {{1, 0, -sin(theta2_ORF312)},
+                        {0, cos(theta1_ORF312), sin(theta1_ORF312) * cos(theta2_ORF312)},
+                        {0, -sin(theta1_ORF312), cos(theta1_ORF312) * cos(theta2_ORF312)}};
+                double[][] Vel_ORF312 = MatrixMultiplication(Tran_ORF312, AngRaid_ORF312);
+                SatAttitudVel_ORF312[i][0] = Vel_ORF312[0][0];
+                SatAttitudVel_ORF312[i][1] = Vel_ORF312[1][0];
+                SatAttitudVel_ORF312[i][2] = Vel_ORF312[2][0];
             }
 
+            if (i == 7200) {
+                double a=1;
+            }
+            //计算当前姿态下卫星视场四个顶点的经纬度
+            double Time_UTC = 0;
+            double ViewAreaPoint[][]=new double[LoadNumber][8];
+            AttitudeViewCalculation(SatPosition_GEI[i], SatVelocity_GEI[i],SatPosition_LLA[i],SatAttitud_ESD[i], LoadInstall, LoadViewAng, LoadNumber,  Time[i], Time_UTC, ViewAreaPoint);
 
             if (MissionFlag) {
                 //数据输出，计算一步传出一组姿态数据
                 Document jsonObject = new Document();
-
+                //北东地1-2-3
+                //Document jsonObject_NED=new Document();
                 jsonObject.append("yaw_angle", SatAttitud[i][2]);
                 jsonObject.append("roll_angle", SatAttitud[i][0]);
                 jsonObject.append("pitch_angle", SatAttitud[i][1]);
                 jsonObject.append("V_yaw_angle", SatAttitudVel[i][2]);
                 jsonObject.append("V_roll_angle", SatAttitudVel[i][0]);
                 jsonObject.append("V_pitch_angle", SatAttitudVel[i][1]);
+                //jsonObject.append("Attitude_NorthEastDown_123", jsonObject_NED);
+                //东南下3-1-2
+                Document jsonObject_ESD=new Document();
+                jsonObject_ESD.append("yaw_angle", SatAttitud_ESD[i][2]);
+                jsonObject_ESD.append("roll_angle", SatAttitud_ESD[i][0]);
+                jsonObject_ESD.append("pitch_angle", SatAttitud_ESD[i][1]);
+                jsonObject_ESD.append("V_yaw_angle", SatAttitudVel_ESD[i][2]);
+                jsonObject_ESD.append("V_roll_angle", SatAttitudVel_ESD[i][0]);
+                jsonObject_ESD.append("V_pitch_angle", SatAttitudVel_ESD[i][1]);
+                jsonObject.append("Attitude_EastSouthDown_312", jsonObject_ESD);
+                //东南下3-2-1
+                Document jsonObject_ESD321=new Document();
+                jsonObject_ESD321.append("yaw_angle", SatAttitud_ESD321[i][2]);
+                jsonObject_ESD321.append("roll_angle", SatAttitud_ESD321[i][0]);
+                jsonObject_ESD321.append("pitch_angle", SatAttitud_ESD321[i][1]);
+                jsonObject_ESD321.append("V_yaw_angle", SatAttitudVel_ESD321[i][2]);
+                jsonObject_ESD321.append("V_roll_angle", SatAttitudVel_ESD321[i][0]);
+                jsonObject_ESD321.append("V_pitch_angle", SatAttitudVel_ESD321[i][1]);
+                jsonObject.append("Attitude_EastSouthDown_321", jsonObject_ESD321);
+                //轨道坐标系3-1-2
+                Document jsonObject_ORF312=new Document();
+                jsonObject_ORF312.append("yaw_angle", SatAttitud_ORF312[i][2]);
+                jsonObject_ORF312.append("roll_angle", SatAttitud_ORF312[i][0]);
+                jsonObject_ORF312.append("pitch_angle", SatAttitud_ORF312[i][1]);
+                jsonObject_ORF312.append("V_yaw_angle", SatAttitudVel_ORF312[i][2]);
+                jsonObject_ORF312.append("V_roll_angle", SatAttitudVel_ORF312[i][0]);
+                jsonObject_ORF312.append("V_pitch_angle", SatAttitudVel_ORF312[i][1]);
+                jsonObject.append("Attitude_OrbitReference_312", jsonObject_ORF312);
+
+                //视场顶点
+                Document jsonObject_ViewArea=new Document();
+                Document jsonObject_ViewArea_Load1=new Document();
+                jsonObject_ViewArea_Load1.append("point1_lon",ViewAreaPoint[0][0]);
+                jsonObject_ViewArea_Load1.append("point1_lat",ViewAreaPoint[0][1]);
+                jsonObject_ViewArea_Load1.append("point2_lon",ViewAreaPoint[0][2]);
+                jsonObject_ViewArea_Load1.append("point2_lat",ViewAreaPoint[0][3]);
+                jsonObject_ViewArea_Load1.append("point3_lon",ViewAreaPoint[0][4]);
+                jsonObject_ViewArea_Load1.append("point3_lat",ViewAreaPoint[0][5]);
+                jsonObject_ViewArea_Load1.append("point4_lon",ViewAreaPoint[0][6]);
+                jsonObject_ViewArea_Load1.append("point4_lat",ViewAreaPoint[0][7]);
+                jsonObject_ViewArea.append("payload1_ViewArea",jsonObject_ViewArea_Load1);
+                Document jsonObject_ViewArea_Load2=new Document();
+                jsonObject_ViewArea_Load2.append("point1_lon",ViewAreaPoint[1][0]);
+                jsonObject_ViewArea_Load2.append("point1_lat",ViewAreaPoint[1][1]);
+                jsonObject_ViewArea_Load2.append("point2_lon",ViewAreaPoint[1][2]);
+                jsonObject_ViewArea_Load2.append("point2_lat",ViewAreaPoint[1][3]);
+                jsonObject_ViewArea_Load2.append("point3_lon",ViewAreaPoint[1][4]);
+                jsonObject_ViewArea_Load2.append("point3_lat",ViewAreaPoint[1][5]);
+                jsonObject_ViewArea_Load2.append("point4_lon",ViewAreaPoint[1][6]);
+                jsonObject_ViewArea_Load2.append("point4_lat",ViewAreaPoint[1][7]);
+                jsonObject_ViewArea.append("payload2_ViewArea",jsonObject_ViewArea_Load2);
+                Document jsonObject_ViewArea_Load3=new Document();
+                jsonObject_ViewArea_Load3.append("point1_lon",ViewAreaPoint[2][0]);
+                jsonObject_ViewArea_Load3.append("point1_lat",ViewAreaPoint[2][1]);
+                jsonObject_ViewArea_Load3.append("point2_lon",ViewAreaPoint[2][2]);
+                jsonObject_ViewArea_Load3.append("point2_lat",ViewAreaPoint[2][3]);
+                jsonObject_ViewArea_Load3.append("point3_lon",ViewAreaPoint[2][4]);
+                jsonObject_ViewArea_Load3.append("point3_lat",ViewAreaPoint[2][5]);
+                jsonObject_ViewArea_Load3.append("point4_lon",ViewAreaPoint[2][6]);
+                jsonObject_ViewArea_Load3.append("point4_lat",ViewAreaPoint[2][7]);
+                jsonObject_ViewArea.append("payload3_ViewArea",jsonObject_ViewArea_Load3);
+                Document jsonObject_ViewArea_Load4=new Document();
+                jsonObject_ViewArea_Load4.append("point1_lon",ViewAreaPoint[3][0]);
+                jsonObject_ViewArea_Load4.append("point1_lat",ViewAreaPoint[3][1]);
+                jsonObject_ViewArea_Load4.append("point2_lon",ViewAreaPoint[3][2]);
+                jsonObject_ViewArea_Load4.append("point2_lat",ViewAreaPoint[3][3]);
+                jsonObject_ViewArea_Load4.append("point3_lon",ViewAreaPoint[3][4]);
+                jsonObject_ViewArea_Load4.append("point3_lat",ViewAreaPoint[3][5]);
+                jsonObject_ViewArea_Load4.append("point4_lon",ViewAreaPoint[3][6]);
+                jsonObject_ViewArea_Load4.append("point4_lat",ViewAreaPoint[3][7]);
+                jsonObject_ViewArea.append("payload4_ViewArea",jsonObject_ViewArea_Load4);
+                jsonObject.append("payload_view_area", jsonObject_ViewArea);
+
                 jsonObject.append("time_point", Time_Point[i]);
                 jsonObject.append("tag", "1");
                 os.add(jsonObject);
 
             } else {
                 Document jsonObject = new Document();
-
+                //北东地1-2-3
+                //Document jsonObject_NED=new Document();
                 jsonObject.append("yaw_angle", SatAttitud[i][2]);
                 jsonObject.append("roll_angle", SatAttitud[i][0]);
                 jsonObject.append("pitch_angle", SatAttitud[i][1]);
                 jsonObject.append("V_yaw_angle", SatAttitudVel[i][2]);
                 jsonObject.append("V_roll_angle", SatAttitudVel[i][0]);
                 jsonObject.append("V_pitch_angle", SatAttitudVel[i][1]);
+                //jsonObject.append("Attitude_NorthEastDown_123", jsonObject_NED);
+                //东南下3-1-2
+                Document jsonObject_ESD=new Document();
+                jsonObject_ESD.append("yaw_angle", SatAttitud_ESD[i][2]);
+                jsonObject_ESD.append("roll_angle", SatAttitud_ESD[i][0]);
+                jsonObject_ESD.append("pitch_angle", SatAttitud_ESD[i][1]);
+                jsonObject_ESD.append("V_yaw_angle", SatAttitudVel_ESD[i][2]);
+                jsonObject_ESD.append("V_roll_angle", SatAttitudVel_ESD[i][0]);
+                jsonObject_ESD.append("V_pitch_angle", SatAttitudVel_ESD[i][1]);
+                jsonObject.append("Attitude_EastSouthDown_312", jsonObject_ESD);
+                //东南下3-2-1
+                Document jsonObject_ESD321=new Document();
+                jsonObject_ESD321.append("yaw_angle", SatAttitud_ESD321[i][2]);
+                jsonObject_ESD321.append("roll_angle", SatAttitud_ESD321[i][0]);
+                jsonObject_ESD321.append("pitch_angle", SatAttitud_ESD321[i][1]);
+                jsonObject_ESD321.append("V_yaw_angle", SatAttitudVel_ESD321[i][2]);
+                jsonObject_ESD321.append("V_roll_angle", SatAttitudVel_ESD321[i][0]);
+                jsonObject_ESD321.append("V_pitch_angle", SatAttitudVel_ESD321[i][1]);
+                jsonObject.append("Attitude_EastSouthDown_321", jsonObject_ESD321);
+                //轨道坐标系3-1-2
+                Document jsonObject_ORF312=new Document();
+                jsonObject_ORF312.append("yaw_angle", SatAttitud_ORF312[i][2]);
+                jsonObject_ORF312.append("roll_angle", SatAttitud_ORF312[i][0]);
+                jsonObject_ORF312.append("pitch_angle", SatAttitud_ORF312[i][1]);
+                jsonObject_ORF312.append("V_yaw_angle", SatAttitudVel_ORF312[i][2]);
+                jsonObject_ORF312.append("V_roll_angle", SatAttitudVel_ORF312[i][0]);
+                jsonObject_ORF312.append("V_pitch_angle", SatAttitudVel_ORF312[i][1]);
+                jsonObject.append("Attitude_OrbitReference_312", jsonObject_ORF312);
+
+                //视场顶点
+                Document jsonObject_ViewArea=new Document();
+                Document jsonObject_ViewArea_Load1=new Document();
+                jsonObject_ViewArea_Load1.append("point1_lon",ViewAreaPoint[0][0]);
+                jsonObject_ViewArea_Load1.append("point1_lat",ViewAreaPoint[0][1]);
+                jsonObject_ViewArea_Load1.append("point2_lon",ViewAreaPoint[0][2]);
+                jsonObject_ViewArea_Load1.append("point2_lat",ViewAreaPoint[0][3]);
+                jsonObject_ViewArea_Load1.append("point3_lon",ViewAreaPoint[0][4]);
+                jsonObject_ViewArea_Load1.append("point3_lat",ViewAreaPoint[0][5]);
+                jsonObject_ViewArea_Load1.append("point4_lon",ViewAreaPoint[0][6]);
+                jsonObject_ViewArea_Load1.append("point4_lat",ViewAreaPoint[0][7]);
+                jsonObject_ViewArea.append("payload1_ViewArea",jsonObject_ViewArea_Load1);
+                Document jsonObject_ViewArea_Load2=new Document();
+                jsonObject_ViewArea_Load2.append("point1_lon",ViewAreaPoint[1][0]);
+                jsonObject_ViewArea_Load2.append("point1_lat",ViewAreaPoint[1][1]);
+                jsonObject_ViewArea_Load2.append("point2_lon",ViewAreaPoint[1][2]);
+                jsonObject_ViewArea_Load2.append("point2_lat",ViewAreaPoint[1][3]);
+                jsonObject_ViewArea_Load2.append("point3_lon",ViewAreaPoint[1][4]);
+                jsonObject_ViewArea_Load2.append("point3_lat",ViewAreaPoint[1][5]);
+                jsonObject_ViewArea_Load2.append("point4_lon",ViewAreaPoint[1][6]);
+                jsonObject_ViewArea_Load2.append("point4_lat",ViewAreaPoint[1][7]);
+                jsonObject_ViewArea.append("payload2_ViewArea",jsonObject_ViewArea_Load2);
+                Document jsonObject_ViewArea_Load3=new Document();
+                jsonObject_ViewArea_Load3.append("point1_lon",ViewAreaPoint[2][0]);
+                jsonObject_ViewArea_Load3.append("point1_lat",ViewAreaPoint[2][1]);
+                jsonObject_ViewArea_Load3.append("point2_lon",ViewAreaPoint[2][2]);
+                jsonObject_ViewArea_Load3.append("point2_lat",ViewAreaPoint[2][3]);
+                jsonObject_ViewArea_Load3.append("point3_lon",ViewAreaPoint[2][4]);
+                jsonObject_ViewArea_Load3.append("point3_lat",ViewAreaPoint[2][5]);
+                jsonObject_ViewArea_Load3.append("point4_lon",ViewAreaPoint[2][6]);
+                jsonObject_ViewArea_Load3.append("point4_lat",ViewAreaPoint[2][7]);
+                jsonObject_ViewArea.append("payload3_ViewArea",jsonObject_ViewArea_Load3);
+                Document jsonObject_ViewArea_Load4=new Document();
+                jsonObject_ViewArea_Load4.append("point1_lon",ViewAreaPoint[3][0]);
+                jsonObject_ViewArea_Load4.append("point1_lat",ViewAreaPoint[3][1]);
+                jsonObject_ViewArea_Load4.append("point2_lon",ViewAreaPoint[3][2]);
+                jsonObject_ViewArea_Load4.append("point2_lat",ViewAreaPoint[3][3]);
+                jsonObject_ViewArea_Load4.append("point3_lon",ViewAreaPoint[3][4]);
+                jsonObject_ViewArea_Load4.append("point3_lat",ViewAreaPoint[3][5]);
+                jsonObject_ViewArea_Load4.append("point4_lon",ViewAreaPoint[3][6]);
+                jsonObject_ViewArea_Load4.append("point4_lat",ViewAreaPoint[3][7]);
+                jsonObject_ViewArea.append("payload4_ViewArea",jsonObject_ViewArea_Load4);
+                jsonObject.append("payload_view_area", jsonObject_ViewArea);
+
                 jsonObject.append("time_point", Time_Point[i]);
                 jsonObject.append("tag", "0");
 
@@ -454,6 +694,855 @@ public class AttitudeCalculation {
         Attitude[2] = z;
     }
 
+    //姿态角计算，北东地1-2-3
+    private static void AttitudeCalculationTest(double[] Satellite_LLA, double[] Target_LLA, double[] ViewInstall, double[] Attitude) {
+        //计算本体系相对于北东地坐标系的姿态
+        double[] Target_NED=new double[3];
+        double[] z_sensor = new double[3];
+        double[] cross_xyz = new double[3];
+        double[] x_sensor;
+        double[] y_sensor;
+        double[][] SToO = new double[3][3];
+        double[][] BToS;
+        double[][] BToO = new double[3][3];
+
+        Target_LLA[2]=Target_LLA[2];
+        ECEFToNED(Satellite_LLA,Target_LLA,Target_NED);
+        /*
+        Target_NED[0]=-3375480.440;
+        Target_NED[1]=-2576716.849;
+        Target_NED[2]=14149996.760;
+         */
+        for (int i = 0; i < 3; i++) {
+            z_sensor[i] = Target_NED[i] / sqrt(Target_NED[0] * Target_NED[0] + Target_NED[1] * Target_NED[1] + Target_NED[2] * Target_NED[2]);
+        }
+        cross_xyz[0] = 1;
+        cross_xyz[1] = 0;
+        cross_xyz[2] = 0;
+        y_sensor = VectorCross(z_sensor, cross_xyz);//y_sensor=Result
+        x_sensor = VectorCross(y_sensor, z_sensor);//x_sensor=Result
+        for (int i = 0; i < 3; i++) {
+            SToO[0][i] = x_sensor[i];
+            SToO[1][i] = y_sensor[i];
+            SToO[2][i] = z_sensor[i];
+        }
+
+        //安装倾角x轴旋转
+        //安装倾角x轴旋转
+        if (ViewInstall[1] > PI / 2)
+            BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), -sin(ViewInstall[2])}, {0, sin(ViewInstall[2]), cos(ViewInstall[2])}};
+        else
+            BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), sin(ViewInstall[2])}, {0, -sin(ViewInstall[2]), cos(ViewInstall[2])}};
+
+        /*
+        //安装倾角y轴旋转
+        if (ViewInstall[1] > PI / 2)
+            BToS = new double[][]{{cos(ViewInstall[2]), 0, -sin(ViewInstall[2])}, {0, 1, 0}, {sin(ViewInstall[2]), 0, cos(ViewInstall[2])}};
+        else
+            BToS = new double[][]{{cos(ViewInstall[2]), 0, sin(ViewInstall[2])}, {0, 1, 0}, {-sin(ViewInstall[2]), 0, cos(ViewInstall[2])}};
+         */
+        //不考虑安装矩阵
+        //BToS=new double[][]{{1,0,0},{0,1,0},{0,0,1}};
+
+        BToO = MatrixMultiplication(SToO, BToS);//BToO=Result
+        BToO=MatrixInverse(BToO);
+
+        double flag;
+        double sy;
+        double x, y, z;
+        //欧拉角转序位1-2-3
+        sy = sqrt(BToO[0][0] * BToO[0][0] + BToO[1][0] * BToO[1][0]);
+        if (sy < pow(10, -6))
+            flag = 1;
+        else
+            flag = 0;
+        if (flag == 0) {
+            //atan2(X,Y)的含义和atan(X/Y)的含义是一样的。
+            //x = atan2(BToO[2][1], BToO[2][2]);
+            //y = atan2(-BToO[2][0], sy);
+            //z = atan2(BToO[1][0], BToO[0][0]);
+            x = atan(BToO[2][1] / BToO[2][2]);
+            y = atan(-BToO[2][0] / sy);
+            z = atan(BToO[1][0] / BToO[0][0]);
+        } else {
+            //x = atan2(-BToO[1][2], BToO[1][1]);
+            //y = atan2(-BToO[2][0], sy);
+            //z = 0;
+            x = atan(-BToO[1][2] / BToO[1][1]);
+            y = atan(-BToO[2][0] / sy);
+            z = 0;
+        }
+
+        Attitude[0] = x;
+        Attitude[1] = y;
+        Attitude[2] = z;
+
+        /*
+        //加入惯性系
+        double r = Math.sqrt(Math.pow(SatPosition_GEI[0], 2) + Math.pow(SatPosition_GEI[1], 2) + Math.pow(SatPosition_GEI[2], 2));
+        double v = Math.sqrt(Math.pow(SatVelocity_GEI[0], 2) + Math.pow(SatVelocity_GEI[1], 2) + Math.pow(SatVelocity_GEI[2], 2));
+        double[] zs = {SatPosition_GEI[0] / r, SatPosition_GEI[1] / r, SatPosition_GEI[2] / r};
+        double[] xs = {SatVelocity_GEI[0] / v, SatVelocity_GEI[1] / v, SatVelocity_GEI[2] / v};
+        double[] ys = new double[3];
+        ys = VectorCross(zs, xs);
+        double[][] OR = {{xs[0], ys[0], zs[0]},
+                {xs[1], ys[1], zs[1]},
+                {xs[2], ys[2], zs[2]}};
+        double[][] OToI=new double[3][3];
+        OToI=MatrixInverse(OR);
+        BToO=MatrixMultiplication(OToI, BToO);
+        //加入本体系
+        double[][] BToB={{0,-1,0},{1,0,0},{0,0,1}};
+        BToO=MatrixMultiplication(BToO, BToB);
+        BToO=MatrixInverse(BToO);
+        //
+
+         */
+
+
+    }
+
+    //姿态角计算，东南地3-1-2
+    private static void AttitudeCalculationESD312(double[] Satellite_LLA, double[] Target_LLA, double[] ViewInstall, double[] Attitude) {
+        //计算本体系相对于东南地坐标系的姿态
+        double[] Target_ESD=new double[3];
+        double[] z_sensor = new double[3];
+        double[] cross_xyz = new double[3];
+        double[] x_sensor;
+        double[] y_sensor;
+        double[][] SToO = new double[3][3];
+        double[][] BToS;
+        double[][] BToO = new double[3][3];
+
+        Target_LLA[2]=Target_LLA[2];
+        double[] Target_NED=new double[3];
+        ECEFToNED(Satellite_LLA,Target_LLA,Target_NED);
+        ECEFToESD(Satellite_LLA,Target_LLA,Target_ESD);
+        /*
+        Target_NED[0]=-3375480.440;
+        Target_NED[1]=-2576716.849;
+        Target_NED[2]=14149996.760;
+         */
+        for (int i = 0; i < 3; i++) {
+            z_sensor[i] = Target_ESD[i] / sqrt(Target_ESD[0] * Target_ESD[0] + Target_ESD[1] * Target_ESD[1] + Target_ESD[2] * Target_ESD[2]);
+        }
+        cross_xyz[0] = 1;
+        cross_xyz[1] = 0;
+        cross_xyz[2] = 0;
+        y_sensor = VectorCross(z_sensor, cross_xyz);//y_sensor=Result
+        x_sensor = VectorCross(y_sensor, z_sensor);//x_sensor=Result
+        for (int i = 0; i < 3; i++) {
+            SToO[0][i] = x_sensor[i];
+            SToO[1][i] = y_sensor[i];
+            SToO[2][i] = z_sensor[i];
+        }
+
+
+        //安装倾角x轴旋转
+        if (ViewInstall[1] > PI / 2)
+            BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), -sin(ViewInstall[2])}, {0, sin(ViewInstall[2]), cos(ViewInstall[2])}};
+        else
+            BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), sin(ViewInstall[2])}, {0, -sin(ViewInstall[2]), cos(ViewInstall[2])}};
+
+
+
+/*
+        //安装倾角y轴旋转
+        if (ViewInstall[1] > PI / 2)
+            BToS = new double[][]{{cos(ViewInstall[2]), 0, -sin(ViewInstall[2])}, {0, 1, 0}, {sin(ViewInstall[2]), 0, cos(ViewInstall[2])}};
+        else
+            BToS = new double[][]{{cos(ViewInstall[2]), 0, sin(ViewInstall[2])}, {0, 1, 0}, {-sin(ViewInstall[2]), 0, cos(ViewInstall[2])}};
+ */
+        //不考虑安装矩阵
+        //BToS=new double[][]{{1,0,0},{0,1,0},{0,0,1}};
+
+        BToO = MatrixMultiplication(SToO, BToS);//BToO=Result
+        BToO=MatrixInverse(BToO);
+
+        double flag;
+        double sy;
+        double x, y, z;
+        //欧拉角转序为3-1-2
+        sy=sqrt(BToO[1][0]*BToO[1][0]+BToO[1][1]*BToO[1][1]);
+        if (sy < pow(10,-6)) {
+            flag=1;
+        }else {
+            flag=0;
+        }
+        if (flag == 0) {
+            x=atan2(-BToO[1][2],sy);
+            y=atan2(BToO[0][2],BToO[2][2]);
+            z=atan2(BToO[1][0],BToO[1][1]);
+        }else {
+            x=atan2(-BToO[1][2],sy);
+            y=atan2(-BToO[2][0],BToO[0][0]);
+            z=0;
+        }
+
+        Attitude[0] = x;
+        Attitude[1] = y;
+        Attitude[2] = z;
+    }
+
+    //姿态角计算，东南地3-2-1
+    private static void AttitudeCalculationESD321(double[] Satellite_LLA, double[] Target_LLA, double[] ViewInstall, double[] Attitude) {
+        //计算本体系相对于东南地坐标系的姿态
+        double[] Target_ESD=new double[3];
+        double[] z_sensor = new double[3];
+        double[] cross_xyz = new double[3];
+        double[] x_sensor;
+        double[] y_sensor;
+        double[][] SToO = new double[3][3];
+        double[][] BToS;
+        double[][] BToO = new double[3][3];
+
+        Target_LLA[2]=Target_LLA[2];
+        double[] Target_NED=new double[3];
+        ECEFToNED(Satellite_LLA,Target_LLA,Target_NED);
+        ECEFToESD(Satellite_LLA,Target_LLA,Target_ESD);
+        /*
+        Target_NED[0]=-3375480.440;
+        Target_NED[1]=-2576716.849;
+        Target_NED[2]=14149996.760;
+         */
+        for (int i = 0; i < 3; i++) {
+            z_sensor[i] = Target_ESD[i] / sqrt(Target_ESD[0] * Target_ESD[0] + Target_ESD[1] * Target_ESD[1] + Target_ESD[2] * Target_ESD[2]);
+        }
+        cross_xyz[0] = 1;
+        cross_xyz[1] = 0;
+        cross_xyz[2] = 0;
+        y_sensor = VectorCross(z_sensor, cross_xyz);//y_sensor=Result
+        x_sensor = VectorCross(y_sensor, z_sensor);//x_sensor=Result
+        for (int i = 0; i < 3; i++) {
+            SToO[0][i] = x_sensor[i];
+            SToO[1][i] = y_sensor[i];
+            SToO[2][i] = z_sensor[i];
+        }
+
+        //安装倾角x轴旋转
+        //安装倾角x轴旋转
+        if (ViewInstall[1] > PI / 2)
+            BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), -sin(ViewInstall[2])}, {0, sin(ViewInstall[2]), cos(ViewInstall[2])}};
+        else
+            BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), sin(ViewInstall[2])}, {0, -sin(ViewInstall[2]), cos(ViewInstall[2])}};
+
+
+        //安装倾角y轴旋转
+        /*
+        if (ViewInstall[1] > PI / 2)
+            BToS = new double[][]{{cos(ViewInstall[2]), 0, -sin(ViewInstall[2])}, {0, 1, 0}, {sin(ViewInstall[2]), 0, cos(ViewInstall[2])}};
+        else
+            BToS = new double[][]{{cos(ViewInstall[2]), 0, sin(ViewInstall[2])}, {0, 1, 0}, {-sin(ViewInstall[2]), 0, cos(ViewInstall[2])}};
+         */
+        //不考虑安装矩阵
+        //BToS=new double[][]{{1,0,0},{0,1,0},{0,0,1}};
+
+        BToO = MatrixMultiplication(SToO, BToS);//BToO=Result
+        BToO=MatrixInverse(BToO);
+
+        double flag;
+        double sy;
+        double x, y, z;
+        //欧拉角转序为3-2-1
+        sy=sqrt(BToO[0][0]*BToO[0][0]+BToO[0][1]*BToO[0][1]);
+        if (sy < pow(10,-6)) {
+            flag=1;
+        }else {
+            flag=0;
+        }
+        if (flag == 0) {
+            x=atan2(-BToO[1][2],BToO[2][2]);
+            y=atan2(BToO[0][2],sy);
+            z=atan2(-BToO[0][1],BToO[0][0]);
+        }else {
+            x=atan2(BToO[2][1],BToO[1][1]);
+            y=atan2(BToO[1][2],sy);
+            z=0;
+        }
+
+        Attitude[0] = x;
+        Attitude[1] = y;
+        Attitude[2] = z;
+    }
+
+    //姿态角计算，轨道坐标系3-1-2
+    private static void AttitudeCalculationORF312(double[] SatPosition_GEI, double[] SatVelocity_GEI, double[] Target_LLA, double[] Time, double[] ViewInstall, double[] Attitude) {
+        double[] SatelliteTime = new double[6];
+        double[][] BToS;
+        double[][] BToO = new double[3][3];
+        double[][] SToO = new double[3][3];
+        double[] x_sensor;
+        double[] y_sensor;
+        double[] z_sensor = new double[3];
+        double[] Target_GEI = new double[3];
+        double[] Error_GEI = new double[3];
+        double[] Error_ORF = new double[3];
+        double[] Position_ECEF = new double[3];
+        double[] cross_xyz = new double[3];
+        double flag;
+        double sy;
+        double x, y, z;
+        for (int i = 0; i < 6; i++) {
+            SatelliteTime[i] = Time[i];
+        }
+        double Time_JD = JD(SatelliteTime);
+        double[] Satllite_GEI = {SatPosition_GEI[0], SatPosition_GEI[1], SatPosition_GEI[2]};
+        double[] SatVelocity_GEI1 = {SatVelocity_GEI[0], SatVelocity_GEI[1], SatVelocity_GEI[2]};
+        LLAToECEF(Target_LLA, Position_ECEF);//Position_ECEF
+        ECEFToICRS(Time_JD, Position_ECEF, Target_GEI);//Target_GEI
+        for (int i = 0; i < 3; i++) {
+            Error_GEI[i] = Target_GEI[i] - Satllite_GEI[i];
+        }
+
+        GEIToORF_Ellipse(Satllite_GEI, SatVelocity_GEI1, Error_GEI, Error_ORF);//Error_ORF
+
+        for (int i = 0; i < 3; i++) {
+            z_sensor[i] = Error_ORF[i] / sqrt(Error_ORF[0] * Error_ORF[0] + Error_ORF[1] * Error_ORF[1] + Error_ORF[2] * Error_ORF[2]);
+        }
+        cross_xyz[0] = 1;
+        cross_xyz[1] = 0;
+        cross_xyz[2] = 0;
+        y_sensor = VectorCross(z_sensor, cross_xyz);//y_sensor=Result
+        x_sensor = VectorCross(y_sensor, z_sensor);//x_sensor=Result
+        for (int i = 0; i < 3; i++) {
+            SToO[0][i] = x_sensor[i];
+            SToO[1][i] = y_sensor[i];
+            SToO[2][i] = z_sensor[i];
+        }
+
+
+        //安装倾角x轴旋转
+        //安装倾角x轴旋转
+        if (ViewInstall[1] > PI / 2)
+            BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), -sin(ViewInstall[2])}, {0, sin(ViewInstall[2]), cos(ViewInstall[2])}};
+        else
+            BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), sin(ViewInstall[2])}, {0, -sin(ViewInstall[2]), cos(ViewInstall[2])}};
+
+        /*
+        //安装倾角y轴旋转
+        if (ViewInstall[1] > PI / 2)
+            BToS = new double[][]{{cos(ViewInstall[2]), 0, -sin(ViewInstall[2])}, {0, 1, 0}, {sin(ViewInstall[2]), 0, cos(ViewInstall[2])}};
+        else
+            BToS = new double[][]{{cos(ViewInstall[2]), 0, sin(ViewInstall[2])}, {0, 1, 0}, {-sin(ViewInstall[2]), 0, cos(ViewInstall[2])}};
+         */
+
+        //不考虑安装矩阵
+        //BToS=new double[][]{{1,0,0},{0,1,0},{0,0,1}};
+
+        BToO = MatrixMultiplication(SToO, BToS);//BToO=Result
+        BToO=MatrixInverse(BToO);
+
+        //欧拉角转序为3-1-2
+        sy=sqrt(BToO[1][0]*BToO[1][0]+BToO[1][1]*BToO[1][1]);
+        if (sy < pow(10,-6)) {
+            flag=1;
+        }else {
+            flag=0;
+        }
+        if (flag == 0) {
+            x=atan2(-BToO[1][2],sy);
+            y=atan2(BToO[0][2],BToO[2][2]);
+            z=atan2(BToO[1][0],BToO[1][1]);
+        }else {
+            x=atan2(-BToO[1][2],sy);
+            y=atan2(-BToO[2][0],BToO[0][0]);
+            z=0;
+        }
+
+        Attitude[0] = x;
+        Attitude[1] = y;
+        Attitude[2] = z;
+    }
+
+    //当前姿态下卫星视场四个顶点的经纬度
+    private static void AttitudeViewCalculation(double Position[], double Velocity[],double Satellite_LLA[],double Attitude[], double ViewInstall[][], double ViewAng[][], int ViewNum,  double Time[], double Time_UTC, double ViewAreaPoint[][]){
+        double r=Math.sqrt(Math.pow(Position[0], 2) + Math.pow(Position[1], 2) + Math.pow(Position[2], 2));
+        double theta=asin(Re/r);
+
+        for (int j = 0; j < ViewNum; j++) {
+            //顶点1
+            double[][] r_install01={{cos(ViewInstall[j][1])},{cos(ViewInstall[j][0])},{cos(ViewInstall[j][2])}};
+            double[][] R_x01=new double[][]{{1, 0, 0}, {0, cos(ViewAng[j][0]), -sin(ViewAng[j][0])}, {0, sin(ViewAng[j][0]), cos(ViewAng[j][0])}};
+            double[][] R_y01=new double[][]{{cos(-ViewAng[j][3]), 0, sin(-ViewAng[j][3])}, {0, 1, 0}, {-sin(-ViewAng[j][3]), 0, cos(-ViewAng[j][3])}};
+            double[][] r_install_mid01=MatrixMultiplication(R_x01,r_install01);
+            double[][] r_install_BF01=MatrixMultiplication(R_y01,r_install_mid01);
+            //东南地312转序姿态
+            double y=Attitude[0];
+            double x=Attitude[1];
+            double z=Attitude[2];
+            double[][] R_Attitude_mid=new double[][]{{cos(y)*cos(z)+sin(y)*sin(x)*sin(z),-cos(y)*sin(z)+sin(y)*sin(x)*cos(z),sin(y)*cos(x)},
+                    {cos(x)*sin(z),cos(x)*cos(z),-sin(x)},
+                    {-sin(y)*cos(z)+cos(y)*sin(x)*sin(z),sin(y)*sin(z)+cos(y)*sin(x)*cos(z),cos(y)*cos(x)}};
+            double[][] R_Attitude=MatrixInverse(R_Attitude_mid);
+            double[][] r_install_ESD01=MatrixMultiplication(R_Attitude,r_install_BF01);
+            double theta_installxz01=atan2(r_install_ESD01[0][0],r_install_ESD01[2][0]);
+            double theta_installyz01=atan2(r_install_ESD01[1][0],r_install_ESD01[2][0]);
+            double betaxz01,betayz01;
+            if (abs(theta_installxz01) >= theta) {
+                if (theta_installxz01>0){
+                    betaxz01=theta-PI;
+                }else if (theta_installxz01<0){
+                    betaxz01=theta+PI;
+                }else {
+                    betaxz01=0;
+                }
+            }else {
+                if (theta_installxz01 > 0) {
+                    betaxz01=theta_installxz01-asin((sin(theta_installxz01)*r)/Re);
+                }else if (theta_installxz01<0){
+                    betaxz01=theta_installxz01+asin((sin(-theta_installxz01)*r)/Re);
+                }else {
+                    betaxz01=0;
+                }
+            }
+            if (abs(theta_installyz01) >= theta) {
+                if (theta_installyz01>0){
+                    betayz01=PI-theta;
+                }else if (theta_installyz01<0){
+                    betayz01=-theta-PI;
+                }else {
+                    betayz01=0;
+                }
+            }else {
+                if (theta_installyz01 > 0) {
+                    betayz01=asin((sin(theta_installyz01)*r)/Re)-theta_installyz01;
+                }else if (theta_installyz01<0){
+                    betayz01=-theta_installyz01-asin((sin(-theta_installyz01)*r)/Re);
+                }else {
+                    betayz01=0;
+                }
+            }
+            double[][] RESD_x01=new double[][]{{cos(betaxz01), 0, -sin(betaxz01)}, {0, 1, 0}, {sin(betaxz01), 0, cos(betaxz01)}};
+            double[][] RESD_y01=new double[][]{{1, 0, 0}, {0, cos(betayz01), -sin(betayz01)}, {0, sin(betayz01), cos(betayz01)}};
+            double[][] r_Satellite_ESD01=new double[][]{{0},{0},{-r}};
+            double[][] r_Satellite_ESD01_mid=new double[3][1];
+            double[][] r_Satellite_ESD01_mid2=new double[3][1];
+            double[] r_Target_ECEF=new double[3];
+            double[] r_Target_GEI=new double[3];
+            r_Satellite_ESD01_mid=MatrixMultiplication(RESD_x01,r_Satellite_ESD01);
+            r_Satellite_ESD01_mid2=MatrixMultiplication(RESD_y01,r_Satellite_ESD01_mid);
+            double[] r_Target_ESD_mid01=new double[]{r_Satellite_ESD01_mid2[0][0],r_Satellite_ESD01_mid2[1][0],r_Satellite_ESD01_mid2[2][0]};
+            ESDToECEF(Satellite_LLA,r_Target_ESD_mid01,r_Target_ECEF);
+            double JD_Time=JD(Time);
+            ECEFToICRS(JD_Time,r_Target_ECEF,r_Target_GEI);
+            double SubSat[] = new double[3];
+            double SubSat_GEI[] = new double[3];
+            PosionToSubSat(r_Target_GEI, Time, Time_UTC, SubSat, SubSat_GEI);
+            ViewAreaPoint[j][0] = SubSat[0];
+            ViewAreaPoint[j][1] = SubSat[1];
+            //顶点2
+            double[][] r_install02={{cos(ViewInstall[j][1])},{cos(ViewInstall[j][0])},{cos(ViewInstall[j][2])}};
+            double[][] R_x02=new double[][]{{1, 0, 0}, {0, cos(ViewAng[j][0]), -sin(ViewAng[j][0])}, {0, sin(ViewAng[j][0]), cos(ViewAng[j][0])}};
+            double[][] R_y02=new double[][]{{cos(ViewAng[j][2]), 0, sin(ViewAng[j][2])}, {0, 1, 0}, {-sin(ViewAng[j][2]), 0, cos(ViewAng[j][2])}};
+            double[][] r_install_mid02=MatrixMultiplication(R_x02,r_install02);
+            double[][] r_install_BF02=MatrixMultiplication(R_y02,r_install_mid02);
+            double[][] r_install_ESD02=MatrixMultiplication(R_Attitude,r_install_BF02);
+            double theta_installxz02=atan2(r_install_ESD02[0][0],r_install_ESD02[2][0]);
+            double theta_installyz02=atan2(r_install_ESD02[1][0],r_install_ESD02[2][0]);
+            double betaxz02,betayz02;
+            if (abs(theta_installxz02) >= theta) {
+                if (theta_installxz02>0){
+                    betaxz02=theta-PI;
+                }else if (theta_installxz02<0){
+                    betaxz02=theta+PI;
+                }else {
+                    betaxz02=0;
+                }
+            }else {
+                if (theta_installxz02 > 0) {
+                    betaxz02=theta_installxz02-asin((sin(theta_installxz02)*r)/Re);
+                }else if (theta_installxz02<0){
+                    betaxz02=theta_installxz02+asin((sin(-theta_installxz02)*r)/Re);
+                }else {
+                    betaxz02=0;
+                }
+            }
+            if (abs(theta_installyz02) >= theta) {
+                if (theta_installyz02>0){
+                    betayz02=PI-theta;
+                }else if (theta_installyz02<0){
+                    betayz02=-theta-PI;
+                }else {
+                    betayz02=0;
+                }
+            }else {
+                if (theta_installyz02 > 0) {
+                    betayz02=asin((sin(theta_installyz02)*r)/Re)-theta_installyz02;
+                }else if (theta_installyz02<0){
+                    betayz02=-theta_installyz02-asin((sin(-theta_installyz02)*r)/Re);
+                }else {
+                    betayz02=0;
+                }
+            }
+            double[][] RESD_x02=new double[][]{{cos(betaxz02), 0, -sin(betaxz02)}, {0, 1, 0}, {sin(betaxz02), 0, cos(betaxz02)}};
+            double[][] RESD_y02=new double[][]{{1, 0, 0}, {0, cos(betayz02), -sin(betayz02)}, {0, sin(betayz02), cos(betayz02)}};
+            double[][] r_Satellite_ESD02=new double[][]{{0},{0},{-r}};
+            double[][] r_Satellite_ESD02_mid=new double[3][1];
+            double[][] r_Satellite_ESD02_mid2=new double[3][1];
+            r_Satellite_ESD02_mid=MatrixMultiplication(RESD_x02,r_Satellite_ESD02);
+            r_Satellite_ESD02_mid2=MatrixMultiplication(RESD_y02,r_Satellite_ESD02_mid);
+            double[] r_Target_ESD_mid02=new double[]{r_Satellite_ESD02_mid2[0][0],r_Satellite_ESD02_mid2[1][0],r_Satellite_ESD02_mid2[2][0]};
+            ESDToECEF(Satellite_LLA,r_Target_ESD_mid02,r_Target_ECEF);
+            ECEFToICRS(JD_Time,r_Target_ECEF,r_Target_GEI);
+            PosionToSubSat(r_Target_GEI, Time, Time_UTC, SubSat, SubSat_GEI);
+            ViewAreaPoint[j][2] = SubSat[0];
+            ViewAreaPoint[j][3] = SubSat[1];
+            //顶点3
+            double[][] r_install03={{cos(ViewInstall[j][1])},{cos(ViewInstall[j][0])},{cos(ViewInstall[j][2])}};
+            double[][] R_x03=new double[][]{{1, 0, 0}, {0, cos(-ViewAng[j][1]), -sin(-ViewAng[j][1])}, {0, sin(-ViewAng[j][1]), cos(-ViewAng[j][1])}};
+            double[][] R_y03=new double[][]{{cos(ViewAng[j][3]), 0, sin(ViewAng[j][3])}, {0, 1, 0}, {-sin(ViewAng[j][3]), 0, cos(ViewAng[j][3])}};
+            double[][] r_install_mid03=MatrixMultiplication(R_x03,r_install03);
+            double[][] r_install_BF03=MatrixMultiplication(R_y03,r_install_mid03);
+            double[][] r_install_ESD03=MatrixMultiplication(R_Attitude,r_install_BF03);
+            double theta_installxz03=atan2(r_install_ESD03[0][0],r_install_ESD03[2][0]);
+            double theta_installyz03=atan2(r_install_ESD03[1][0],r_install_ESD03[2][0]);
+            double betaxz03,betayz03;
+            if (abs(theta_installxz03) >= theta) {
+                if (theta_installxz03>0){
+                    betaxz03=theta-PI;
+                }else if (theta_installxz03<0){
+                    betaxz03=theta+PI;
+                }else {
+                    betaxz03=0;
+                }
+            }else {
+                if (theta_installxz03 > 0) {
+                    betaxz03=theta_installxz03-asin((sin(theta_installxz03)*r)/Re);
+                }else if (theta_installxz03<0){
+                    betaxz03=theta_installxz03+asin((sin(-theta_installxz03)*r)/Re);
+                }else {
+                    betaxz03=0;
+                }
+            }
+            if (abs(theta_installyz03) >= theta) {
+                if (theta_installyz03>0){
+                    betayz03=PI-theta;
+                }else if (theta_installyz03<0){
+                    betayz03=-theta-PI;
+                }else {
+                    betayz03=0;
+                }
+            }else {
+                if (theta_installyz03 > 0) {
+                    betayz03=asin((sin(theta_installyz03)*r)/Re)-theta_installyz03;
+                }else if (theta_installyz03<0){
+                    betayz03=-theta_installyz03-asin((sin(-theta_installyz03)*r)/Re);
+                }else {
+                    betayz03=0;
+                }
+            }
+            double[][] RESD_x03=new double[][]{{cos(betaxz03), 0, -sin(betaxz03)}, {0, 1, 0}, {sin(betaxz03), 0, cos(betaxz03)}};
+            double[][] RESD_y03=new double[][]{{1, 0, 0}, {0, cos(betayz03), -sin(betayz03)}, {0, sin(betayz03), cos(betayz03)}};
+            double[][] r_Satellite_ESD03=new double[][]{{0},{0},{-r}};
+            double[][] r_Satellite_ESD03_mid=new double[3][1];
+            double[][] r_Satellite_ESD03_mid2=new double[3][1];
+            r_Satellite_ESD03_mid=MatrixMultiplication(RESD_x03,r_Satellite_ESD03);
+            r_Satellite_ESD03_mid2=MatrixMultiplication(RESD_y03,r_Satellite_ESD03_mid);
+            double[] r_Target_ESD_mid03=new double[]{r_Satellite_ESD03_mid2[0][0],r_Satellite_ESD03_mid2[1][0],r_Satellite_ESD03_mid2[2][0]};
+            ESDToECEF(Satellite_LLA,r_Target_ESD_mid03,r_Target_ECEF);
+            ECEFToICRS(JD_Time,r_Target_ECEF,r_Target_GEI);
+            PosionToSubSat(r_Target_GEI, Time, Time_UTC, SubSat, SubSat_GEI);
+            ViewAreaPoint[j][4] = SubSat[0];
+            ViewAreaPoint[j][5] = SubSat[1];
+            //顶点4
+            double[][] r_install04={{cos(ViewInstall[j][1])},{cos(ViewInstall[j][0])},{cos(ViewInstall[j][2])}};
+            double[][] R_x04=new double[][]{{1, 0, 0}, {0, cos(-ViewAng[j][1]), -sin(-ViewAng[j][1])}, {0, sin(-ViewAng[j][1]), cos(-ViewAng[j][1])}};
+            double[][] R_y04=new double[][]{{cos(-ViewAng[j][2]), 0, sin(-ViewAng[j][2])}, {0, 1, 0}, {-sin(-ViewAng[j][2]), 0, cos(-ViewAng[j][2])}};
+            double[][] r_install_mid04=MatrixMultiplication(R_x04,r_install04);
+            double[][] r_install_BF04=MatrixMultiplication(R_y04,r_install_mid04);
+            double[][] r_install_ESD04=MatrixMultiplication(R_Attitude,r_install_BF04);
+            double theta_installxz04=atan2(r_install_ESD04[0][0],r_install_ESD04[2][0]);
+            double theta_installyz04=atan2(r_install_ESD04[1][0],r_install_ESD04[2][0]);
+            double betaxz04,betayz04;
+            if (abs(theta_installxz04) >= theta) {
+                if (theta_installxz04>0){
+                    betaxz04=theta-PI;
+                }else if (theta_installxz04<0){
+                    betaxz04=theta+PI;
+                }else {
+                    betaxz04=0;
+                }
+            }else {
+                if (theta_installxz04 > 0) {
+                    betaxz04=theta_installxz04-asin((sin(theta_installxz04)*r)/Re);
+                }else if (theta_installxz04<0){
+                    betaxz04=theta_installxz04+asin((sin(-theta_installxz04)*r)/Re);
+                }else {
+                    betaxz04=0;
+                }
+            }
+            if (abs(theta_installyz04) >= theta) {
+                if (theta_installyz04>0){
+                    betayz04=PI-theta;
+                }else if (theta_installyz04<0){
+                    betayz04=-theta-PI;
+                }else {
+                    betayz04=0;
+                }
+            }else {
+                if (theta_installyz04 > 0) {
+                    betayz04=asin((sin(theta_installyz04)*r)/Re)-theta_installyz04;
+                }else if (theta_installyz04<0){
+                    betayz04=-theta_installyz04-asin((sin(-theta_installyz04)*r)/Re);
+                }else {
+                    betayz04=0;
+                }
+            }
+            double[][] RESD_x04=new double[][]{{cos(betaxz04), 0, -sin(betaxz04)}, {0, 1, 0}, {sin(betaxz04), 0, cos(betaxz04)}};
+            double[][] RESD_y04=new double[][]{{1, 0, 0}, {0, cos(betayz04), -sin(betayz04)}, {0, sin(betayz04), cos(betayz04)}};
+            double[][] r_Satellite_ESD04=new double[][]{{0},{0},{-r}};
+            double[][] r_Satellite_ESD04_mid=new double[3][1];
+            double[][] r_Satellite_ESD04_mid2=new double[3][1];
+            r_Satellite_ESD04_mid=MatrixMultiplication(RESD_x04,r_Satellite_ESD04);
+            r_Satellite_ESD04_mid2=MatrixMultiplication(RESD_y04,r_Satellite_ESD04_mid);
+            double[] r_Target_ESD_mid04=new double[]{r_Satellite_ESD04_mid2[0][0],r_Satellite_ESD04_mid2[1][0],r_Satellite_ESD04_mid2[2][0]};
+            ESDToECEF(Satellite_LLA,r_Target_ESD_mid04,r_Target_ECEF);
+            ECEFToICRS(JD_Time,r_Target_ECEF,r_Target_GEI);
+            PosionToSubSat(r_Target_GEI, Time, Time_UTC, SubSat, SubSat_GEI);
+            ViewAreaPoint[j][6] = SubSat[0];
+            ViewAreaPoint[j][7] = SubSat[1];
+
+            //System.out.println(ViewAreaPoint[j][0]+","+ViewAreaPoint[j][1]+","+ViewAreaPoint[j][2]+","+ViewAreaPoint[j][3]+","+ViewAreaPoint[j][4]+","+ViewAreaPoint[j][5]+","+ViewAreaPoint[j][6]+","+ViewAreaPoint[j][7]);
+        }
+    }
+
+    //当前姿态下卫星视场四个顶点的经纬度
+    private static void AttitudeViewCalculationold(double Position[], double Velocity[],double Satellite_LLA[],double Attitude[], double ViewInstall[][], double ViewAng[][], int ViewNum,  double Time[], double Time_UTC, double ViewAreaPoint[][]){
+        double r=Math.sqrt(Math.pow(Position[0], 2) + Math.pow(Position[1], 2) + Math.pow(Position[2], 2));
+        double theta=asin(Re/r);
+
+        for (int j = 0; j < ViewNum; j++) {
+            //顶点1
+            double[][] r_install01={{cos(ViewInstall[j][0])},{cos(ViewInstall[j][1])},{cos(ViewInstall[j][2])}};
+            double[][] R_x01=new double[][]{{1, 0, 0}, {0, cos(ViewAng[j][0]), -sin(ViewAng[j][0])}, {0, sin(ViewAng[j][0]), cos(ViewAng[j][0])}};
+            double[][] R_y01=new double[][]{{cos(-ViewAng[j][3]), 0, sin(-ViewAng[j][3])}, {0, 1, 0}, {-sin(-ViewAng[j][3]), 0, cos(-ViewAng[j][3])}};
+            double[][] r_install_mid01=MatrixMultiplication(R_x01,r_install01);
+            double[][] r_install_BF01=MatrixMultiplication(R_y01,r_install_mid01);
+            //东南地312转序姿态
+            double x=Attitude[0];
+            double y=Attitude[1];
+            double z=Attitude[2];
+            double[][] R_Attitude=new double[][]{{cos(y)*cos(z)+sin(y)*sin(x)*sin(z),-cos(y)*sin(z)+sin(y)*sin(x)*cos(z),sin(y)*cos(x)},
+                    {cos(x)*sin(z),cos(x)*cos(z),-sin(x)},
+                    {-sin(y)*cos(z)+cos(y)*sin(x)*sin(z),sin(y)*sin(z)+cos(y)*sin(x)*cos(z),cos(y)*cos(x)}};
+            double[][] r_install_ESD01=MatrixMultiplication(R_Attitude,r_install_BF01);
+            double theta_install01=acos(r_install_ESD01[2][0]/(r_install_ESD01[0][0]*r_install_ESD01[0][0]+r_install_ESD01[1][0]*r_install_ESD01[1][0]+r_install_ESD01[2][0]*r_install_ESD01[2][0]));
+            double beta01;
+            if (abs(theta_install01) >= theta) {
+                beta01=PI-theta;
+            }else {
+                beta01=asin((sin(theta_install01)*r)/Re)-theta_install01;
+            }
+            //法线矢量
+            double[] v101=new double[]{r_install_ESD01[0][0],r_install_ESD01[1][0],r_install_ESD01[2][0]};
+            double[] v201=new double[]{0,0,1};
+            double[] n01=VectorCross(v101,v201);
+            double[][] R_n01=new double[3][3];
+            R_n01[0][0] = n01[0] * n01[0] * (1 - Math.cos(beta01)) + Math.cos(beta01);
+            R_n01[0][1] = n01[0] * n01[1] * (1 - Math.cos(beta01)) + n01[2] * Math.sin(beta01);
+            R_n01[0][2] = n01[0] * n01[2] * (1 - Math.cos(beta01)) - n01[1] * Math.sin(beta01);
+            R_n01[1][0] = n01[0] * n01[1] * (1 - Math.cos(beta01)) - n01[2] * Math.sin(beta01);
+            R_n01[1][1] = n01[1] * n01[1] * (1 - Math.cos(beta01)) + Math.cos(beta01);
+            R_n01[1][2] = n01[1] * n01[2] * (1 - Math.cos(beta01)) + n01[0] * Math.sin(beta01);
+            R_n01[2][0] = n01[0] * n01[2] * (1 - Math.cos(beta01)) + n01[1] * Math.sin(beta01);
+            R_n01[2][1] = n01[1] * n01[2] * (1 - Math.cos(beta01)) - n01[0] * Math.sin(beta01);
+            R_n01[2][2] = n01[2] * n01[2] * (1 - Math.cos(beta01)) + Math.cos(beta01);
+            double[][] r_Target_ESD01=new double[3][1];
+            double[] r_Target01_ECEF=new double[3];
+            double[] r_Target01_GEI=new double[3];
+            double[][] r_Satellite_ESD01=new double[][]{{0},{0},{-r}};
+            r_Target_ESD01=MatrixMultiplication(R_n01,r_Satellite_ESD01);
+            double[] r_Target_ESD01_mid=new double[]{r_Target_ESD01[0][0],r_Target_ESD01[1][0],r_Target_ESD01[2][0]};
+            ESDToECEF(Satellite_LLA,r_Target_ESD01_mid,r_Target01_ECEF);
+            double JD_Time=JD(Time);
+            ECEFToICRS(JD_Time,r_Target01_ECEF,r_Target01_GEI);
+            double SubSat[] = new double[3];
+            double SubSat_GEI[] = new double[3];
+            PosionToSubSat(r_Target01_GEI, Time, Time_UTC, SubSat, SubSat_GEI);
+            ViewAreaPoint[j][0] = SubSat[0];
+            ViewAreaPoint[j][1] = SubSat[1];
+            //顶点2
+            double[][] r_install02={{cos(ViewInstall[j][0])},{cos(ViewInstall[j][1])},{cos(ViewInstall[j][2])}};
+            double[][] R_x02=new double[][]{{1, 0, 0}, {0, cos(ViewAng[j][0]), -sin(ViewAng[j][0])}, {0, sin(ViewAng[j][0]), cos(ViewAng[j][0])}};
+            double[][] R_y02=new double[][]{{cos(ViewAng[j][3]), 0, sin(ViewAng[j][3])}, {0, 1, 0}, {-sin(ViewAng[j][3]), 0, cos(ViewAng[j][3])}};
+            double[][] r_install_mid02=MatrixMultiplication(R_x02,r_install02);
+            double[][] r_install_BF02=MatrixMultiplication(R_y02,r_install_mid02);
+            double[][] r_install_ESD02=MatrixMultiplication(R_Attitude,r_install_BF02);
+            double theta_install02=acos(r_install_ESD02[2][0]/(r_install_ESD02[0][0]*r_install_ESD02[0][0]+r_install_ESD02[1][0]*r_install_ESD02[1][0]+r_install_ESD02[2][0]*r_install_ESD02[2][0]));
+            double beta02;
+            if (abs(theta_install02) >= theta) {
+                beta02=PI-theta;
+            }else {
+                beta02=asin((sin(theta_install02)*r)/Re)-theta_install02;
+            }
+            //法线矢量
+            double[] v102=new double[]{r_install_ESD02[0][0],r_install_ESD02[1][0],r_install_ESD02[2][0]};
+            double[] v202=new double[]{0,0,1};
+            double[] n02=VectorCross(v102,v202);
+            double[][] R_n02=new double[3][3];
+            R_n02[0][0] = n02[0] * n02[0] * (1 - Math.cos(beta02)) + Math.cos(beta02);
+            R_n02[0][1] = n02[0] * n02[1] * (1 - Math.cos(beta02)) + n02[2] * Math.sin(beta02);
+            R_n02[0][2] = n02[0] * n02[2] * (1 - Math.cos(beta02)) - n02[1] * Math.sin(beta02);
+            R_n02[1][0] = n02[0] * n02[1] * (1 - Math.cos(beta02)) - n02[2] * Math.sin(beta02);
+            R_n02[1][1] = n02[1] * n02[1] * (1 - Math.cos(beta02)) + Math.cos(beta02);
+            R_n02[1][2] = n02[1] * n02[2] * (1 - Math.cos(beta02)) + n02[0] * Math.sin(beta02);
+            R_n02[2][0] = n02[0] * n02[2] * (1 - Math.cos(beta02)) + n02[1] * Math.sin(beta02);
+            R_n02[2][1] = n02[1] * n02[2] * (1 - Math.cos(beta02)) - n02[0] * Math.sin(beta02);
+            R_n02[2][2] = n02[2] * n02[2] * (1 - Math.cos(beta02)) + Math.cos(beta02);
+            double[][] r_Target_ESD02=new double[3][1];
+            double[] r_Target02_ECEF=new double[3];
+            double[] r_Target02_GEI=new double[3];
+            double[][] r_Satellite_ESD02=new double[][]{{0},{0},{-r}};
+            r_Target_ESD02=MatrixMultiplication(R_n02,r_Satellite_ESD02);
+            double[] r_Target_ESD02_mid=new double[]{r_Target_ESD02[0][0],r_Target_ESD02[1][0],r_Target_ESD02[2][0]};
+            ESDToECEF(Satellite_LLA,r_Target_ESD02_mid,r_Target02_ECEF);
+            ECEFToICRS(JD_Time,r_Target02_ECEF,r_Target02_GEI);
+            PosionToSubSat(r_Target02_GEI, Time, Time_UTC, SubSat, SubSat_GEI);
+            ViewAreaPoint[j][2] = SubSat[0];
+            ViewAreaPoint[j][3] = SubSat[1];
+            //顶点3
+            double[][] r_install03={{cos(ViewInstall[j][0])},{cos(ViewInstall[j][1])},{cos(ViewInstall[j][2])}};
+            double[][] R_x03=new double[][]{{1, 0, 0}, {0, cos(-ViewAng[j][0]), -sin(-ViewAng[j][0])}, {0, sin(-ViewAng[j][0]), cos(-ViewAng[j][0])}};
+            double[][] R_y03=new double[][]{{cos(ViewAng[j][3]), 0, sin(ViewAng[j][3])}, {0, 1, 0}, {-sin(ViewAng[j][3]), 0, cos(ViewAng[j][3])}};
+            double[][] r_install_mid03=MatrixMultiplication(R_x03,r_install03);
+            double[][] r_install_BF03=MatrixMultiplication(R_y03,r_install_mid03);
+            double[][] r_install_ESD03=MatrixMultiplication(R_Attitude,r_install_BF03);
+            double theta_install03=acos(r_install_ESD03[2][0]/(r_install_ESD03[0][0]*r_install_ESD03[0][0]+r_install_ESD03[1][0]*r_install_ESD03[1][0]+r_install_ESD03[2][0]*r_install_ESD03[2][0]));
+            double beta03;
+            if (abs(theta_install03) >= theta) {
+                beta03=PI-theta;
+            }else {
+                beta03=asin((sin(theta_install03)*r)/Re)-theta_install03;
+            }
+            //法线矢量
+            double[] v103=new double[]{r_install_ESD03[0][0],r_install_ESD03[1][0],r_install_ESD03[2][0]};
+            double[] v203=new double[]{0,0,1};
+            double[] n03=VectorCross(v103,v203);
+            double[][] R_n03=new double[3][3];
+            R_n03[0][0] = n03[0] * n03[0] * (1 - Math.cos(beta03)) + Math.cos(beta03);
+            R_n03[0][1] = n03[0] * n03[1] * (1 - Math.cos(beta03)) + n03[2] * Math.sin(beta03);
+            R_n03[0][2] = n03[0] * n03[2] * (1 - Math.cos(beta03)) - n03[1] * Math.sin(beta03);
+            R_n03[1][0] = n03[0] * n03[1] * (1 - Math.cos(beta03)) - n03[2] * Math.sin(beta03);
+            R_n03[1][1] = n03[1] * n03[1] * (1 - Math.cos(beta03)) + Math.cos(beta03);
+            R_n03[1][2] = n03[1] * n03[2] * (1 - Math.cos(beta03)) + n03[0] * Math.sin(beta03);
+            R_n03[2][0] = n03[0] * n03[2] * (1 - Math.cos(beta03)) + n03[1] * Math.sin(beta03);
+            R_n03[2][1] = n03[1] * n03[2] * (1 - Math.cos(beta03)) - n03[0] * Math.sin(beta03);
+            R_n03[2][2] = n03[2] * n03[2] * (1 - Math.cos(beta03)) + Math.cos(beta03);
+            double[][] r_Target_ESD03=new double[3][1];
+            double[] r_Target03_ECEF=new double[3];
+            double[] r_Target03_GEI=new double[3];
+            double[][] r_Satellite_ESD03=new double[][]{{0},{0},{-r}};
+            r_Target_ESD03=MatrixMultiplication(R_n03,r_Satellite_ESD03);
+            double[] r_Target_ESD03_mid=new double[]{r_Target_ESD03[0][0],r_Target_ESD03[1][0],r_Target_ESD03[2][0]};
+            ESDToECEF(Satellite_LLA,r_Target_ESD03_mid,r_Target03_ECEF);
+            ECEFToICRS(JD_Time,r_Target03_ECEF,r_Target03_GEI);
+            PosionToSubSat(r_Target03_GEI, Time, Time_UTC, SubSat, SubSat_GEI);
+            ViewAreaPoint[j][4] = SubSat[0];
+            ViewAreaPoint[j][5] = SubSat[1];
+            //顶点4
+            double[][] r_install04={{cos(ViewInstall[j][0])},{cos(ViewInstall[j][1])},{cos(ViewInstall[j][2])}};
+            double[][] R_x04=new double[][]{{1, 0, 0}, {0, cos(-ViewAng[j][0]), -sin(-ViewAng[j][0])}, {0, sin(-ViewAng[j][0]), cos(-ViewAng[j][0])}};
+            double[][] R_y04=new double[][]{{cos(-ViewAng[j][3]), 0, sin(-ViewAng[j][3])}, {0, 1, 0}, {-sin(-ViewAng[j][3]), 0, cos(-ViewAng[j][3])}};
+            double[][] r_install_mid04=MatrixMultiplication(R_x04,r_install04);
+            double[][] r_install_BF04=MatrixMultiplication(R_y04,r_install_mid04);
+            double[][] r_install_ESD04=MatrixMultiplication(R_Attitude,r_install_BF04);
+            double theta_install04=acos(r_install_ESD04[2][0]/(r_install_ESD04[0][0]*r_install_ESD04[0][0]+r_install_ESD04[1][0]*r_install_ESD04[1][0]+r_install_ESD04[2][0]*r_install_ESD04[2][0]));
+            double beta04;
+            if (abs(theta_install04) >= theta) {
+                beta04=PI-theta;
+            }else {
+                beta04=asin((sin(theta_install04)*r)/Re)-theta_install04;
+            }
+            //法线矢量
+            double[] v104=new double[]{r_install_ESD04[0][0],r_install_ESD04[1][0],r_install_ESD04[2][0]};
+            double[] v204=new double[]{0,0,1};
+            double[] n04=VectorCross(v104,v204);
+            double[][] R_n04=new double[3][3];
+            R_n04[0][0] = n04[0] * n04[0] * (1 - Math.cos(beta04)) + Math.cos(beta04);
+            R_n04[0][1] = n04[0] * n04[1] * (1 - Math.cos(beta04)) + n04[2] * Math.sin(beta04);
+            R_n04[0][2] = n04[0] * n04[2] * (1 - Math.cos(beta04)) - n04[1] * Math.sin(beta04);
+            R_n04[1][0] = n04[0] * n04[1] * (1 - Math.cos(beta04)) - n04[2] * Math.sin(beta04);
+            R_n04[1][1] = n04[1] * n04[1] * (1 - Math.cos(beta04)) + Math.cos(beta04);
+            R_n04[1][2] = n04[1] * n04[2] * (1 - Math.cos(beta04)) + n04[0] * Math.sin(beta04);
+            R_n04[2][0] = n04[0] * n04[2] * (1 - Math.cos(beta04)) + n04[1] * Math.sin(beta04);
+            R_n04[2][1] = n04[1] * n04[2] * (1 - Math.cos(beta04)) - n04[0] * Math.sin(beta04);
+            R_n04[2][2] = n04[2] * n04[2] * (1 - Math.cos(beta04)) + Math.cos(beta04);
+            double[][] r_Target_ESD04=new double[3][1];
+            double[] r_Target04_ECEF=new double[3];
+            double[] r_Target04_GEI=new double[3];
+            double[][] r_Satellite_ESD04=new double[][]{{0},{0},{-r}};
+            r_Target_ESD04=MatrixMultiplication(R_n04,r_Satellite_ESD04);
+            double[] r_Target_ESD04_mid=new double[]{r_Target_ESD04[0][0],r_Target_ESD04[1][0],r_Target_ESD04[2][0]};
+            ESDToECEF(Satellite_LLA,r_Target_ESD04_mid,r_Target04_ECEF);
+            ECEFToICRS(JD_Time,r_Target04_ECEF,r_Target04_GEI);
+            PosionToSubSat(r_Target04_GEI, Time, Time_UTC, SubSat, SubSat_GEI);
+            ViewAreaPoint[j][6] = SubSat[0];
+            ViewAreaPoint[j][7] = SubSat[1];
+        }
+    }
+
+    //计算卫星可见走廊
+    private static void ViewArea_ESD(double Position[], double Velocity[],double Satellite_LLA[], double ViewInstall[][], double ViewAng[][], int ViewNum, double RollMax, double Time[], double Time_UTC, double ViewAreaPoint[]) {
+
+
+        double[] nv = {Velocity[0] / Math.sqrt(Math.pow(Velocity[0], 2) + Math.pow(Velocity[1], 2) + Math.pow(Velocity[2], 2)),
+                Velocity[1] / Math.sqrt(Math.pow(Velocity[0], 2) + Math.pow(Velocity[1], 2) + Math.pow(Velocity[2], 2)),
+                Velocity[2] / Math.sqrt(Math.pow(Velocity[0], 2) + Math.pow(Velocity[1], 2) + Math.pow(Velocity[2], 2))};
+        double r = Math.sqrt(Math.pow(Position[0], 2) + Math.pow(Position[1], 2) + Math.pow(Position[2], 2));
+        double theta = Math.asin(Re / r);
+
+        double alpha, beta, theta_V, theta_xz, theta_yz, ViewAng_min;
+        double R[][] = new double[3][3];
+        double r_beta[] = new double[3];
+        double SubSat[] = new double[3];
+        double SubSat_GEI[] = new double[3];
+        for (int j = 0; j < ViewNum; j++) {
+            theta_xz = Math.atan(Math.cos(ViewInstall[j][0]) / Math.cos(ViewInstall[j][2]));
+            theta_yz = Math.atan(Math.cos(ViewInstall[j][1]) / Math.cos(ViewInstall[j][2]));
+            if ((ViewAng[j][2] + theta_yz + RollMax) >= theta) {
+                theta_V = Math.asin(Re / r);
+                beta = -(Math.PI / 2 - theta_V);
+            } else {
+                alpha = Math.asin((Math.sin(theta_yz + ViewAng[j][2] + RollMax) * r) / Re);
+                beta = -(alpha - (theta_yz + ViewAng[j][2] + RollMax));
+            }
+
+            double[][] r_Satellite_ESD=new double[][]{{0},{0},{-r}};
+            //double[][] R_x=new double[][]{{1, 0, 0}, {0, cos(beta), -sin(beta)}, {0, sin(beta), cos(beta)}};
+            double[][] R_x=new double[][]{{cos(beta), 0, -sin(beta)}, {0, 1, 0}, {sin(beta), 0, cos(beta)}};
+            double[][] r_Target_ESD=new double[3][1];
+            double[] r_Target_ECEF=new double[3];
+            double[] r_Target_GEI=new double[3];
+            r_Target_ESD=MatrixMultiplication(R_x,r_Satellite_ESD);
+            double[] r_Target_ESD_mid=new double[]{r_Target_ESD[0][0],r_Target_ESD[1][0],r_Target_ESD[2][0]};
+            ESDToECEF(Satellite_LLA,r_Target_ESD_mid,r_Target_ECEF);
+            double JD_Time=JD(Time);
+            ECEFToICRS(JD_Time,r_Target_ECEF,r_Target_GEI);
+            PosionToSubSat(r_Target_GEI, Time, Time_UTC, SubSat, SubSat_GEI);
+            ViewAreaPoint[4 * j + 0] = SubSat[0];
+            ViewAreaPoint[4 * j + 1] = SubSat[1];
+
+            if (Math.abs(theta_yz - ViewAng[j][3] - RollMax) >= theta) {
+                theta_V = Math.asin(Re / r);
+                beta = Math.PI / 2 - theta_V;
+                //beta = -beta;
+            } else {
+                alpha = Math.asin((Math.sin(theta_yz - ViewAng[j][3] - RollMax) * r) / Re);
+                beta = alpha - (theta_yz - ViewAng[j][3] - RollMax);
+                beta = -beta;
+            }
+            //double[][] R_x_2=new double[][]{{1, 0, 0}, {0, cos(beta), -sin(beta)}, {0, sin(beta), cos(beta)}};
+            double[][] R_x_2=new double[][]{{cos(beta), 0, -sin(beta)}, {0, 1, 0}, {sin(beta), 0, cos(beta)}};
+            r_Target_ESD=MatrixMultiplication(R_x_2,r_Satellite_ESD);
+            double[] r_Target_ESD_mid_2=new double[]{r_Target_ESD[0][0],r_Target_ESD[1][0],r_Target_ESD[2][0]};
+            ESDToECEF(Satellite_LLA,r_Target_ESD_mid_2,r_Target_ECEF);
+            ECEFToICRS(JD_Time,r_Target_ECEF,r_Target_GEI);
+            PosionToSubSat(r_Target_GEI, Time, Time_UTC, SubSat, SubSat_GEI);
+            ViewAreaPoint[4 * j + 2] = SubSat[0];
+            ViewAreaPoint[4 * j + 3] = SubSat[1];
+        }
+    }
+
     //儒略日计算
     private static double JD(double Time[]) {
         double year_UT = Time[0];
@@ -483,48 +1572,247 @@ public class AttitudeCalculation {
         return JD;
     }
 
+    //地固坐标系到卫星北东地坐标系
+    private static void ECEFToNED(double[] Satellite_LLA,double[] Target_LLA,double[] Target_NED){
+        double[] Satellite_ECEF=new double[3];
+        double[] Target_ECEF=new double[3];
+        LLAToECEF(Satellite_LLA, Satellite_ECEF);
+        LLAToECEF(Target_LLA, Target_ECEF);
+
+        double B=Satellite_LLA[1] * Math.PI / 180.0;//经度
+        double L=Satellite_LLA[0] * Math.PI / 180.0;//纬度
+        double[][] R_ECEFToNED={{-sin(B)*cos(L),-sin(B)*sin(L),cos(B)},
+                {-sin(L),cos(L),0},
+                {-cos(B)*cos(L),-cos(B)*sin(L),-sin(B)}};
+        double[][] Error_r=new double[3][1];
+        Error_r[0][0]=Target_ECEF[0]-Satellite_ECEF[0];
+        Error_r[1][0]=Target_ECEF[1]-Satellite_ECEF[1];
+        Error_r[2][0]=Target_ECEF[2]-Satellite_ECEF[2];
+        double[][] Target_NED_mid=new double[3][1];
+        Target_NED_mid=MatrixMultiplication(R_ECEFToNED,Error_r);
+        Target_NED[0]=Target_NED_mid[0][0];
+        Target_NED[1]=Target_NED_mid[1][0];
+        Target_NED[2]=Target_NED_mid[2][0];
+    }
+
+    //地固坐标系到卫星东南地坐标系
+    private static void ECEFToESD(double[] Satellite_LLA,double[] Target_LLA,double[] Target_ESD){
+        double[] Satellite_ECEF=new double[3];
+        double[] Target_ECEF=new double[3];
+        LLAToECEF(Satellite_LLA, Satellite_ECEF);
+        LLAToECEF(Target_LLA, Target_ECEF);
+
+        double B=Satellite_LLA[1] * Math.PI / 180.0;//经度
+        double L=Satellite_LLA[0] * Math.PI / 180.0;//纬度
+        double[][] R_ECEFToNED={{-sin(B)*cos(L),-sin(B)*sin(L),cos(B)},
+                {-sin(L),cos(L),0},
+                {-cos(B)*cos(L),-cos(B)*sin(L),-sin(B)}};
+        double[][] Error_r=new double[3][1];
+        Error_r[0][0]=Target_ECEF[0]-Satellite_ECEF[0];
+        Error_r[1][0]=Target_ECEF[1]-Satellite_ECEF[1];
+        Error_r[2][0]=Target_ECEF[2]-Satellite_ECEF[2];
+        double[][] Target_NED_mid=new double[3][1];
+        Target_NED_mid=MatrixMultiplication(R_ECEFToNED,Error_r);
+        double Ang_z=-PI/2;
+        double[][] R_NEDToESD={{cos(Ang_z),-sin(Ang_z),0},
+                {sin(Ang_z),cos(Ang_z),0},
+                {0,0,1}};
+        double[][] Target_ESD_mid=new double[3][1];
+        Target_ESD_mid=MatrixMultiplication(R_NEDToESD,Target_NED_mid);
+        Target_ESD[0]=Target_ESD_mid[0][0];
+        Target_ESD[1]=Target_ESD_mid[1][0];
+        Target_ESD[2]=Target_ESD_mid[2][0];
+    }
+
     //地固坐标系转到惯性坐标系
     private static void ECEFToICRS(double JD, double position_ECEF[], double position_GEI[]) {
         double T = (JD - 2451545.0) / 36525.0;
-        double z = 2306.2182 * T + 1.09468 * Math.pow(T, 2) + 0.018203 * Math.pow(T, 3);
-        double theta = 2004.3109 * T + 0.42665 * Math.pow(T, 2) - 0.041833 * Math.pow(T, 3);
-        double zeta = 2306.2181 * T + 0.30188 * Math.pow(T, 2) + 0.017998 * Math.pow(T, 3);
-        z = (z / 3600.0) * Math.PI / 180.0;
-        theta = (theta / 3600.0) * Math.PI / 180.0;
-        zeta = (zeta / 3600.0) * Math.PI / 180.0;
-        double[][] R_P = {{Math.cos(z) * Math.cos(theta) * Math.cos(zeta) - Math.sin(z) * Math.sin(zeta), -Math.cos(z) * Math.cos(theta) * Math.sin(zeta) - Math.sin(z) * Math.cos(zeta), -Math.cos(z) * Math.sin(theta)},
-                {Math.sin(z) * Math.cos(theta) * Math.cos(zeta) + Math.cos(z) * Math.sin(zeta), -Math.sin(z) * Math.cos(theta) * Math.sin(zeta) + Math.cos(z) * Math.cos(zeta), -Math.sin(z) * Math.sin(theta)},
-                {Math.sin(theta) * Math.cos(zeta), -Math.sin(theta) * Math.sin(zeta), Math.cos(theta)}};
-        double epsilon = (23 + 26 / 60) * Math.PI / 180.0;
-        double depsilon = (-10.697 / Math.pow(60, 3)) * Math.PI / 180.0;
-        double dPsi = (-104.170 / Math.pow(60, 3)) * Math.PI / 180.0;
-        double epsilon_r = epsilon + depsilon;
-        double[][] R_N = {{Math.cos(dPsi), -Math.sin(dPsi) * Math.cos(epsilon), -Math.sin(dPsi) * Math.sin(epsilon)},
-                {Math.sin(dPsi) * Math.cos(epsilon_r), Math.cos(dPsi) * Math.cos(epsilon_r) * Math.cos(epsilon) + Math.sin(epsilon_r) * Math.sin(epsilon), Math.cos(dPsi) * Math.cos(epsilon_r) * Math.sin(epsilon) - Math.sin(epsilon_r) * Math.cos(epsilon)},
-                {Math.sin(dPsi) * Math.sin(epsilon_r), Math.cos(dPsi) * Math.sin(epsilon_r) * Math.cos(epsilon) - Math.cos(epsilon_r) * Math.sin(epsilon), Math.cos(dPsi) * Math.sin(epsilon_r) * Math.sin(epsilon) + Math.cos(epsilon_r) * Math.cos(epsilon)}};
 
-        double GAST = Time_GAST(JD);
-        double[][] R_S = {{Math.cos(GAST), Math.sin(GAST), 0},
-                {-Math.sin(GAST), Math.cos(GAST), 0},
-                {0, 0, 1}};
+        //岁差角
+        double Zeta_A = 2.5976176 + 2306.0809506*T + 0.3019015*T*T + 0.0179663*T*T*T - 0.0000327*T*T*T*T - 0.0000002*T*T*T*T*T;//秒
+        double Theta_A = 2004.1917476*T - 0.4269353*T*T - 0.041825*T*T*T - 0.0000601*T*T*T*T - 0.0000001*T*T*T*T*T;
+        double Z_A = -2.5976176 + 2306.0803226*T + 1.094779*T*T + 0.0182273*T*T*T + 0.000047*T*T*T*T - 0.0000003*T*T*T*T*T;
+        Zeta_A = Zeta_A/3600.0;//度
+        Theta_A = Theta_A/3600.0;
+        Z_A = Z_A/3600.0;
+        //岁差矩阵
+        double[][] R3Z_A={{cos(-Z_A*PI/180.0),sin(-Z_A*PI/180.0),0},
+                {-sin(-Z_A*PI/180.0),cos(-Z_A*PI/180.0),0},
+                {0,0,1}};
+        double[][] R2Theta_A={{cos(Theta_A*PI/180.0),0,-sin(Theta_A*PI/180.0)},
+                {0,1,0},
+                {sin(Theta_A*PI/180.0),0,cos(Theta_A*PI/180.0)}};
+        double[][] R3_Zeta_A={{cos(-Zeta_A*PI/180.0),sin(-Zeta_A*PI/180.0),0},
+                {-sin(-Zeta_A*PI/180.0),cos(-Zeta_A*PI/180.0),0},
+                {0,0,1}};
+        double[][] PR=new double[3][3];
+        double[][] PR_mid=new double[3][3];
+        PR_mid=MatrixMultiplication(R3Z_A,R2Theta_A);
+        PR=MatrixMultiplication(PR_mid,R3_Zeta_A);
 
-        double X_p = 48.775 / Math.pow(60, 3);
-        double Y_p = 384.034 / Math.pow(60, 3);
-        double[][] R_M = {{1, 0, X_p},
-                {0, 1, -Y_p},
-                {-X_p, Y_p, 1}};
+        //章动计算
+        double Epsilon_A = 84381.448 - 46.8150*T - 0.00059*T*T + 0.001813*T*T*T;
+        Epsilon_A = Epsilon_A/3600.0;
+        // http://blog.sina.com.cn/s/blog_852e40660100w1m6.html
+        double L = 280.4665+36000.7698*T;
+        double dL = 218.3165+481267.8813*T;
+        double Omega = 125.04452-1934.136261*T;
+        double DeltaPsi = -17.20*sin(Omega*PI/180.0)-1.32*sin(2*L*PI/180.0)-0.23*sin(2*dL*PI/180.0)+0.21*sin(2*Omega*PI/180.0);
+        double DeltaEpsilon = 9.20*cos(Omega*PI/180.0)+0.57*cos(2*L*PI/180.0)+0.10*cos(2*dL*PI/180.0)-0.09*cos(2*Omega*PI/180.0);
+        DeltaPsi = DeltaPsi/3600.0;
+        DeltaEpsilon = DeltaEpsilon/3600.0;
 
-        double[][] R = new double[3][3];
-        R = MatrixMultiplication(MatrixMultiplication(MatrixMultiplication(R_P, R_N), R_S), R_M);
+        //章动矩阵
+        double[][] R1_DEA={{1,0,0},
+                {0,cos(-(DeltaEpsilon+Epsilon_A)*PI/180.0),sin(-(DeltaEpsilon+Epsilon_A)*PI/180.0)},
+                {0,-sin(-(DeltaEpsilon+Epsilon_A)*PI/180.0),cos(-(DeltaEpsilon+Epsilon_A)*PI/180.0)}};
+        double[][] R3_DeltaPsi={{cos(-DeltaPsi*PI/180.0),sin(-DeltaPsi*PI/180.0),0},
+                {-sin(-DeltaPsi*PI/180.0),cos(-DeltaPsi*PI/180.0),0},
+                {0,0,1}};
+        double[][] R1_Epsilon={{1,0,0},
+                {0,cos(Epsilon_A*PI/180.0),sin(Epsilon_A*PI/180.0)},
+                {0,-sin(Epsilon_A*PI/180.0),cos(Epsilon_A*PI/180.0)}};
+        double[][] NR=new double[3][3];
+        double[][] NR_mid=new double[3][3];
+        NR_mid=MatrixMultiplication(R1_DEA,R3_DeltaPsi);
+        NR=MatrixMultiplication(NR_mid,R1_Epsilon);
+
+        //地球自转
+        double GMST = 280.46061837 + 360.98564736629*(JD-2451545.0) + 0.000387933*T*T - T*T*T/38710000.0;
+        GMST = GMST%360;
+        double GAST = GMST + DeltaPsi*cos((DeltaEpsilon + Epsilon_A)*PI/180.0);
+        GAST = GAST%360;
+        double[][] ER={{cos(GAST*PI/180.0),sin(GAST*PI/180.0),0},
+                {-sin(GAST*PI/180.0),cos(GAST*PI/180.0),0},
+                {0,0,1}};
+
+        //极移坐标
+        //  https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop.html
+        // https://datacenter.iers.org/data/html/finals.all.html
+        double Xp = 0.001674*0.955;
+        double Yp = 0.001462*0.955;
+        // 极移矩阵
+        double[][] R1_YP={{1,0,0},
+                {0,cos(-Yp*PI/180.0),sin(-Yp*PI/180.0)},
+                {0,-sin(-Yp*PI/180.0),cos(-Yp*PI/180.0)}};
+        double[][] R2_XP={{cos(-Xp*PI/180.0),0,-sin(-Xp*PI/180.0)},
+                {0,1,0},
+                {sin(-Xp*PI/180.0),0,cos(-Xp*PI/180.0)}};
+        double[][] EP=new double[3][3];
+        EP=MatrixMultiplication(R1_YP,R2_XP);
+
+        // 空固坐标系到地固坐标系的转换矩阵
+        double[][] EPER=new double[3][3];
+        double[][] EPERNR=new double[3][3];
+        double[][] ECEF;
+        EPER=MatrixMultiplication(EP,ER);
+        EPERNR=MatrixMultiplication(EPER,NR);
+        ECEF=MatrixMultiplication(EPERNR,PR);
+        //地固坐标系到惯性坐标系的转换矩阵
         double[][] R_inv = new double[3][3];
-        R_inv = MatrixInverse(R);
+        R_inv = MatrixInverse(ECEF);
         double[][] p_ECEF = {{position_ECEF[0]}, {position_ECEF[1]}, {position_ECEF[2]}};
         double[][] pp_GEI = new double[3][1];
-        pp_GEI = MatrixMultiplication(R, p_ECEF);
+        pp_GEI = MatrixMultiplication(R_inv, p_ECEF);
 
         position_GEI[0] = pp_GEI[0][0];
         position_GEI[1] = pp_GEI[1][0];
         position_GEI[2] = pp_GEI[2][0];
+    }
+
+    //惯性坐标系到地固坐标系转
+    private static void ICRSToECEF(double[] Time, double position_GEI[], double position_ECEF[]) {
+        double JD=JD(Time);
+        double T = (JD - 2451545.0) / 36525.0;
+
+        //岁差角
+        double Zeta_A = 2.5976176 + 2306.0809506*T + 0.3019015*T*T + 0.0179663*T*T*T - 0.0000327*T*T*T*T - 0.0000002*T*T*T*T*T;//秒
+        double Theta_A = 2004.1917476*T - 0.4269353*T*T - 0.041825*T*T*T - 0.0000601*T*T*T*T - 0.0000001*T*T*T*T*T;
+        double Z_A = -2.5976176 + 2306.0803226*T + 1.094779*T*T + 0.0182273*T*T*T + 0.000047*T*T*T*T - 0.0000003*T*T*T*T*T;
+        Zeta_A = Zeta_A/3600.0;//度
+        Theta_A = Theta_A/3600.0;
+        Z_A = Z_A/3600.0;
+        //岁差矩阵
+        double[][] R3Z_A={{cos(-Z_A*PI/180.0),sin(-Z_A*PI/180.0),0},
+                {-sin(-Z_A*PI/180.0),cos(-Z_A*PI/180.0),0},
+                {0,0,1}};
+        double[][] R2Theta_A={{cos(Theta_A*PI/180.0),0,-sin(Theta_A*PI/180.0)},
+                {0,1,0},
+                {sin(Theta_A*PI/180.0),0,cos(Theta_A*PI/180.0)}};
+        double[][] R3_Zeta_A={{cos(-Zeta_A*PI/180.0),sin(-Zeta_A*PI/180.0),0},
+                {-sin(-Zeta_A*PI/180.0),cos(-Zeta_A*PI/180.0),0},
+                {0,0,1}};
+        double[][] PR=new double[3][3];
+        double[][] PR_mid=new double[3][3];
+        PR_mid=MatrixMultiplication(R3Z_A,R2Theta_A);
+        PR=MatrixMultiplication(PR_mid,R3_Zeta_A);
+
+        //章动计算
+        double Epsilon_A = 84381.448 - 46.8150*T - 0.00059*T*T + 0.001813*T*T*T;
+        Epsilon_A = Epsilon_A/3600.0;
+        // http://blog.sina.com.cn/s/blog_852e40660100w1m6.html
+        double L = 280.4665+36000.7698*T;
+        double dL = 218.3165+481267.8813*T;
+        double Omega = 125.04452-1934.136261*T;
+        double DeltaPsi = -17.20*sin(Omega*PI/180.0)-1.32*sin(2*L*PI/180.0)-0.23*sin(2*dL*PI/180.0)+0.21*sin(2*Omega*PI/180.0);
+        double DeltaEpsilon = 9.20*cos(Omega*PI/180.0)+0.57*cos(2*L*PI/180.0)+0.10*cos(2*dL*PI/180.0)-0.09*cos(2*Omega*PI/180.0);
+        DeltaPsi = DeltaPsi/3600.0;
+        DeltaEpsilon = DeltaEpsilon/3600.0;
+
+        //章动矩阵
+        double[][] R1_DEA={{1,0,0},
+                {0,cos(-(DeltaEpsilon+Epsilon_A)*PI/180.0),sin(-(DeltaEpsilon+Epsilon_A)*PI/180.0)},
+                {0,-sin(-(DeltaEpsilon+Epsilon_A)*PI/180.0),cos(-(DeltaEpsilon+Epsilon_A)*PI/180.0)}};
+        double[][] R3_DeltaPsi={{cos(-DeltaPsi*PI/180.0),sin(-DeltaPsi*PI/180.0),0},
+                {-sin(-DeltaPsi*PI/180.0),cos(-DeltaPsi*PI/180.0),0},
+                {0,0,1}};
+        double[][] R1_Epsilon={{1,0,0},
+                {0,cos(Epsilon_A*PI/180.0),sin(Epsilon_A*PI/180.0)},
+                {0,-sin(Epsilon_A*PI/180.0),cos(Epsilon_A*PI/180.0)}};
+        double[][] NR=new double[3][3];
+        double[][] NR_mid=new double[3][3];
+        NR_mid=MatrixMultiplication(R1_DEA,R3_DeltaPsi);
+        NR=MatrixMultiplication(NR_mid,R1_Epsilon);
+
+        //地球自转
+        double GMST = 280.46061837 + 360.98564736629*(JD-2451545.0) + 0.000387933*T*T - T*T*T/38710000.0;
+        GMST = GMST%360;
+        double GAST = GMST + DeltaPsi*cos((DeltaEpsilon + Epsilon_A)*PI/180.0);
+        GAST = GAST%360;
+        double[][] ER={{cos(GAST*PI/180.0),sin(GAST*PI/180.0),0},
+                {-sin(GAST*PI/180.0),cos(GAST*PI/180.0),0},
+                {0,0,1}};
+
+        //极移坐标
+        //  https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop.html
+        // https://datacenter.iers.org/data/html/finals.all.html
+        double Xp = 0.001674*0.955;
+        double Yp = 0.001462*0.955;
+        // 极移矩阵
+        double[][] R1_YP={{1,0,0},
+                {0,cos(-Yp*PI/180.0),sin(-Yp*PI/180.0)},
+                {0,-sin(-Yp*PI/180.0),cos(-Yp*PI/180.0)}};
+        double[][] R2_XP={{cos(-Xp*PI/180.0),0,-sin(-Xp*PI/180.0)},
+                {0,1,0},
+                {sin(-Xp*PI/180.0),0,cos(-Xp*PI/180.0)}};
+        double[][] EP=new double[3][3];
+        EP=MatrixMultiplication(R1_YP,R2_XP);
+
+        // 空固坐标系到地固坐标系的转换矩阵
+        double[][] EPER=new double[3][3];
+        double[][] EPERNR=new double[3][3];
+        double[][] ECEF;
+        EPER=MatrixMultiplication(EP,ER);
+        EPERNR=MatrixMultiplication(EPER,NR);
+        ECEF=MatrixMultiplication(EPERNR,PR);
+
+        double[][] p_GEI = {{position_GEI[0]}, {position_GEI[1]}, {position_GEI[2]}};
+        double[][] pp_ECEF = new double[3][1];
+        pp_ECEF = MatrixMultiplication(ECEF, p_GEI);
+
+        position_ECEF[0] = pp_ECEF[0][0];
+        position_ECEF[1] = pp_ECEF[1][0];
+        position_ECEF[2] = pp_ECEF[2][0];
     }
 
     //地固直角坐标系转换为地心地固坐标系
@@ -555,6 +1843,113 @@ public class AttitudeCalculation {
         Position_ORF[0] = pS_ORF[0][0];
         Position_ORF[1] = pS_ORF[1][0];
         Position_ORF[2] = pS_ORF[2][0];
+    }
+
+    //惯性坐标系转到轨道坐标系，大椭圆轨道
+    private static void GEIToORF_Ellipse(double SatPosition_GEI[], double SatVelocity_GEI[], double Position_GEI[], double Position_ORF[]) {
+        double r = Math.sqrt(Math.pow(SatPosition_GEI[0], 2) + Math.pow(SatPosition_GEI[1], 2) + Math.pow(SatPosition_GEI[2], 2));
+        double v = Math.sqrt(Math.pow(SatVelocity_GEI[0], 2) + Math.pow(SatVelocity_GEI[1], 2) + Math.pow(SatVelocity_GEI[2], 2));
+        double[] zs = {-SatPosition_GEI[0] / r, -SatPosition_GEI[1] / r, -SatPosition_GEI[2] / r};
+        double[] xs = {SatVelocity_GEI[0] / v, SatVelocity_GEI[1] / v, SatVelocity_GEI[2] / v};
+        double[] ys = new double[3];
+        ys = VectorCross(zs, xs);
+        //System.out.println(Double.toString(xs[0])+","+Double.toString(xs[1])+","+Double.toString(xs[2]));
+        //System.out.println(Double.toString(ys[0])+","+Double.toString(ys[1])+","+Double.toString(ys[2]));
+        //System.out.println(Double.toString(zs[0])+","+Double.toString(zs[1])+","+Double.toString(zs[2]));
+        double r_ys=sqrt(pow(ys[0],2)+pow(ys[1],2)+pow(ys[2],2));
+        ys[0]=ys[0]/r_ys;
+        ys[1]=ys[1]/r_ys;
+        ys[2]=ys[2]/r_ys;
+        xs=VectorCross(ys,zs);
+        /*
+        double[][] OR = {{xs[0], ys[0], zs[0]},
+                {xs[1], ys[1], zs[1]},
+                {xs[2], ys[2], zs[2]}};
+         */
+        double[][] OR = {{xs[0], xs[1], xs[2]},
+                {ys[0], ys[1], ys[2]},
+                {zs[0], zs[1], zs[2]}};
+        double[][] pS_GEI = {{Position_GEI[0]}, {Position_GEI[1]}, {Position_GEI[2]}};
+        double[][] pS_ORF = new double[3][1];
+        pS_ORF = MatrixMultiplication(OR, pS_GEI);
+        Position_ORF[0] = pS_ORF[0][0];
+        Position_ORF[1] = pS_ORF[1][0];
+        Position_ORF[2] = pS_ORF[2][0];
+    }
+
+    //地固坐标系到卫星东南地坐标系
+    private static void ESDToECEF(double[] Satellite_LLA,double[] Position_ESD,double[] Position_ECEF){
+        double[] Satellite_ECEF=new double[3];
+        LLAToECEF(Satellite_LLA, Satellite_ECEF);
+
+        double B=Satellite_LLA[1] * Math.PI / 180.0;//经度
+        double L=Satellite_LLA[0] * Math.PI / 180.0;//纬度
+        double[][] R_ECEFToNED={{-sin(B)*cos(L),-sin(B)*sin(L),cos(B)},
+                {-sin(L),cos(L),0},
+                {-cos(B)*cos(L),-cos(B)*sin(L),-sin(B)}};
+        double[][] R_NEDToECEF=MatrixInverse(R_ECEFToNED);
+        double[][] Target_ESD_mid=new double[3][1];
+        double[][] Position_ESD_mid=new double[][]{{Position_ESD[0]},{Position_ESD[1]},{Position_ESD[2]}};
+        Target_ESD_mid=MatrixMultiplication(R_NEDToECEF,Position_ESD_mid);
+        Position_ECEF[0]=Target_ESD_mid[0][0];
+        Position_ECEF[1]=Target_ESD_mid[1][0];
+        Position_ECEF[2]=Target_ESD_mid[2][0];
+    }
+
+    //由卫星位置计算星下点的经纬度，以及卫星位置的经纬高，以及卫星星下点在地心赤道惯性系中的位置
+    private static void PosionToSubSat(double posion_GEI[], double Time[], double Time_UTC, double SubSat[], double SubSat_GEI[]) {
+        double omega = 1.0027 * 180 / 43200;//地球自转角速度，单位为：度/秒
+
+
+        double x = posion_GEI[0];
+        double y = posion_GEI[1];
+        double z = posion_GEI[2];
+
+        double Dec;
+        if (x != 0 || y != 0) {
+            Dec = Math.atan(z / (Math.pow((Math.pow(x, 2) + Math.pow(y, 2)), 0.5))) * 180 / Math.PI;
+        } else {
+            if (z > 0)
+                Dec = 90;
+            else
+                Dec = -90;
+        }
+        double RA = 0;
+        if (x > 0)
+            RA = Math.atan(y / x) * 180 / Math.PI;
+        if (x < 0) {
+            if (y >= 0)
+                RA = 180 + Math.atan(y / x) * 180 / Math.PI;
+            else
+                RA = -180 + Math.atan(y / x) * 180 / Math.PI;
+        }
+        if (x == 0) {
+            if (y >= 0)
+                RA = 90;
+            else
+                RA = -90;
+        }
+
+        double lat = Dec;
+        double JD_Time=JD(Time);
+        double GAST = Time_GAST(JD_Time);
+        GAST = GAST + omega * Time_UTC;
+        double lon = RA - GAST;
+
+        //限定范围
+        if (lon > 180)
+            lon = lon - 360;
+        else if (lon <= -180)
+            lon = lon + 360;
+
+        SubSat[0] = lon;
+        SubSat[1] = lat;
+        SubSat[2] = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2)) - Re;
+
+        double r = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2));
+        SubSat_GEI[0] = Re * x / r;
+        SubSat_GEI[1] = Re * y / r;
+        SubSat_GEI[2] = Re * z / r;
     }
 
     //计算参考时间的格林尼治赤经

@@ -5,7 +5,6 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.UpdateOptions;
-import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
@@ -28,6 +27,7 @@ import static java.lang.Math.*;
 
 public class VisibilityCalculation {
     private static int TimeZone = -8;                     //北京时区到世界时-8
+    //private static int TimeZone = 0;                     //北京时区到世界时-8
 
     //任务变量
     private static int MissionNumber;                   //任务数量
@@ -657,7 +657,7 @@ public class VisibilityCalculation {
             int[] StationVisibilityTimePeriod_iiList=new int[2];
             Target_LLA[0] = subStationPosition[0];
             Target_LLA[1] = subStationPosition[1];
-            Target_LLA[2] = subStationPosition[2] + Re;
+            Target_LLA[2] = subStationPosition[2];
             LLAToECEF(Target_LLA, Target_ECEF);
             for (int Orbit_i = 0; Orbit_i < OrbitalDataNum; Orbit_i++) {
                 double[] NowTime = new double[6];
@@ -715,8 +715,8 @@ public class VisibilityCalculation {
          */
         MongoClient mongoClient = MangoDBConnector.getClient();
         //获取名为"temp"的数据库
-        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
-//        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
+        //MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
 
         //数据传出
         for (int i = 0; i < MissionNumber; i++) {
@@ -918,12 +918,12 @@ public class VisibilityCalculation {
                     //读取是否为实传模式
                     //读取所需地面站
                     String MissionTransferStation_iList=null;
-                    int MissionWorkMode_iList = 0;
-                    if (document.getString("work_mode").equals("实传")) {
-                        MissionWorkMode_iList = 1;
+                    int MissionWorkMode_iList = 1;
+                    if (document.getString("work_mode").equals("记录")) {
+                        MissionWorkMode_iList = 0;
                         MissionTransferStation_iList=document.get("station_number").toString();
                     } else {
-                        MissionWorkMode_iList = 0;
+                        MissionWorkMode_iList = 1;
                     }
                     MissionWorkModeList.add(MissionNumber, MissionWorkMode_iList);
                     MissionTransferStationList.add(MissionNumber,MissionTransferStation_iList);
@@ -1429,7 +1429,7 @@ public class VisibilityCalculation {
             int[] StationVisibilityTimePeriod_iiList=new int[2];
             Target_LLA[0] = subStationPosition[0];
             Target_LLA[1] = subStationPosition[1];
-            Target_LLA[2] = subStationPosition[2] + Re;
+            Target_LLA[2] = subStationPosition[2];
             LLAToECEF(Target_LLA, Target_ECEF);
             for (int Orbit_i = 0; Orbit_i < OrbitalDataNum; Orbit_i++) {
                 double[] NowTime = new double[6];
@@ -1529,12 +1529,12 @@ public class VisibilityCalculation {
 
                 Target_LLA[0] = subMissionTargetArea.get(t)[0];
                 Target_LLA[1] = subMissionTargetArea.get(t)[1];
-                Target_LLA[2] = Re;
+                Target_LLA[2] = 0;
                 LLAToECEF(Target_LLA, Target_ECEF);
                 ECEFToICRS(NowTime_JD, Target_ECEF, Target_GEI);
                 SatPositionRe_LLA[0] = SatPosition_LLA[0];
                 SatPositionRe_LLA[1] = SatPosition_LLA[1];
-                SatPositionRe_LLA[2] = SatPosition_LLA[2] + Re;
+                SatPositionRe_LLA[2] = SatPosition_LLA[2];
                 LLAToECEF(SatPositionRe_LLA, SatPosition_ECEF);
                 int Side_Flag = SideJudge(Target_ECEF, SatPosition_ECEF);
                 int High_Flag = HighJudge(SatPosition_LLA, subMissionTargetHeight);
@@ -1573,7 +1573,7 @@ public class VisibilityCalculation {
             double[] Target_LLA=new double[3];
             Target_LLA[0]=subStationPosition[0];
             Target_LLA[1]=subStationPosition[1];
-            Target_LLA[2]=subStationPosition[2]+Re;
+            Target_LLA[2]=subStationPosition[2];
             double[] Target_ECEF=new double[3];
             LLAToECEF(Target_LLA,Target_ECEF);
 
@@ -1604,12 +1604,12 @@ public class VisibilityCalculation {
 
                 Target_LLA[0] = MissionTargetArea[i][2 * t];
                 Target_LLA[1] = MissionTargetArea[i][2 * t + 1];
-                Target_LLA[2] = Re;
+                Target_LLA[2] = 0;
                 LLAToECEF(Target_LLA, Target_ECEF);
                 ECEFToICRS(NowTime_JD, Target_ECEF, Target_GEI);
                 SatPositionRe_LLA[0] = SatPosition_LLA[0];
                 SatPositionRe_LLA[1] = SatPosition_LLA[1];
-                SatPositionRe_LLA[2] = SatPosition_LLA[2] + Re;
+                SatPositionRe_LLA[2] = SatPosition_LLA[2];
                 LLAToECEF(SatPositionRe_LLA, SatPosition_ECEF);
                 int Side_Flag = SideJudge(Target_ECEF, SatPosition_ECEF);
                 int High_Flag = HighJudge(SatPosition_LLA, MisssionTargetHeight[i]);
@@ -1708,8 +1708,104 @@ public class VisibilityCalculation {
             return 0;
     }
 
+
     //地固坐标系转到惯性坐标系
     private static void ECEFToICRS(double JD, double position_ECEF[], double position_GEI[]) {
+        double T = (JD - 2451545.0) / 36525.0;
+
+        //岁差角
+        double Zeta_A = 2.5976176 + 2306.0809506*T + 0.3019015*T*T + 0.0179663*T*T*T - 0.0000327*T*T*T*T - 0.0000002*T*T*T*T*T;//秒
+        double Theta_A = 2004.1917476*T - 0.4269353*T*T - 0.041825*T*T*T - 0.0000601*T*T*T*T - 0.0000001*T*T*T*T*T;
+        double Z_A = -2.5976176 + 2306.0803226*T + 1.094779*T*T + 0.0182273*T*T*T + 0.000047*T*T*T*T - 0.0000003*T*T*T*T*T;
+        Zeta_A = Zeta_A/3600.0;//度
+        Theta_A = Theta_A/3600.0;
+        Z_A = Z_A/3600.0;
+        //岁差矩阵
+        double[][] R3Z_A={{cos(-Z_A*PI/180.0),sin(-Z_A*PI/180.0),0},
+                {-sin(-Z_A*PI/180.0),cos(-Z_A*PI/180.0),0},
+                {0,0,1}};
+        double[][] R2Theta_A={{cos(Theta_A*PI/180.0),0,-sin(Theta_A*PI/180.0)},
+                {0,1,0},
+                {sin(Theta_A*PI/180.0),0,cos(Theta_A*PI/180.0)}};
+        double[][] R3_Zeta_A={{cos(-Zeta_A*PI/180.0),sin(-Zeta_A*PI/180.0),0},
+                {-sin(-Zeta_A*PI/180.0),cos(-Zeta_A*PI/180.0),0},
+                {0,0,1}};
+        double[][] PR=new double[3][3];
+        double[][] PR_mid=new double[3][3];
+        PR_mid=MatrixMultiplication(R3Z_A,R2Theta_A);
+        PR=MatrixMultiplication(PR_mid,R3_Zeta_A);
+
+        //章动计算
+        double Epsilon_A = 84381.448 - 46.8150*T - 0.00059*T*T + 0.001813*T*T*T;
+        Epsilon_A = Epsilon_A/3600.0;
+        // http://blog.sina.com.cn/s/blog_852e40660100w1m6.html
+        double L = 280.4665+36000.7698*T;
+        double dL = 218.3165+481267.8813*T;
+        double Omega = 125.04452-1934.136261*T;
+        double DeltaPsi = -17.20*sin(Omega*PI/180.0)-1.32*sin(2*L*PI/180.0)-0.23*sin(2*dL*PI/180.0)+0.21*sin(2*Omega*PI/180.0);
+        double DeltaEpsilon = 9.20*cos(Omega*PI/180.0)+0.57*cos(2*L*PI/180.0)+0.10*cos(2*dL*PI/180.0)-0.09*cos(2*Omega*PI/180.0);
+        DeltaPsi = DeltaPsi/3600.0;
+        DeltaEpsilon = DeltaEpsilon/3600.0;
+
+        //章动矩阵
+        double[][] R1_DEA={{1,0,0},
+                {0,cos(-(DeltaEpsilon+Epsilon_A)*PI/180.0),sin(-(DeltaEpsilon+Epsilon_A)*PI/180.0)},
+                {0,-sin(-(DeltaEpsilon+Epsilon_A)*PI/180.0),cos(-(DeltaEpsilon+Epsilon_A)*PI/180.0)}};
+        double[][] R3_DeltaPsi={{cos(-DeltaPsi*PI/180.0),sin(-DeltaPsi*PI/180.0),0},
+                {-sin(-DeltaPsi*PI/180.0),cos(-DeltaPsi*PI/180.0),0},
+                {0,0,1}};
+        double[][] R1_Epsilon={{1,0,0},
+                {0,cos(Epsilon_A*PI/180.0),sin(Epsilon_A*PI/180.0)},
+                {0,-sin(Epsilon_A*PI/180.0),cos(Epsilon_A*PI/180.0)}};
+        double[][] NR=new double[3][3];
+        double[][] NR_mid=new double[3][3];
+        NR_mid=MatrixMultiplication(R1_DEA,R3_DeltaPsi);
+        NR=MatrixMultiplication(NR_mid,R1_Epsilon);
+
+        //地球自转
+        double GMST = 280.46061837 + 360.98564736629*(JD-2451545.0) + 0.000387933*T*T - T*T*T/38710000.0;
+        GMST = GMST%360;
+        double GAST = GMST + DeltaPsi*cos((DeltaEpsilon + Epsilon_A)*PI/180.0);
+        GAST = GAST%360;
+        double[][] ER={{cos(GAST*PI/180.0),sin(GAST*PI/180.0),0},
+                {-sin(GAST*PI/180.0),cos(GAST*PI/180.0),0},
+                {0,0,1}};
+
+        //极移坐标
+        //  https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop.html
+        // https://datacenter.iers.org/data/html/finals.all.html
+        double Xp = 0.001674*0.955;
+        double Yp = 0.001462*0.955;
+        // 极移矩阵
+        double[][] R1_YP={{1,0,0},
+                {0,cos(-Yp*PI/180.0),sin(-Yp*PI/180.0)},
+                {0,-sin(-Yp*PI/180.0),cos(-Yp*PI/180.0)}};
+        double[][] R2_XP={{cos(-Xp*PI/180.0),0,-sin(-Xp*PI/180.0)},
+                {0,1,0},
+                {sin(-Xp*PI/180.0),0,cos(-Xp*PI/180.0)}};
+        double[][] EP=new double[3][3];
+        EP=MatrixMultiplication(R1_YP,R2_XP);
+
+        // 空固坐标系到地固坐标系的转换矩阵
+        double[][] EPER=new double[3][3];
+        double[][] EPERNR=new double[3][3];
+        double[][] ECEF;
+        EPER=MatrixMultiplication(EP,ER);
+        EPERNR=MatrixMultiplication(EPER,NR);
+        ECEF=MatrixMultiplication(EPERNR,PR);
+        //地固坐标系到惯性坐标系的转换矩阵
+        double[][] R_inv = new double[3][3];
+        R_inv = MatrixInverse(ECEF);
+        double[][] p_ECEF = {{position_ECEF[0]}, {position_ECEF[1]}, {position_ECEF[2]}};
+        double[][] pp_GEI = new double[3][1];
+        pp_GEI = MatrixMultiplication(R_inv, p_ECEF);
+
+        position_GEI[0] = pp_GEI[0][0];
+        position_GEI[1] = pp_GEI[1][0];
+        position_GEI[2] = pp_GEI[2][0];
+    }
+    //地固坐标系转到惯性坐标系
+    private static void ECEFToICRSold(double JD, double position_ECEF[], double position_GEI[]) {
         double T = (JD - 2451545.0) / 36525.0;
         double z = 2306.2182 * T + 1.09468 * Math.pow(T, 2) + 0.018203 * Math.pow(T, 3);
         double theta = 2004.3109 * T + 0.42665 * Math.pow(T, 2) - 0.041833 * Math.pow(T, 3);
@@ -1764,7 +1860,7 @@ public class VisibilityCalculation {
     }
 
     //惯性坐标系转到轨道坐标系
-    private static void GEIToORF(double SatPosition_GEI[], double SatVelocity_GEI[], double Position_GEI[], double Position_ORF[]) {
+    private static void GEIToORFold(double SatPosition_GEI[], double SatVelocity_GEI[], double Position_GEI[], double Position_ORF[]) {
         double r = Math.sqrt(Math.pow(SatPosition_GEI[0], 2) + Math.pow(SatPosition_GEI[1], 2) + Math.pow(SatPosition_GEI[2], 2));
         double v = Math.sqrt(Math.pow(SatVelocity_GEI[0], 2) + Math.pow(SatVelocity_GEI[1], 2) + Math.pow(SatVelocity_GEI[2], 2));
         double[] zs = {SatPosition_GEI[0] / r, SatPosition_GEI[1] / r, SatPosition_GEI[2] / r};
@@ -1775,6 +1871,37 @@ public class VisibilityCalculation {
                 {xs[1], ys[1], zs[1]},
                 {xs[2], ys[2], zs[2]}};
         double[][] pS_GEI = {{Position_GEI[0] - SatPosition_GEI[0]}, {Position_GEI[1] - SatPosition_GEI[1]}, {Position_GEI[2] - SatPosition_GEI[2]}};
+        double[][] pS_ORF = new double[3][1];
+        pS_ORF = MatrixMultiplication(OR, pS_GEI);
+        Position_ORF[0] = pS_ORF[0][0];
+        Position_ORF[1] = pS_ORF[1][0];
+        Position_ORF[2] = pS_ORF[2][0];
+    }
+    //惯性坐标系转到轨道坐标系，大椭圆轨道
+    private static void GEIToORF(double SatPosition_GEI[], double SatVelocity_GEI[], double Position_GEI[], double Position_ORF[]) {
+        double r = Math.sqrt(Math.pow(SatPosition_GEI[0], 2) + Math.pow(SatPosition_GEI[1], 2) + Math.pow(SatPosition_GEI[2], 2));
+        double v = Math.sqrt(Math.pow(SatVelocity_GEI[0], 2) + Math.pow(SatVelocity_GEI[1], 2) + Math.pow(SatVelocity_GEI[2], 2));
+        double[] zs = {-SatPosition_GEI[0] / r, -SatPosition_GEI[1] / r, -SatPosition_GEI[2] / r};
+        double[] xs = {SatVelocity_GEI[0] / v, SatVelocity_GEI[1] / v, SatVelocity_GEI[2] / v};
+        double[] ys = new double[3];
+        ys = VectorCross(zs, xs);
+        //System.out.println(Double.toString(xs[0])+","+Double.toString(xs[1])+","+Double.toString(xs[2]));
+        //System.out.println(Double.toString(ys[0])+","+Double.toString(ys[1])+","+Double.toString(ys[2]));
+        //System.out.println(Double.toString(zs[0])+","+Double.toString(zs[1])+","+Double.toString(zs[2]));
+        double r_ys=sqrt(pow(ys[0],2)+pow(ys[1],2)+pow(ys[2],2));
+        ys[0]=ys[0]/r_ys;
+        ys[1]=ys[1]/r_ys;
+        ys[2]=ys[2]/r_ys;
+        xs=VectorCross(ys,zs);
+        /*
+        double[][] OR = {{xs[0], ys[0], zs[0]},
+                {xs[1], ys[1], zs[1]},
+                {xs[2], ys[2], zs[2]}};
+         */
+        double[][] OR = {{xs[0], xs[1], xs[2]},
+                {ys[0], ys[1], ys[2]},
+                {zs[0], zs[1], zs[2]}};
+        double[][] pS_GEI = {{Position_GEI[0]}, {Position_GEI[1]}, {Position_GEI[2]}};
         double[][] pS_ORF = new double[3][1];
         pS_ORF = MatrixMultiplication(OR, pS_GEI);
         Position_ORF[0] = pS_ORF[0][0];

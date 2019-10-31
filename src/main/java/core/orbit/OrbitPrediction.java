@@ -5,10 +5,10 @@ import com.google.gson.JsonObject;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
+import javax.swing.*;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -16,8 +16,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 
-import static java.lang.Math.acos;
-import static java.lang.Math.sqrt;
+import static java.lang.Math.*;
 
 //import common.mongo.DbDefine;
 //import common.mongo.MangoDBConnector;
@@ -29,6 +28,13 @@ class OrbitPrediction {
     private static double SRP = 1;
     private static double ADRAG = 0;
     private static double OnlyJ2 = 0;
+
+    //private static double GRAVP = 0;
+    //private static double MOON = 0;
+    //private static double SUN = 0;
+    //private static double SRP = 0;
+    //private static double ADRAG = 0;
+    //private static double OnlyJ2 = 0;
 
     private static double j2 = 1082.626e-6;
     private static double j3 = -2.5356e-6;
@@ -632,9 +638,7 @@ class OrbitPrediction {
     //轨道外推
     public static void OrbitPredictorII(Instant timeRaw, LocalDateTime start, LocalDateTime end, double step, double[] orbit0, JsonObject json) {
         MongoClient mongoClient = MangoDBConnector.getClient();
-//        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
-        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
-
+        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
         MongoCollection<Document> orbitDB = mongoDatabase.getCollection("orbit_attitude");
         JsonArray properties = json.getAsJsonArray("properties");
         //载荷参数初始话
@@ -766,13 +770,15 @@ class OrbitPrediction {
 
         //将数据存入数组
         double Num = (xmax - x) / h;
-        int OrbitalDataNum = (new Double(Num)).intValue();
+        int OrbitalDataNum = (new Double(Num+1)).intValue();
         double[][] Orbital_Time = new double[OrbitalDataNum][6];
         double[][] Orbital_SatPosition = new double[OrbitalDataNum][3];
         double[][] Orbital_SatVelocity = new double[OrbitalDataNum][3];
         double[][] Orbital_SatPositionLLA = new double[OrbitalDataNum][3];
         double[][] Orbital_Subpotion = new double[OrbitalDataNum][3];
         double[][] Orbital_ViewArea = new double[OrbitalDataNum][4 * ViewNum];
+
+        double[][] Orbital_SatPositionECEF=new double[OrbitalDataNum][3];
 
         ArrayList<Document> os = new ArrayList<>();
         //每隔一定时间记录一次
@@ -785,7 +791,23 @@ class OrbitPrediction {
             if (h > (xmax - x)) {
                 h = xmax - x;
             }
-            RK4(Y, y, x, year, month, day, h, sa);
+            //old dynamics
+            //RK4(Y, y, x, year, month, day, h, sa);
+            //new dynamics
+            double[] Position={Y[0],Y[1],Y[2]};
+            double[] Velocity={Y[3],Y[4],Y[5]};
+            double[] Next_Position=new double[3];
+            double[] Next_Velocity=new double[3];
+            OrbitDynamics(h,Position,Velocity,Next_Position,Next_Velocity);
+            y[0]=Next_Position[0];
+            y[1]=Next_Position[1];
+            y[2]=Next_Position[2];
+            y[3]=Next_Velocity[0];
+            y[4]=Next_Velocity[1];
+            y[5]=Next_Velocity[2];
+            double JD = JulianDate(year, month, day, x);
+            ECI_ECEF(JD, Next_Position, sa);
+
             P2subsatP(y, subsat);
             Y[0] = y[0];
             Y[1] = y[1];
@@ -825,9 +847,30 @@ class OrbitPrediction {
             Orbital_Subpotion[j][1] = subsat[1];
             Orbital_Subpotion[j][2] = subsat[2];
 
+            //计算地固坐标系下卫星位置
+            double[] Time=new double[6];
+            if (j >= OrbitalDataNum) {
+                Time[0]=Orbital_Time[j][0];
+                Time[1]=Orbital_Time[j][1];
+                Time[2]=Orbital_Time[j][2];
+                Time[3]=Orbital_Time[j][3];
+                Time[4]=Orbital_Time[j][4];
+                Time[5]=Orbital_Time[j][5];
+            }else {
+                Time[0]=Orbital_Time[j][0];
+                Time[1]=Orbital_Time[j][1];
+                Time[2]=Orbital_Time[j][2];
+                Time[3]=Orbital_Time[j][3];
+                Time[4]=Orbital_Time[j][4];
+                Time[5]=Orbital_Time[j][5];
+            }
+            ICRSToECEF(Time, Orbital_SatPosition[j], Orbital_SatPositionECEF[j]);
+
+
             //可见走廊
             double Time_UTC = 0;
-            ViewArea(Orbital_SatPosition[j], Orbital_SatVelocity[j], ViewInstall, ViewAng, ViewNum, RollMax, Orbital_Time[j], Time_UTC, Orbital_ViewArea[j]);
+            //ViewArea(Orbital_SatPosition[j], Orbital_SatVelocity[j], ViewInstall, ViewAng, ViewNum, RollMax, Orbital_Time[j], Time_UTC, Orbital_ViewArea[j]);
+            ViewArea_ESD(Orbital_SatPosition[j], Orbital_SatVelocity[j],Orbital_SatPositionLLA[j], ViewInstall, ViewAng, ViewNum, RollMax, Orbital_Time[j], Time_UTC, Orbital_ViewArea[j]);
             x += h;
 
             //数据输出
@@ -845,6 +888,13 @@ class OrbitPrediction {
             jsonObject.addProperty("satellite_point_y", subsat[1]);
             jsonObject.addProperty("satellite_point_z", subsat[2]);
 
+            //卫星地固坐标系下位置
+            JsonObject jsonObject_ECEF=new JsonObject();
+            jsonObject_ECEF.addProperty("P_x",Orbital_SatPositionECEF[j][0]);
+            jsonObject_ECEF.addProperty("P_y",Orbital_SatPositionECEF[j][1]);
+            jsonObject_ECEF.addProperty("P_z",Orbital_SatPositionECEF[j][2]);
+            jsonObject.add("Position_EarthCenteredEarthFixed",jsonObject_ECEF);
+
             JsonArray orbit_attitud_lp = new JsonArray();
 
             for (int i = 0; i < ViewNum; i++) {
@@ -861,8 +911,14 @@ class OrbitPrediction {
             jsonObject.add("load_properties", orbit_attitud_lp);
 
             Document doc = Document.parse(jsonObject.toString());
-            doc.append("time_point", Date.from(timeRaw.plusMillis((long) (1000 * j * step))));
+            int jPlas=j+1;
+            doc.append("time_point", Date.from(timeRaw.plusMillis((long) (1000 * jPlas * step))));
+//            Document modifiers = new Document();
+//            modifiers.append("$set", doc);
+////
+//            orbitDB.updateOne(new Document("time_point", doc.getDate("time_point")), modifiers, new UpdateOptions().upsert(true));
 
+//            orbitDB.insertOne(doc);
             os.add(doc);
 
             if (os.size() > 10000) {
@@ -984,6 +1040,68 @@ class OrbitPrediction {
         }
     }
 
+    //计算卫星可见走廊
+    private static void ViewArea_ESD(double Position[], double Velocity[],double Satellite_LLA[], double ViewInstall[][], double ViewAng[][], int ViewNum, double RollMax, double Time[], double Time_UTC, double ViewAreaPoint[]) {
+
+
+        double[] nv = {Velocity[0] / Math.sqrt(Math.pow(Velocity[0], 2) + Math.pow(Velocity[1], 2) + Math.pow(Velocity[2], 2)),
+                Velocity[1] / Math.sqrt(Math.pow(Velocity[0], 2) + Math.pow(Velocity[1], 2) + Math.pow(Velocity[2], 2)),
+                Velocity[2] / Math.sqrt(Math.pow(Velocity[0], 2) + Math.pow(Velocity[1], 2) + Math.pow(Velocity[2], 2))};
+        double r = Math.sqrt(Math.pow(Position[0], 2) + Math.pow(Position[1], 2) + Math.pow(Position[2], 2));
+        double theta = Math.asin(R_earth / r);
+
+        double alpha, beta, theta_V, theta_xz, theta_yz, ViewAng_min;
+        double R[][] = new double[3][3];
+        double r_beta[] = new double[3];
+        double SubSat[] = new double[3];
+        double SubSat_GEI[] = new double[3];
+        for (int j = 0; j < ViewNum; j++) {
+            theta_xz = Math.atan(Math.cos(ViewInstall[j][0]) / Math.cos(ViewInstall[j][2]));
+            theta_yz = Math.atan(Math.cos(ViewInstall[j][1]) / Math.cos(ViewInstall[j][2]));
+            if ((ViewAng[j][2] + theta_yz + RollMax) >= theta) {
+                theta_V = Math.asin(R_earth / r);
+                beta = -(Math.PI / 2 - theta_V);
+            } else {
+                alpha = Math.asin((Math.sin(theta_yz + ViewAng[j][2] + RollMax) * r) / R_earth);
+                beta = -(alpha - (theta_yz + ViewAng[j][2] + RollMax));
+            }
+
+            double[][] r_Satellite_ESD=new double[][]{{0},{0},{-r}};
+            //double[][] R_x=new double[][]{{1, 0, 0}, {0, cos(beta), -sin(beta)}, {0, sin(beta), cos(beta)}};
+            double[][] R_x=new double[][]{{cos(beta), 0, -sin(beta)}, {0, 1, 0}, {sin(beta), 0, cos(beta)}};
+            double[][] r_Target_ESD=new double[3][1];
+            double[] r_Target_ECEF=new double[3];
+            double[] r_Target_GEI=new double[3];
+            r_Target_ESD=MatrixMultiplication(R_x,r_Satellite_ESD);
+            double[] r_Target_ESD_mid=new double[]{r_Target_ESD[0][0],r_Target_ESD[1][0],r_Target_ESD[2][0]};
+            ESDToECEF(Satellite_LLA,r_Target_ESD_mid,r_Target_ECEF);
+            double JD_Time=JD(Time);
+            ECEFToICRS(JD_Time,r_Target_ECEF,r_Target_GEI);
+            PosionToSubSat(r_Target_GEI, Time, Time_UTC, SubSat, SubSat_GEI);
+            ViewAreaPoint[4 * j + 0] = SubSat[0];
+            ViewAreaPoint[4 * j + 1] = SubSat[1];
+
+            if (Math.abs(theta_yz - ViewAng[j][3] - RollMax) >= theta) {
+                theta_V = Math.asin(R_earth / r);
+                beta = Math.PI / 2 - theta_V;
+                //beta = -beta;
+            } else {
+                alpha = Math.asin((Math.sin(theta_yz - ViewAng[j][3] - RollMax) * r) / R_earth);
+                beta = alpha - (theta_yz - ViewAng[j][3] - RollMax);
+                beta = -beta;
+            }
+            //double[][] R_x_2=new double[][]{{1, 0, 0}, {0, cos(beta), -sin(beta)}, {0, sin(beta), cos(beta)}};
+            double[][] R_x_2=new double[][]{{cos(beta), 0, -sin(beta)}, {0, 1, 0}, {sin(beta), 0, cos(beta)}};
+            r_Target_ESD=MatrixMultiplication(R_x_2,r_Satellite_ESD);
+            double[] r_Target_ESD_mid_2=new double[]{r_Target_ESD[0][0],r_Target_ESD[1][0],r_Target_ESD[2][0]};
+            ESDToECEF(Satellite_LLA,r_Target_ESD_mid_2,r_Target_ECEF);
+            ECEFToICRS(JD_Time,r_Target_ECEF,r_Target_GEI);
+            PosionToSubSat(r_Target_GEI, Time, Time_UTC, SubSat, SubSat_GEI);
+            ViewAreaPoint[4 * j + 2] = SubSat[0];
+            ViewAreaPoint[4 * j + 3] = SubSat[1];
+        }
+    }
+
     private static int AvoidSunshineIITest( double[][] Orbital_Time,double[][] Orbital_SatPosition,int[] SunAvoidTimePeriod) {
         int Flag_tBefore = 0;
         int Avoid_Flag = 0;
@@ -1077,6 +1195,227 @@ class OrbitPrediction {
         SubSat_GEI[0] = R_earth * x / r;
         SubSat_GEI[1] = R_earth * y / r;
         SubSat_GEI[2] = R_earth * z / r;
+    }
+
+    //惯性坐标系到地固坐标系转
+    private static void ICRSToECEF(double[] Time, double position_GEI[], double position_ECEF[]) {
+        double JD=JD(Time);
+        double T = (JD - 2451545.0) / 36525.0;
+
+        //岁差角
+        double Zeta_A = 2.5976176 + 2306.0809506*T + 0.3019015*T*T + 0.0179663*T*T*T - 0.0000327*T*T*T*T - 0.0000002*T*T*T*T*T;//秒
+        double Theta_A = 2004.1917476*T - 0.4269353*T*T - 0.041825*T*T*T - 0.0000601*T*T*T*T - 0.0000001*T*T*T*T*T;
+        double Z_A = -2.5976176 + 2306.0803226*T + 1.094779*T*T + 0.0182273*T*T*T + 0.000047*T*T*T*T - 0.0000003*T*T*T*T*T;
+        Zeta_A = Zeta_A/3600.0;//度
+        Theta_A = Theta_A/3600.0;
+        Z_A = Z_A/3600.0;
+        //岁差矩阵
+        double[][] R3Z_A={{cos(-Z_A*PI/180.0),sin(-Z_A*PI/180.0),0},
+                {-sin(-Z_A*PI/180.0),cos(-Z_A*PI/180.0),0},
+                {0,0,1}};
+        double[][] R2Theta_A={{cos(Theta_A*PI/180.0),0,-sin(Theta_A*PI/180.0)},
+                {0,1,0},
+                {sin(Theta_A*PI/180.0),0,cos(Theta_A*PI/180.0)}};
+        double[][] R3_Zeta_A={{cos(-Zeta_A*PI/180.0),sin(-Zeta_A*PI/180.0),0},
+                {-sin(-Zeta_A*PI/180.0),cos(-Zeta_A*PI/180.0),0},
+                {0,0,1}};
+        double[][] PR=new double[3][3];
+        double[][] PR_mid=new double[3][3];
+        PR_mid=MatrixMultiplication(R3Z_A,R2Theta_A);
+        PR=MatrixMultiplication(PR_mid,R3_Zeta_A);
+
+        //章动计算
+        double Epsilon_A = 84381.448 - 46.8150*T - 0.00059*T*T + 0.001813*T*T*T;
+        Epsilon_A = Epsilon_A/3600.0;
+        // http://blog.sina.com.cn/s/blog_852e40660100w1m6.html
+        double L = 280.4665+36000.7698*T;
+        double dL = 218.3165+481267.8813*T;
+        double Omega = 125.04452-1934.136261*T;
+        double DeltaPsi = -17.20*sin(Omega*PI/180.0)-1.32*sin(2*L*PI/180.0)-0.23*sin(2*dL*PI/180.0)+0.21*sin(2*Omega*PI/180.0);
+        double DeltaEpsilon = 9.20*cos(Omega*PI/180.0)+0.57*cos(2*L*PI/180.0)+0.10*cos(2*dL*PI/180.0)-0.09*cos(2*Omega*PI/180.0);
+        DeltaPsi = DeltaPsi/3600.0;
+        DeltaEpsilon = DeltaEpsilon/3600.0;
+
+        //章动矩阵
+        double[][] R1_DEA={{1,0,0},
+                {0,cos(-(DeltaEpsilon+Epsilon_A)*PI/180.0),sin(-(DeltaEpsilon+Epsilon_A)*PI/180.0)},
+                {0,-sin(-(DeltaEpsilon+Epsilon_A)*PI/180.0),cos(-(DeltaEpsilon+Epsilon_A)*PI/180.0)}};
+        double[][] R3_DeltaPsi={{cos(-DeltaPsi*PI/180.0),sin(-DeltaPsi*PI/180.0),0},
+                {-sin(-DeltaPsi*PI/180.0),cos(-DeltaPsi*PI/180.0),0},
+                {0,0,1}};
+        double[][] R1_Epsilon={{1,0,0},
+                {0,cos(Epsilon_A*PI/180.0),sin(Epsilon_A*PI/180.0)},
+                {0,-sin(Epsilon_A*PI/180.0),cos(Epsilon_A*PI/180.0)}};
+        double[][] NR=new double[3][3];
+        double[][] NR_mid=new double[3][3];
+        NR_mid=MatrixMultiplication(R1_DEA,R3_DeltaPsi);
+        NR=MatrixMultiplication(NR_mid,R1_Epsilon);
+
+        //地球自转
+        double GMST = 280.46061837 + 360.98564736629*(JD-2451545.0) + 0.000387933*T*T - T*T*T/38710000.0;
+        GMST = mod(GMST,360);
+        double GAST = GMST + DeltaPsi*cos((DeltaEpsilon + Epsilon_A)*PI/180.0);
+        GAST = mod(GAST,360);
+        double[][] ER={{cos(GAST*PI/180.0),sin(GAST*PI/180.0),0},
+                {-sin(GAST*PI/180.0),cos(GAST*PI/180.0),0},
+                {0,0,1}};
+
+        //极移坐标
+        //  https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop.html
+        // https://datacenter.iers.org/data/html/finals.all.html
+        double Xp = 0.001674*0.955;
+        double Yp = 0.001462*0.955;
+        // 极移矩阵
+        double[][] R1_YP={{1,0,0},
+                {0,cos(-Yp*PI/180.0),sin(-Yp*PI/180.0)},
+                {0,-sin(-Yp*PI/180.0),cos(-Yp*PI/180.0)}};
+        double[][] R2_XP={{cos(-Xp*PI/180.0),0,-sin(-Xp*PI/180.0)},
+                {0,1,0},
+                {sin(-Xp*PI/180.0),0,cos(-Xp*PI/180.0)}};
+        double[][] EP=new double[3][3];
+        EP=MatrixMultiplication(R1_YP,R2_XP);
+
+        // 空固坐标系到地固坐标系的转换矩阵
+        double[][] EPER=new double[3][3];
+        double[][] EPERNR=new double[3][3];
+        double[][] ECEF;
+        EPER=MatrixMultiplication(EP,ER);
+        EPERNR=MatrixMultiplication(EPER,NR);
+        ECEF=MatrixMultiplication(EPERNR,PR);
+
+        double[][] p_GEI = {{position_GEI[0]}, {position_GEI[1]}, {position_GEI[2]}};
+        double[][] pp_ECEF = new double[3][1];
+        pp_ECEF = MatrixMultiplication(ECEF, p_GEI);
+
+        position_ECEF[0] = pp_ECEF[0][0];
+        position_ECEF[1] = pp_ECEF[1][0];
+        position_ECEF[2] = pp_ECEF[2][0];
+    }
+
+    //地固坐标系到卫星东南地坐标系
+    private static void ESDToECEF(double[] Satellite_LLA,double[] Position_ESD,double[] Position_ECEF){
+        double[] Satellite_ECEF=new double[3];
+        LLAToECEF(Satellite_LLA, Satellite_ECEF);
+
+        double B=Satellite_LLA[1] * Math.PI / 180.0;//经度
+        double L=Satellite_LLA[0] * Math.PI / 180.0;//纬度
+        double[][] R_ECEFToNED={{-sin(B)*cos(L),-sin(B)*sin(L),cos(B)},
+                {-sin(L),cos(L),0},
+                {-cos(B)*cos(L),-cos(B)*sin(L),-sin(B)}};
+        double[][] R_NEDToECEF=MatrixInverse(R_ECEFToNED);
+        double[][] Target_ESD_mid=new double[3][1];
+        double[][] Position_ESD_mid=new double[][]{{Position_ESD[0]},{Position_ESD[1]},{Position_ESD[2]}};
+        Target_ESD_mid=MatrixMultiplication(R_NEDToECEF,Position_ESD_mid);
+        Position_ECEF[0]=Target_ESD_mid[0][0];
+        Position_ECEF[1]=Target_ESD_mid[1][0];
+        Position_ECEF[2]=Target_ESD_mid[2][0];
+    }
+
+    //地固坐标系转到惯性坐标系
+    private static void ECEFToICRS(double JD, double position_ECEF[], double position_GEI[]) {
+        double T = (JD - 2451545.0) / 36525.0;
+
+        //岁差角
+        double Zeta_A = 2.5976176 + 2306.0809506*T + 0.3019015*T*T + 0.0179663*T*T*T - 0.0000327*T*T*T*T - 0.0000002*T*T*T*T*T;//秒
+        double Theta_A = 2004.1917476*T - 0.4269353*T*T - 0.041825*T*T*T - 0.0000601*T*T*T*T - 0.0000001*T*T*T*T*T;
+        double Z_A = -2.5976176 + 2306.0803226*T + 1.094779*T*T + 0.0182273*T*T*T + 0.000047*T*T*T*T - 0.0000003*T*T*T*T*T;
+        Zeta_A = Zeta_A/3600.0;//度
+        Theta_A = Theta_A/3600.0;
+        Z_A = Z_A/3600.0;
+        //岁差矩阵
+        double[][] R3Z_A={{cos(-Z_A*PI/180.0),sin(-Z_A*PI/180.0),0},
+                {-sin(-Z_A*PI/180.0),cos(-Z_A*PI/180.0),0},
+                {0,0,1}};
+        double[][] R2Theta_A={{cos(Theta_A*PI/180.0),0,-sin(Theta_A*PI/180.0)},
+                {0,1,0},
+                {sin(Theta_A*PI/180.0),0,cos(Theta_A*PI/180.0)}};
+        double[][] R3_Zeta_A={{cos(-Zeta_A*PI/180.0),sin(-Zeta_A*PI/180.0),0},
+                {-sin(-Zeta_A*PI/180.0),cos(-Zeta_A*PI/180.0),0},
+                {0,0,1}};
+        double[][] PR=new double[3][3];
+        double[][] PR_mid=new double[3][3];
+        PR_mid=MatrixMultiplication(R3Z_A,R2Theta_A);
+        PR=MatrixMultiplication(PR_mid,R3_Zeta_A);
+
+        //章动计算
+        double Epsilon_A = 84381.448 - 46.8150*T - 0.00059*T*T + 0.001813*T*T*T;
+        Epsilon_A = Epsilon_A/3600.0;
+        // http://blog.sina.com.cn/s/blog_852e40660100w1m6.html
+        double L = 280.4665+36000.7698*T;
+        double dL = 218.3165+481267.8813*T;
+        double Omega = 125.04452-1934.136261*T;
+        double DeltaPsi = -17.20*sin(Omega*PI/180.0)-1.32*sin(2*L*PI/180.0)-0.23*sin(2*dL*PI/180.0)+0.21*sin(2*Omega*PI/180.0);
+        double DeltaEpsilon = 9.20*cos(Omega*PI/180.0)+0.57*cos(2*L*PI/180.0)+0.10*cos(2*dL*PI/180.0)-0.09*cos(2*Omega*PI/180.0);
+        DeltaPsi = DeltaPsi/3600.0;
+        DeltaEpsilon = DeltaEpsilon/3600.0;
+
+        //章动矩阵
+        double[][] R1_DEA={{1,0,0},
+                {0,cos(-(DeltaEpsilon+Epsilon_A)*PI/180.0),sin(-(DeltaEpsilon+Epsilon_A)*PI/180.0)},
+                {0,-sin(-(DeltaEpsilon+Epsilon_A)*PI/180.0),cos(-(DeltaEpsilon+Epsilon_A)*PI/180.0)}};
+        double[][] R3_DeltaPsi={{cos(-DeltaPsi*PI/180.0),sin(-DeltaPsi*PI/180.0),0},
+                {-sin(-DeltaPsi*PI/180.0),cos(-DeltaPsi*PI/180.0),0},
+                {0,0,1}};
+        double[][] R1_Epsilon={{1,0,0},
+                {0,cos(Epsilon_A*PI/180.0),sin(Epsilon_A*PI/180.0)},
+                {0,-sin(Epsilon_A*PI/180.0),cos(Epsilon_A*PI/180.0)}};
+        double[][] NR=new double[3][3];
+        double[][] NR_mid=new double[3][3];
+        NR_mid=MatrixMultiplication(R1_DEA,R3_DeltaPsi);
+        NR=MatrixMultiplication(NR_mid,R1_Epsilon);
+
+        //地球自转
+        double GMST = 280.46061837 + 360.98564736629*(JD-2451545.0) + 0.000387933*T*T - T*T*T/38710000.0;
+        GMST = GMST%360;
+        double GAST = GMST + DeltaPsi*cos((DeltaEpsilon + Epsilon_A)*PI/180.0);
+        GAST = GAST%360;
+        double[][] ER={{cos(GAST*PI/180.0),sin(GAST*PI/180.0),0},
+                {-sin(GAST*PI/180.0),cos(GAST*PI/180.0),0},
+                {0,0,1}};
+
+        //极移坐标
+        //  https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop.html
+        // https://datacenter.iers.org/data/html/finals.all.html
+        double Xp = 0.001674*0.955;
+        double Yp = 0.001462*0.955;
+        // 极移矩阵
+        double[][] R1_YP={{1,0,0},
+                {0,cos(-Yp*PI/180.0),sin(-Yp*PI/180.0)},
+                {0,-sin(-Yp*PI/180.0),cos(-Yp*PI/180.0)}};
+        double[][] R2_XP={{cos(-Xp*PI/180.0),0,-sin(-Xp*PI/180.0)},
+                {0,1,0},
+                {sin(-Xp*PI/180.0),0,cos(-Xp*PI/180.0)}};
+        double[][] EP=new double[3][3];
+        EP=MatrixMultiplication(R1_YP,R2_XP);
+
+        // 空固坐标系到地固坐标系的转换矩阵
+        double[][] EPER=new double[3][3];
+        double[][] EPERNR=new double[3][3];
+        double[][] ECEF;
+        EPER=MatrixMultiplication(EP,ER);
+        EPERNR=MatrixMultiplication(EPER,NR);
+        ECEF=MatrixMultiplication(EPERNR,PR);
+        //地固坐标系到惯性坐标系的转换矩阵
+        double[][] R_inv = new double[3][3];
+        R_inv = MatrixInverse(ECEF);
+        double[][] p_ECEF = {{position_ECEF[0]}, {position_ECEF[1]}, {position_ECEF[2]}};
+        double[][] pp_GEI = new double[3][1];
+        pp_GEI = MatrixMultiplication(R_inv, p_ECEF);
+
+        position_GEI[0] = pp_GEI[0][0];
+        position_GEI[1] = pp_GEI[1][0];
+        position_GEI[2] = pp_GEI[2][0];
+    }
+
+    //地固直角坐标系转换为地心地固坐标系
+    private static void LLAToECEF(double Position_LLA[], double Position_ECEF[]) {
+        double L = Position_LLA[0] * Math.PI / 180.0;
+        double B = Position_LLA[1] * Math.PI / 180.0;
+        double H = Position_LLA[2];
+
+        Position_ECEF[0] = (R_earth + H) * Math.cos(B) * Math.cos(L);
+        Position_ECEF[1] = (R_earth + H) * Math.cos(B) * Math.sin(L);
+        Position_ECEF[2] = (R_earth + H) * Math.sin(B);
     }
 
     //计算参考时间的格林尼治赤经
@@ -1174,6 +1513,179 @@ class OrbitPrediction {
         Velocity[0] = -c4 * (c6 * craan + c5 * sraan * cinc);
         Velocity[1] = -c4 * (c6 * sraan - c5 * craan * cinc);
         Velocity[2] = c4 * c5 * sinc;
+    }
+
+    //矩阵乘法
+    private static double[][] MatrixMultiplication(double A[][], double B[][]) {
+        int A_rowNum = A.length;
+        int A_columnNum = A[0].length;
+        int B_rowNum = B.length;
+        int B_columnNum = B[0].length;
+        if (A_columnNum != B_rowNum)
+            JOptionPane.showMessageDialog(null, "乘法矩阵维数不一致", "矩阵乘法错误", JOptionPane.ERROR_MESSAGE);
+        double[][] Result = new double[A_rowNum][B_columnNum];
+        for (int i = 0; i < A_rowNum; i++) {
+            for (int j = 0; j < B_columnNum; j++) {
+                Result[i][j] = 0;
+                for (int k = 0; k < A_columnNum; k++)
+                    Result[i][j] = Result[i][j] + A[i][k] * B[k][j];
+            }
+        }
+        return Result;
+    }
+
+    //矩阵求逆
+    private static double[][] MatrixInverse(double A[][]) {
+        int A_rowNum = A.length;
+        int A_columnNum = A[0].length;
+        if (A_rowNum != A_columnNum)
+            JOptionPane.showMessageDialog(null, "求逆矩阵不是方阵", "矩阵求逆错误", JOptionPane.ERROR_MESSAGE);
+
+        double[][] Result = new double[A_rowNum][A_columnNum];
+        double Matrix_R = MatrixResult(A);
+        if (Matrix_R == 0)
+            JOptionPane.showMessageDialog(null, "求逆矩阵的值为零", "矩阵求逆错误", JOptionPane.ERROR_MESSAGE);
+        for (int i = 0; i < A_rowNum; i++) {
+            for (int j = 0; j < A_columnNum; j++) {
+                if ((i + j) % 2 == 0) {
+                    Result[i][j] = MatrixResult(MatrixCofactor(A, i + 1, j + 1)) / Matrix_R;
+                } else {
+                    Result[i][j] = -MatrixResult(MatrixCofactor(A, i + 1, j + 1)) / Matrix_R;
+                }
+            }
+        }
+        Result = MatrixTransposition(Result);
+        return Result;
+    }
+
+    //求矩阵(h,v)位置的余子式，用于矩阵求逆
+    private static double[][] MatrixCofactor(double[][] A, int h, int v) {
+        int A_rowNum = A.length;
+        int A_columnNum = A[0].length;
+        if (A_rowNum != A_columnNum)
+            JOptionPane.showMessageDialog(null, "求余子式矩阵不是方阵", "矩阵求余子式错误", JOptionPane.ERROR_MESSAGE);
+        double[][] Cofactor = new double[A_rowNum - 1][A_columnNum - 1];
+        for (int i = 0; i < A_rowNum - 1; i++) {
+            if (i < h - 1) {
+                for (int j = 0; j < A_columnNum - 1; j++) {
+                    if (j < v - 1)
+                        Cofactor[i][j] = A[i][j];
+                    else
+                        Cofactor[i][j] = A[i][j + 1];
+                }
+            } else {
+                for (int j = 0; j < A_columnNum - 1; j++) {
+                    if (j < v - 1)
+                        Cofactor[i][j] = A[i + 1][j];
+                    else
+                        Cofactor[i][j] = A[i + 1][j + 1];
+                }
+            }
+        }
+        return Cofactor;
+    }
+
+    //计算行列式的值
+    private static double MatrixResult(double A[][]) {
+        int A_rowNum = A.length;
+        int A_columnNum = A[0].length;
+        if (A_rowNum != A_columnNum)
+            JOptionPane.showMessageDialog(null, "求矩阵值的矩阵不是方阵", "矩阵求值错误", JOptionPane.ERROR_MESSAGE);
+        //一维矩阵计算
+        if (A_rowNum == 1)
+            return A[0][0];
+
+        //二维矩阵计算
+        if (A_rowNum == 2)
+            return A[0][0] * A[1][1] - A[0][1] * A[1][0];
+
+        //计算二维以上矩阵
+        double result = 0;
+        double[] nums = new double[A_rowNum];
+        for (int i = 0; i < A_rowNum; i++) {
+            if (i % 2 == 0) {
+                nums[i] = A[0][i] * MatrixResult(MatrixCofactor(A, 1, i + 1));
+            } else {
+                nums[i] = -A[0][i] * MatrixResult(MatrixCofactor(A, 1, i + 1));
+            }
+        }
+        for (int i = 0; i < A_rowNum; i++)
+            result = result + nums[i];
+
+        return result;
+    }
+
+    //矩阵的转置
+    private static double[][] MatrixTransposition(double A[][]) {
+        double[][] Result = new double[A[0].length][A.length];
+        for (int i = 0; i < A.length; i++) {
+            for (int j = 0; j < A[0].length; j++)
+                Result[j][i] = A[i][j];
+        }
+        return Result;
+    }
+
+    //矢量叉乘
+    private static double[] VectorCross(double A[], double B[]) {
+        if (A.length != 3 || B.length != 3)
+            JOptionPane.showMessageDialog(null, "求矢量的叉乘输入不合法", "求矢量叉乘错误", JOptionPane.ERROR_MESSAGE);
+        double[] Result = new double[3];
+        Result[0] = A[1] * B[2] - A[2] * B[1];
+        Result[1] = A[2] * B[0] - A[0] * B[2];
+        Result[2] = A[0] * B[1] - A[1] * B[0];
+
+        return Result;
+    }
+
+    //卫星轨道动力学，此程序没有考虑摄动项，后续添加
+    private static void OrbitDynamics(double Step,double Position[],double Velocity[],double Next_Position[],double Next_Velocity[]){
+        double mu=398600.4415*Math.pow(10,9); //地球引力常数 (m^3/s^2)
+        double[] r={Position[0],Position[1],Position[2]};
+        double[] v={Velocity[0],Velocity[1],Velocity[2]};
+        double h=Step;
+
+        double[] r0={r[0],r[1],r[2]};
+        double[] v0={v[0],v[1],v[2]};
+        double[] L1=new double[3];
+        double[] M1=new double[3];
+        FC1(mu,r,v,L1,M1);
+
+        for (int i=0;i<3;i++){
+            r[i]=r0[i]+h*L1[i]/2;
+            v[i]=v0[i]+h*M1[i]/2;
+        }
+        double[] L2=new double[3];
+        double[] M2=new double[3];
+        FC1(mu,r,v,L2,M2);
+
+        for (int i=0;i<3;i++){
+            r[i]=r0[i]+h*L2[i]/2;
+            v[i]=v0[i]+h*M2[i]/2;
+        }
+        double[] L3=new double[3];
+        double[] M3=new double[3];
+        FC1(mu,r,v,L3,M3);
+
+        for (int i=0;i<3;i++){
+            r[i]=r0[i]+h*L3[i];
+            v[i]=v0[i]+h*M3[i];
+        }
+        double[] L4=new double[3];
+        double[] M4=new double[3];
+        FC1(mu,r,v,L4,M4);
+
+        for (int i=0;i<3;i++){
+            Next_Position[i]=r0[i]+h*(L1[i]+2*L2[i]+2*L3[i]+L4[i])/6;
+            Next_Velocity[i]=v0[i]+h*(M1[i]+2*M2[i]+2*M3[i]+M4[i])/6;
+        }
+    }
+    //轨道动力学方程
+    private static void FC1(double mu,double r[],double v[],double L[],double M[]){
+        L[0]=v[0];L[1]=v[1];L[2]=v[2];
+        double rm=Math.sqrt(r[0]*r[0]+r[1]*r[1]+r[2]*r[2]);
+        M[0]=-r[0]*mu/Math.pow(rm,3);
+        M[1]=-r[1]*mu/Math.pow(rm,3);
+        M[2]=-r[2]*mu/Math.pow(rm,3);
     }
 
     private static void main(String[] arr) {
