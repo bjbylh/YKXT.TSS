@@ -5,7 +5,6 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.UpdateOptions;
-import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
@@ -87,32 +86,37 @@ public class ReviewReset {
         //读取卫星资源数据
         ArrayList<Document> properties = (ArrayList<Document>) Satllitejson.get("properties");
         for (Document document : properties) {
-            if (document.getString("key").equals("power_efficiency")) {
-                PowerEfficiency = Double.parseDouble(document.get("value").toString()) / 100;
-            } else if (document.getString("key").equals("power_charge")) {
-                PowerChargeEfficiency = Double.parseDouble(document.get("value").toString()) / 100;
-            } else if (document.getString("key").equals("sailboard_current")) {
-                PowerGenerationMax = Double.parseDouble(document.get("value").toString());
-            } else if (document.getString("key").equals("power_capacity")) {
-                PowerCapacity = Double.parseDouble(document.get("value").toString());
-            } else if (document.getString("key").equals("average_power_standby")) {
-                PowerAverage_Standby = Double.parseDouble(document.get("value").toString());
-            } else if (document.getString("key").equals("average_power_image")) {
-                PowerAverage_Image = Double.parseDouble(document.get("value").toString());
-            } else if (document.getString("key").equals("average_power_playback")) {
-                PowerAverage_Playback = Double.parseDouble(document.get("value").toString());
-            } else if (document.getString("key").equals("record_play_power")) {
-                PowerRecord_Play = Double.parseDouble(document.get("value").toString());
-            } else if (document.getString("key").equals("roll_angle_max")) {
-                Attitude_EulerMax[0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("pitch_angle_max")) {
-                Attitude_EulerMax[1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("v_roll_angle")) {
-                Attitude_AngVelMax[0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else if (document.getString("key").equals("v_pitch_angle")) {
-                Attitude_AngVelMax[1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
-            } else
+            try {
+                if (document.getString("key").equals("power_efficiency")) {
+                    PowerEfficiency = Double.parseDouble(document.get("value").toString()) / 100;
+                } else if (document.getString("key").equals("power_charge")) {
+                    PowerChargeEfficiency = Double.parseDouble(document.get("value").toString()) / 100;
+                } else if (document.getString("key").equals("sailboard_current")) {
+                    PowerGenerationMax = Double.parseDouble(document.get("value").toString());
+                } else if (document.getString("key").equals("power_capacity")) {
+                    PowerCapacity = Double.parseDouble(document.get("value").toString());
+                } else if (document.getString("key").equals("average_power_standby")) {
+                    PowerAverage_Standby = Double.parseDouble(document.get("value").toString());
+                } else if (document.getString("key").equals("average_power_image")) {
+                    PowerAverage_Image = Double.parseDouble(document.get("value").toString());
+                } else if (document.getString("key").equals("average_power_playback")) {
+                    PowerAverage_Playback = Double.parseDouble(document.get("value").toString());
+                } else if (document.getString("key").equals("record_play_power")) {
+                    PowerRecord_Play = Double.parseDouble(document.get("value").toString());
+                } else if (document.getString("key").equals("roll_angle_max")) {
+                    Attitude_EulerMax[0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("pitch_angle_max")) {
+                    Attitude_EulerMax[1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("v_roll_angle")) {
+                    Attitude_AngVelMax[0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("v_pitch_angle")) {
+                    Attitude_AngVelMax[1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else
+                    continue;
+            } catch (Exception e) {
+                e.printStackTrace();
                 continue;
+            }
         }
 
         //轨道数据读入
@@ -125,36 +129,41 @@ public class ReviewReset {
         OrbitalDataNum = 0;
         if (Orbitjson!=null) {
             for (Document document : Orbitjson) {
-                Date time_point = document.getDate("time_point");
-                //时间转换为doubule型
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                String StringTime;
-                Calendar cal = Calendar.getInstance();
-                cal.setTime(time_point);
-                cal.add(Calendar.HOUR_OF_DAY, -8);
-                StringTime = sdf.format(cal.getTime());
-                Time_Point[OrbitalDataNum] = time_point;
-                Orbital_Time[OrbitalDataNum][0] = Double.parseDouble(StringTime.substring(0, 4));
-                Orbital_Time[OrbitalDataNum][1] = Double.parseDouble(StringTime.substring(5, 7));
-                Orbital_Time[OrbitalDataNum][2] = Double.parseDouble(StringTime.substring(8, 10));
-                Orbital_Time[OrbitalDataNum][3] = Double.parseDouble(StringTime.substring(11, 13));
-                Orbital_Time[OrbitalDataNum][4] = Double.parseDouble(StringTime.substring(14, 16));
-                Orbital_Time[OrbitalDataNum][5] = Double.parseDouble(StringTime.substring(17, 19));
+                try {
+                    Date time_point = document.getDate("time_point");
+                    //时间转换为doubule型
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    String StringTime;
+                    Calendar cal = Calendar.getInstance();
+                    cal.setTime(time_point);
+                    cal.add(Calendar.HOUR_OF_DAY, -8);
+                    StringTime = sdf.format(cal.getTime());
+                    Time_Point[OrbitalDataNum] = time_point;
+                    Orbital_Time[OrbitalDataNum][0] = Double.parseDouble(StringTime.substring(0, 4));
+                    Orbital_Time[OrbitalDataNum][1] = Double.parseDouble(StringTime.substring(5, 7));
+                    Orbital_Time[OrbitalDataNum][2] = Double.parseDouble(StringTime.substring(8, 10));
+                    Orbital_Time[OrbitalDataNum][3] = Double.parseDouble(StringTime.substring(11, 13));
+                    Orbital_Time[OrbitalDataNum][4] = Double.parseDouble(StringTime.substring(14, 16));
+                    Orbital_Time[OrbitalDataNum][5] = Double.parseDouble(StringTime.substring(17, 19));
 
-                Orbital_SatPosition[OrbitalDataNum][0] = Double.parseDouble(document.get("P_x").toString());
-                Orbital_SatPosition[OrbitalDataNum][1] = Double.parseDouble(document.get("P_y").toString());
-                Orbital_SatPosition[OrbitalDataNum][2] = Double.parseDouble(document.get("P_z").toString());
-                Orbital_SatVelocity[OrbitalDataNum][0] = Double.parseDouble(document.get("Vx").toString());
-                Orbital_SatVelocity[OrbitalDataNum][1] = Double.parseDouble(document.get("Vy").toString());
-                Orbital_SatVelocity[OrbitalDataNum][2] = Double.parseDouble(document.get("Vz").toString());
-                Orbital_SatPositionLLA[OrbitalDataNum][0] = Double.parseDouble(document.get("lon").toString());
-                Orbital_SatPositionLLA[OrbitalDataNum][1] = Double.parseDouble(document.get("lat").toString());
-                Orbital_SatPositionLLA[OrbitalDataNum][2] = Double.parseDouble(document.get("H").toString());
+                    Orbital_SatPosition[OrbitalDataNum][0] = Double.parseDouble(document.get("P_x").toString());
+                    Orbital_SatPosition[OrbitalDataNum][1] = Double.parseDouble(document.get("P_y").toString());
+                    Orbital_SatPosition[OrbitalDataNum][2] = Double.parseDouble(document.get("P_z").toString());
+                    Orbital_SatVelocity[OrbitalDataNum][0] = Double.parseDouble(document.get("Vx").toString());
+                    Orbital_SatVelocity[OrbitalDataNum][1] = Double.parseDouble(document.get("Vy").toString());
+                    Orbital_SatVelocity[OrbitalDataNum][2] = Double.parseDouble(document.get("Vz").toString());
+                    Orbital_SatPositionLLA[OrbitalDataNum][0] = Double.parseDouble(document.get("lon").toString());
+                    Orbital_SatPositionLLA[OrbitalDataNum][1] = Double.parseDouble(document.get("lat").toString());
+                    Orbital_SatPositionLLA[OrbitalDataNum][2] = Double.parseDouble(document.get("H").toString());
 
-                OrbitalDataNum = OrbitalDataNum + 1;
+                    OrbitalDataNum = OrbitalDataNum + 1;
 
-                if(OrbitalDataNum >= OrbitDataCount)
-                    break;
+                    if(OrbitalDataNum >= OrbitDataCount)
+                        break;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    continue;
+                }
             }
         }
 
@@ -164,17 +173,22 @@ public class ReviewReset {
         AttitudeDataNum = 0;
         if (Attitudejson != null) {
             for (Document document : Attitudejson) {
-                Attitude_EulerAng[AttitudeDataNum][0] = Double.parseDouble(document.get("roll_angle").toString());
-                Attitude_EulerAng[AttitudeDataNum][1] = Double.parseDouble(document.get("pitch_angle").toString());
-                Attitude_EulerAng[AttitudeDataNum][2] = Double.parseDouble(document.get("yaw_angle").toString());
-                Attitude_AngVel[AttitudeDataNum][0] = Double.parseDouble(document.get("V_roll_angle").toString());
-                Attitude_AngVel[AttitudeDataNum][1] = Double.parseDouble(document.get("V_pitch_angle").toString());
-                Attitude_AngVel[AttitudeDataNum][2] = Double.parseDouble(document.get("V_yaw_angle").toString());
+                try {
+                    Attitude_EulerAng[AttitudeDataNum][0] = Double.parseDouble(document.get("roll_angle").toString());
+                    Attitude_EulerAng[AttitudeDataNum][1] = Double.parseDouble(document.get("pitch_angle").toString());
+                    Attitude_EulerAng[AttitudeDataNum][2] = Double.parseDouble(document.get("yaw_angle").toString());
+                    Attitude_AngVel[AttitudeDataNum][0] = Double.parseDouble(document.get("V_roll_angle").toString());
+                    Attitude_AngVel[AttitudeDataNum][1] = Double.parseDouble(document.get("V_pitch_angle").toString());
+                    Attitude_AngVel[AttitudeDataNum][2] = Double.parseDouble(document.get("V_yaw_angle").toString());
 
-                AttitudeDataNum = AttitudeDataNum + 1;
+                    AttitudeDataNum = AttitudeDataNum + 1;
 
-                if(AttitudeDataNum >= AttitudeDataCount)
-                    break;
+                    if(AttitudeDataNum >= AttitudeDataCount)
+                        break;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    continue;
+                }
             }
         }
 
@@ -311,8 +325,10 @@ public class ReviewReset {
         //将能量单位统一为瓦
         double BatteryCapacity = PowerCapacity * 42 * 60 * 60;      //蓄电池电量
         double MemorySpace = MemoryStorageCapacity;           //固存空间
-        PowerStatus[0] = BatteryCapacity;
-        DataStatus[0] = MemorySpace;
+        if ((int) OrbitDataCount > 0) {
+            PowerStatus[0] = BatteryCapacity;
+            DataStatus[0] = MemorySpace;
+        }
         FalseMissionNum = 0;
         for (int j = 1; j < OrbitalDataNum; j++) {
             //System.out.println(j);
@@ -469,7 +485,7 @@ public class ReviewReset {
         //数据传出
         MongoClient mongoClient = MangoDBConnector.getClient();
         //获取名为"temp"的数据库
-        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
         String transmission_number = "tn_" + Instant.now().toEpochMilli();
         for (int i = 0; i < MissionNumber; i++) {
             if (FalseMission[i] == 0) {

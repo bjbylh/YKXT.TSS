@@ -34,7 +34,17 @@ public class ConfigManager {
         return bundle.getString("REDIS_IP");
     }
 
-    public String fetchJsonPath(){
+    public String fetchJsonPath() {
         return bundle.getString("PATH");
+    }
+
+    public String fetchInsFilePath() {
+        return bundle.getString("INS_PATH");
+    }
+
+    public boolean fetchDebug() {
+        if (bundle.getString("DEBUG").toLowerCase().equals("true"))
+            return true;
+        else return false;
     }
 }

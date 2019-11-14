@@ -1,9 +1,6 @@
 package srv;
 
-import common.def.Topic;
-import common.redis.TaskBuilderService;
-import common.redis.subscribe.NewTaskSubscriber;
-import srv.task.TaskMonitor;
+import srv.task.InsAndFlashMontor;
 
 import java.io.IOException;
 
@@ -13,12 +10,12 @@ import java.io.IOException;
 public class Server {
     public static void main(String[] args) throws InterruptedException, IOException {
         //启动任务监视线程
-        TaskMonitor.getInstance().startup();
+//        TaskMonitor.getInstance().startup();
 
         //启动新任务监听线程
-        NewTaskSubscriber newTaskSubscriber = new NewTaskSubscriber();
-        TaskBuilderService newTaskBuilderService = new TaskBuilderService(newTaskSubscriber, Topic.CMD_RECV);
-        newTaskBuilderService.startup();
+//        NewTaskSubscriber newTaskSubscriber = new NewTaskSubscriber();
+//        TaskBuilderService newTaskBuilderService = new TaskBuilderService(newTaskSubscriber, Topic.CMD_RECV);
+//        newTaskBuilderService.startup();
 
         //启动控制监视线程
 //        TaskStatusSubscriber taskStatusSubscriber = new TaskStatusSubscriber();
@@ -28,5 +25,7 @@ public class Server {
         //心跳服务
         //HeartBeatService.getInstance().startup();
 
+        //指令状态及内存占用计算线程
+        InsAndFlashMontor.getInstance().startup();
     }
 }

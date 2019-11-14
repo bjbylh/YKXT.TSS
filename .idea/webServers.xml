@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="8711248b-f2ea-4b43-8c61-f072c4afe694" name="aliyun" url="http://39.98.93.230">
+        <fileTransfer host="39.98.93.230" port="22" rootFolder="/home/GS/OCS/TSS" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+      <webServer id="94ca833d-e471-4d95-a327-430307158576" name="综合楼" url="http://192.168.2.109">
+        <fileTransfer host="192.168.2.109" port="22" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

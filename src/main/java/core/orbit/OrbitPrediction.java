@@ -869,8 +869,12 @@ class OrbitPrediction {
 
             //可见走廊
             double Time_UTC = 0;
-            //ViewArea(Orbital_SatPosition[j], Orbital_SatVelocity[j], ViewInstall, ViewAng, ViewNum, RollMax, Orbital_Time[j], Time_UTC, Orbital_ViewArea[j]);
-            ViewArea_ESD(Orbital_SatPosition[j], Orbital_SatVelocity[j],Orbital_SatPositionLLA[j], ViewInstall, ViewAng, ViewNum, RollMax, Orbital_Time[j], Time_UTC, Orbital_ViewArea[j]);
+            //ture为当前版本,false为前一版本
+            if (true) {
+                ViewArea_ESD(Orbital_SatPosition[j], Orbital_SatVelocity[j],Orbital_SatPositionLLA[j], ViewInstall, ViewAng, ViewNum, RollMax, Orbital_Time[j], Time_UTC, Orbital_ViewArea[j]);
+            }else {
+                ViewArea_ESDold(Orbital_SatPosition[j], Orbital_SatVelocity[j],Orbital_SatPositionLLA[j], ViewInstall, ViewAng, ViewNum, RollMax, Orbital_Time[j], Time_UTC, Orbital_ViewArea[j]);
+            }
             x += h;
 
             //数据输出
@@ -901,10 +905,10 @@ class OrbitPrediction {
                 JsonObject jsonObject1 = new JsonObject();
                 jsonObject1.addProperty("load_amount", ViewNum);
                 jsonObject1.addProperty("load_number", i+1);
-                jsonObject1.addProperty("visible_left_lon", Orbital_ViewArea[j][4 * i + 0]);
-                jsonObject1.addProperty("visible_left_lat", Orbital_ViewArea[j][4 * i + 1]);
-                jsonObject1.addProperty("visible_right_lon", Orbital_ViewArea[j][4 * i + 2]);
-                jsonObject1.addProperty("visible_right_lat", Orbital_ViewArea[j][4 * i + 3]);
+                jsonObject1.addProperty("visible_left_lon", Orbital_ViewArea[j][4 * i + 2]);
+                jsonObject1.addProperty("visible_left_lat", Orbital_ViewArea[j][4 * i + 3]);
+                jsonObject1.addProperty("visible_right_lon", Orbital_ViewArea[j][4 * i + 0]);
+                jsonObject1.addProperty("visible_right_lat", Orbital_ViewArea[j][4 * i + 1]);
                 orbit_attitud_lp.add(jsonObject1);
             }
 
@@ -1042,6 +1046,80 @@ class OrbitPrediction {
 
     //计算卫星可见走廊
     private static void ViewArea_ESD(double Position[], double Velocity[],double Satellite_LLA[], double ViewInstall[][], double ViewAng[][], int ViewNum, double RollMax, double Time[], double Time_UTC, double ViewAreaPoint[]) {
+        double r = Math.sqrt(Math.pow(Position[0], 2) + Math.pow(Position[1], 2) + Math.pow(Position[2], 2));
+        double theta = Math.asin(R_earth / r);
+
+        double alpha, beta, theta_V, theta_xz, theta_yz, ViewAng_min;
+        double SubSat[] = new double[3];
+        double SubSat_GEI[] = new double[3];
+        for (int j = 0; j < ViewNum; j++) {
+            theta_xz = ViewAng[j][0];
+            theta_yz = Math.atan(Math.cos(ViewInstall[j][1]) / Math.cos(ViewInstall[j][2]));
+            if ((ViewAng[j][2] + theta_yz + RollMax) >= theta) {
+                theta_V = Math.asin(R_earth / r);
+                beta = -(Math.PI / 2 - theta_V);
+            } else {
+                alpha = Math.asin((Math.sin(theta_yz + ViewAng[j][2] + RollMax) * r) / R_earth);
+                beta = -(alpha - (theta_yz + ViewAng[j][2] + RollMax));
+            }
+            double betayz01;
+            if (abs(theta_xz) >= theta) {
+                if (theta_xz>0){
+                    betayz01=PI-theta;
+                }else if (theta_xz<0){
+                    betayz01=-theta-PI;
+                }else {
+                    betayz01=0;
+                }
+            }else {
+                if (theta_xz > 0) {
+                    betayz01=asin((sin(theta_xz)*r)/R_earth)-theta_xz;
+                }else if (theta_xz<0){
+                    betayz01=-theta_xz-asin((sin(-theta_xz)*r)/R_earth);
+                }else {
+                    betayz01=0;
+                }
+            }
+            double[][] r_Satellite_ESD=new double[][]{{0},{0},{-r}};
+            double[][] R_x=new double[][]{{cos(beta), 0, -sin(beta)}, {0, 1, 0}, {sin(beta), 0, cos(beta)}};
+            double[][] RESD_y01=new double[][]{{1, 0, 0}, {0, cos(betayz01), -sin(betayz01)}, {0, sin(betayz01), cos(betayz01)}};
+            double[][] r_Target_ESD=new double[3][1];
+            double[] r_Target_ECEF=new double[3];
+            double[] r_Target_GEI=new double[3];
+            r_Target_ESD=MatrixMultiplication(R_x,r_Satellite_ESD);
+            r_Target_ESD=MatrixMultiplication(RESD_y01,r_Target_ESD);
+            double[] r_Target_ESD_mid=new double[]{r_Target_ESD[0][0],r_Target_ESD[1][0],r_Target_ESD[2][0]};
+            ESDToECEF(Satellite_LLA,r_Target_ESD_mid,r_Target_ECEF);
+            double JD_Time=JD(Time);
+            ECEFToICRS(JD_Time,r_Target_ECEF,r_Target_GEI);
+            PosionToSubSat(r_Target_GEI, Time, Time_UTC, SubSat, SubSat_GEI);
+            ViewAreaPoint[4 * j + 0] = SubSat[0];
+            ViewAreaPoint[4 * j + 1] = SubSat[1];
+
+            if (Math.abs(theta_yz - ViewAng[j][3] - RollMax) >= theta) {
+                theta_V = Math.asin(R_earth / r);
+                beta = Math.PI / 2 - theta_V;
+                //beta = -beta;
+            } else {
+                alpha = Math.asin((Math.sin(theta_yz - ViewAng[j][3] - RollMax) * r) / R_earth);
+                beta = alpha - (theta_yz - ViewAng[j][3] - RollMax);
+                beta = -beta;
+            }
+            double[][] R_x_2=new double[][]{{cos(beta), 0, -sin(beta)}, {0, 1, 0}, {sin(beta), 0, cos(beta)}};
+            double[][] RESD_y02=new double[][]{{1, 0, 0}, {0, cos(-betayz01), -sin(-betayz01)}, {0, sin(-betayz01), cos(-betayz01)}};
+            r_Target_ESD=MatrixMultiplication(R_x_2,r_Satellite_ESD);
+            r_Target_ESD=MatrixMultiplication(RESD_y02,r_Target_ESD);
+            double[] r_Target_ESD_mid_2=new double[]{r_Target_ESD[0][0],r_Target_ESD[1][0],r_Target_ESD[2][0]};
+            ESDToECEF(Satellite_LLA,r_Target_ESD_mid_2,r_Target_ECEF);
+            ECEFToICRS(JD_Time,r_Target_ECEF,r_Target_GEI);
+            PosionToSubSat(r_Target_GEI, Time, Time_UTC, SubSat, SubSat_GEI);
+            ViewAreaPoint[4 * j + 2] = SubSat[0];
+            ViewAreaPoint[4 * j + 3] = SubSat[1];
+        }
+    }
+
+    //计算卫星可见走廊
+    private static void ViewArea_ESDold(double Position[], double Velocity[],double Satellite_LLA[], double ViewInstall[][], double ViewAng[][], int ViewNum, double RollMax, double Time[], double Time_UTC, double ViewAreaPoint[]) {
 
 
         double[] nv = {Velocity[0] / Math.sqrt(Math.pow(Velocity[0], 2) + Math.pow(Velocity[1], 2) + Math.pow(Velocity[2], 2)),
@@ -1073,6 +1151,8 @@ class OrbitPrediction {
             double[] r_Target_ECEF=new double[3];
             double[] r_Target_GEI=new double[3];
             r_Target_ESD=MatrixMultiplication(R_x,r_Satellite_ESD);
+            double[][] R_x01=new double[][]{{1, 0, 0}, {0, cos(ViewAng[j][0]), -sin(ViewAng[j][0])}, {0, sin(ViewAng[j][0]), cos(ViewAng[j][0])}};
+
             double[] r_Target_ESD_mid=new double[]{r_Target_ESD[0][0],r_Target_ESD[1][0],r_Target_ESD[2][0]};
             ESDToECEF(Satellite_LLA,r_Target_ESD_mid,r_Target_ECEF);
             double JD_Time=JD(Time);

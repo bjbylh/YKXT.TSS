@@ -7,6 +7,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.UpdateOptions;
+import common.ConfigManager;
 import common.def.MainTaskStatus;
 import common.def.SubTaskStatus;
 import common.def.TaskType;
@@ -114,6 +115,21 @@ public class TaskPlanCore {
             //资源平衡
             if (MOD_ENERGY_CALCULATION(subList[4])) return;
 
+            try {
+                if (ConfigManager.getInstance().fetchDebug()) {
+                    MongoCollection<Document> Data_Missionjson = mongoDatabase.getCollection("image_mission");
+                    FindIterable<Document> D_Missionjson = Data_Missionjson.find();
+                    ArrayList<Document> Missionjson = new ArrayList<>();
+                    for (Document document : D_Missionjson) {
+                        if (mission_numbners.contains(document.getString("mission_number")))
+                            Missionjson.add(document);
+                    }
+                    InstructionGeneration.InstructionGenerationII(Missionjson, null, null, ConfigManager.getInstance().fetchInsFilePath());
+                }
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
+
             System.out.println("[" + Instant.now().toString() + "] " + "Finished");
             if (TaskType.CRONTAB == taskType)
                 updateMainStatus(id, MainTaskStatus.SUSPEND);
@@ -125,6 +141,7 @@ public class TaskPlanCore {
 
             mongoClient.close();
         }
+
 
         private void initOrbit() {
             //轨道数据表
@@ -158,7 +175,7 @@ public class TaskPlanCore {
 
                     orders.add(order);
 
-                    if(order.getString("mission_number") != null){
+                    if (order.getString("mission_number") != null) {
                         MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
                         Document filter = new Document();
                         filter.append("mission_number", order.getString("mission_number"));
@@ -182,7 +199,7 @@ public class TaskPlanCore {
 
             for (Document order : documents) {
                 if (orderList.contains(order.getString("order_number"))) {
-                    if(order.containsKey("_id"))
+                    if (order.containsKey("_id"))
                         order.remove("_id");
                     order.append("order_state", "待规划");
                     Document modifiers = new Document();
@@ -239,7 +256,7 @@ public class TaskPlanCore {
             }
 
             for (Document d : station_missions) {
-                if(d.getString("transmission_number") != null){
+                if (d.getString("transmission_number") != null) {
                     MongoCollection<Document> transmission_mission = mongoDatabase.getCollection("transmission_mission");
                     Document filter = new Document();
                     filter.append("transmission_number", d.getString("transmission_number"));
@@ -288,7 +305,7 @@ public class TaskPlanCore {
 
             Document Transmissionjson = null;
 
-            if(Transmission_number != "") {
+            if (Transmission_number != "") {
                 for (Document mission : transmission_misison.find()) {
                     if (Transmission_number.equals(mission.getString("transmission_number"))) {
                         Transmissionjson = mission;

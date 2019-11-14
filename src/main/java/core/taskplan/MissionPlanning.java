@@ -184,7 +184,10 @@ public class MissionPlanning {
         StationPosition = new double[GroundStationjson.size()][3];
         StationPitch = new double[GroundStationjson.size()];
         StationNumber = 0;
+        ArrayList<String> StationCode=new ArrayList<>();
         for (Document document : GroundStationjson) {
+            String StationCode_i= document.get("ground_station_code").toString();
+            StationCode.add(StationNumber,StationCode_i);
             ArrayList<Document> Stationproperties = (ArrayList<Document>) document.get("properties");
             for (Document document1 : Stationproperties) {
                 if (document1.getString("key").equals("station_name")) {
@@ -254,6 +257,8 @@ public class MissionPlanning {
                 StationMissionStarTime[0][i]=Orbital_Time[1][i];
                 StationMissionEndTime[0][i]=Orbital_Time[0][i];
             }
+            StationMissionStationNameList.add(0,"nullName");
+            StationMissionNumberList.add(0,"nullNumber");
         }else {
             StationMissionStarTime = new double[StationMissionJson.size()][6];
             StationMissionEndTime=new double[StationMissionJson.size()][6];
@@ -931,71 +936,88 @@ public class MissionPlanning {
         //传输任务分配
         ArrayList<int[][]> PlanningTransTimePeriodList=new ArrayList<>();
         ArrayList<Integer> PlanningTransNumList=new ArrayList<>();
-        int MissionPeriodAll = 0;
-        StationNumber = 1;
+        int MissionPeriodAll = 1;
+        int StationNumber_ForMission = 0;
         for (int j = 0; j < StationMissionNum; j++) {
-            PlanningTransNum = 0;
-            int Side_Flag = 0;
-            int Flag_tBefore = 0;
-            int Visibility_Flag = 0;
-            int Flag_t = 0;
-            double[] Target_LLA = new double[3];
-            double[] Target_ECEF = new double[3];
-            Target_LLA[0] = StationPosition[StationNumber][0];
-            Target_LLA[1] = StationPosition[StationNumber][1];
-            Target_LLA[2] = StationPosition[StationNumber][2];
-            LLAToECEF(Target_LLA, Target_ECEF);
-            for (int k = 0; k < (int) OrbitDataCount; k++) {
-                double Time_JD = JD(Orbital_Time[k]);
-                int Flag_StationTime=0;
-                double StationStarTime_JD=JD(StationMissionStarTime[j]);
-                double StationEndTime_JD=JD(StationMissionEndTime[j]);
-                if (Time_JD >= StationStarTime_JD && Time_JD<=StationEndTime_JD) {
-                    Flag_StationTime=1;
+            try{
+                PlanningTransNum = 0;
+                int Side_Flag = 0;
+                int Flag_tBefore = 0;
+                int Visibility_Flag = 0;
+                int Flag_t = 0;
+
+                if (StationNumber == 0) {
+                    continue;
                 }
-                if (Flag_StationTime == 1) {
-                    double[] Target_GEI = new double[3];
-                    ECEFToICRS(Time_JD, Target_ECEF, Target_GEI);
-                    double[] SatPositionRe_LLA = new double[3];
-                    double[] SatPosition_ECEF = new double[3];
-                    SatPositionRe_LLA[0] = Orbital_SatPositionLLA[k][0];
-                    SatPositionRe_LLA[1] = Orbital_SatPositionLLA[k][1];
-                    SatPositionRe_LLA[2] = Orbital_SatPositionLLA[k][2];
-                    LLAToECEF(SatPositionRe_LLA, SatPosition_ECEF);
-                    Side_Flag = 1;
-                    if (Side_Flag == 1) {
-                        Visibility_Flag = StationVisibilityJudge(Target_ECEF, SatPosition_ECEF, StationPitch[StationNumber]);
-                        Flag_tBefore = Flag_t;
-                        Flag_t = Visibility_Flag;
-                    } else {
+                //搜索地面站
+                for (int i = 0; i < StationNumber; i++) {
+                    if (StationMissionStationNameList.get(j)== StationCode.get(i)) {
+                        StationNumber_ForMission=i;
+                        break;
+                    }
+                }
+
+                double[] Target_LLA = new double[3];
+                double[] Target_ECEF = new double[3];
+                Target_LLA[0] = StationPosition[StationNumber_ForMission][0];
+                Target_LLA[1] = StationPosition[StationNumber_ForMission][1];
+                Target_LLA[2] = StationPosition[StationNumber_ForMission][2];
+                LLAToECEF(Target_LLA, Target_ECEF);
+                for (int k = 0; k < (int) OrbitDataCount; k++) {
+                    double Time_JD = JD(Orbital_Time[k]);
+                    int Flag_StationTime=0;
+                    double StationStarTime_JD=JD(StationMissionStarTime[j]);
+                    double StationEndTime_JD=JD(StationMissionEndTime[j]);
+                    if (Time_JD >= StationStarTime_JD && Time_JD<=StationEndTime_JD) {
+                        Flag_StationTime=1;
+                    }
+                    if (Flag_StationTime == 1) {
+                        double[] Target_GEI = new double[3];
+                        ECEFToICRS(Time_JD, Target_ECEF, Target_GEI);
+                        double[] SatPositionRe_LLA = new double[3];
+                        double[] SatPosition_ECEF = new double[3];
+                        SatPositionRe_LLA[0] = Orbital_SatPositionLLA[k][0];
+                        SatPositionRe_LLA[1] = Orbital_SatPositionLLA[k][1];
+                        SatPositionRe_LLA[2] = Orbital_SatPositionLLA[k][2];
+                        LLAToECEF(SatPositionRe_LLA, SatPosition_ECEF);
+                        Side_Flag = 1;
+                        if (Side_Flag == 1) {
+                            Visibility_Flag = StationVisibilityJudge(Target_ECEF, SatPosition_ECEF, StationPitch[StationNumber_ForMission]);
+                            Flag_tBefore = Flag_t;
+                            Flag_t = Visibility_Flag;
+                        } else {
+                            Visibility_Flag = 0;
+                            Flag_tBefore = Flag_t;
+                            Flag_t = Visibility_Flag;
+                        }
+                    }else {
                         Visibility_Flag = 0;
                         Flag_tBefore = Flag_t;
                         Flag_t = Visibility_Flag;
                     }
-                }else {
-                    Visibility_Flag = 0;
-                    Flag_tBefore = Flag_t;
-                    Flag_t = Visibility_Flag;
+
+                    if (Flag_tBefore == 0 && Flag_t == 1) {
+                        PlanningTransTimePeriod[PlanningTransNum][0] = k;
+                        PlanningTransStation[PlanningTransNum] = StationNumber_ForMission+1;
+                    } else if (Flag_tBefore == 1 && Flag_t == 0) {
+                        PlanningTransTimePeriod[PlanningTransNum][1] = k - 1;
+                        PlanningTransNum = PlanningTransNum + 1;
+                    }
+                    if (k == (int)OrbitDataCount - 1 && Flag_t == 1) {
+                        PlanningTransTimePeriod[PlanningTransNum][1] = k;
+                        PlanningTransNum = PlanningTransNum + 1;
+                    }
                 }
 
-                if (Flag_tBefore == 0 && Flag_t == 1) {
-                    PlanningTransTimePeriod[PlanningTransNum][0] = k;
-                    PlanningTransStation[PlanningTransNum] = StationNumber;
-                } else if (Flag_tBefore == 1 && Flag_t == 0) {
-                    PlanningTransTimePeriod[PlanningTransNum][1] = k - 1;
-                    PlanningTransNum = PlanningTransNum + 1;
-                }
-                if (k == (int)OrbitDataCount - 1 && Flag_t == 1) {
-                    PlanningTransTimePeriod[PlanningTransNum][1] = k;
-                    PlanningTransNum = PlanningTransNum + 1;
-                }
+                MissionPeriodAll=MissionPeriodAll+PlanningTransNum;
+                int[][] PlanningTransTimePeriod_iList=PlanningTransTimePeriod;
+                int PlanningTransNum_iList=PlanningTransNum;
+                PlanningTransTimePeriodList.add(j,PlanningTransTimePeriod_iList);
+                PlanningTransNumList.add(j,PlanningTransNum_iList);
+            } catch (Exception e) {
+                e.printStackTrace();
+                continue;
             }
-
-            MissionPeriodAll=MissionPeriodAll+PlanningTransNum;
-            int[][] PlanningTransTimePeriod_iList=PlanningTransTimePeriod;
-            int PlanningTransNum_iList=PlanningTransNum;
-            PlanningTransTimePeriodList.add(j,PlanningTransTimePeriod_iList);
-            PlanningTransNumList.add(j,PlanningTransNum_iList);
         }
 
         //数据传出
@@ -1108,9 +1130,19 @@ public class MissionPlanning {
         if(TransmissionMissionJson != null) {
             ArrayList<Document> TranWindowjsonArry = new ArrayList<>();
             for (int i = 0; i < StationMissionNum; i++) {
+
+                //搜索地面站
+                int StationNumber_ForMissionOut=0;
+                for (int Station_i = 0; Station_i < StationNumber; Station_i++) {
+                    if (StationMissionStationNameList.get(i)== StationCode.get(Station_i)) {
+                        StationNumber_ForMissionOut=Station_i;
+                        break;
+                    }
+                }
+
                 for (int j = 0; j < PlanningTransNumList.get(i); j++) {
                     Document TranWindowjsonObject = new Document();
-                    TranWindowjsonObject.append("station_name", StationSerialNumber[1]);
+                    TranWindowjsonObject.append("station_name", StationSerialNumber[StationNumber_ForMissionOut]);
                     TranWindowjsonObject.append("start_time", Time_Point[PlanningTransTimePeriodList.get(i)[j][0]]);
                     TranWindowjsonObject.append("end_time", Time_Point[PlanningTransTimePeriodList.get(i)[j][1]]);
                     TranWindowjsonArry.add(TranWindowjsonObject);
