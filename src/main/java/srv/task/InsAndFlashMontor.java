@@ -68,7 +68,7 @@ public class InsAndFlashMontor {
                     if (instruction_info.size() > 0) {
                         pool_inss_image.add(document);
 
-                        if (document.getString("work_mode").contains("记录")) {
+                        if (document.getString("work_mode").contains("记录") || document.getString("work_mode").contains("擦除")) {
                             pool_files_image.add(document);
                         }
                     }
@@ -149,18 +149,63 @@ public class InsAndFlashMontor {
             }
         }
 
+        private Date getExecTime(Document d) {
+            ArrayList<Document> instruction_info = (ArrayList<Document>) d.get("instruction_info");
+            if (!instruction_info.get(instruction_info.size() - 1).getBoolean("valid"))
+                return null;
+
+            return instruction_info.get(instruction_info.size() - 1).getDate("execution_time");
+        }
+
         private void procFilePool(ArrayList<Document> pool_files_image, ArrayList<Document> pool_files_trans) {
-            Map<Integer,Pair<Boolean,Boolean>> fileStatus = Maps.newLinkedHashMap();
-            Map<Integer,Date> fileRecordTime = Maps.newLinkedHashMap();
+            Date zeroTime = Date.from(Instant.now().minusSeconds(60 * 60 * 24 * 365 * 10L));//时间零点初始化为十年前
+
+            for (Document d : pool_files_image) {
+                if (d.getString("work_mode").contains("擦除")) {
+                    Date execution_time = getExecTime(d);
+
+                    if (execution_time == null)
+                        continue;
+
+                    if (execution_time.after(zeroTime))
+                        zeroTime = execution_time;
+                }
+            }
 
 
-            for(Document d : pool_files_image){
-                int file_no = Integer.parseInt(d.getString("record_file_no"));
-                ArrayList<Document> instruction_info = (ArrayList<Document>) d.get("instruction_info");
-                if(!instruction_info.get(instruction_info.size() - 1).getBoolean("valid"))
-                    continue;
+            Map<Integer, Pair<Boolean, Boolean>> fileStatus = Maps.newLinkedHashMap();//第一个布尔值表示vaild，第二个表示replayed
+            Map<Integer, Date> fileRecordTime = Maps.newLinkedHashMap();
+            Map<Integer, Pair<Date, Date>> fileWindows = Maps.newLinkedHashMap();
 
-                Date execution_time = instruction_info.get(instruction_info.size() - 1).getDate("execution_time");
+            for (Document d : pool_files_image) {
+                try {
+                    int file_no = Integer.parseInt(d.getString("record_file_no"));
+
+                    Date execution_time = getExecTime(d);
+
+                    if (execution_time == null)
+                        continue;
+
+                    if (execution_time.before(zeroTime))
+                        continue;
+
+                    ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
+
+                    Document window = image_windows.get(0);
+
+                    if (fileStatus.containsKey(file_no)) {
+                        fileStatus.remove(file_no);
+                        fileRecordTime.remove(file_no);
+                        fileWindows.remove(file_no);
+                    }
+
+                    fileStatus.put(file_no, new Pair<>(false, false));
+                    fileRecordTime.put(file_no, execution_time);
+                    fileWindows.put(file_no,new Pair<>(window.getDate("start_time"),window.getDate("end_time")));
+
+
+                } catch (Exception e) {
+                }
             }
         }
     }
