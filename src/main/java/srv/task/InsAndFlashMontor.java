@@ -207,6 +207,39 @@ public class InsAndFlashMontor {
                 } catch (Exception e) {
                 }
             }
+
+            for(Document d : pool_files_trans){
+                try {
+
+                    Date execution_time = getExecTime(d);
+
+                    if (execution_time == null)
+                        continue;
+
+                    if (execution_time.before(zeroTime))
+                        continue;
+
+                    ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
+
+                    Document window = image_windows.get(0);
+
+                    if(d.getString("mode").contains("sequential")){
+
+                    }else if(d.getString("mode").contains("file")){
+                        int file_no = Integer.parseInt(d.getString("record_file_no"));
+                        if (fileStatus.containsKey(file_no)) {
+                            fileStatus.remove(file_no);
+                            fileRecordTime.remove(file_no);
+                            fileWindows.remove(file_no);
+                        }
+
+                        fileStatus.put(file_no, new Pair<>(false, false));
+                        fileRecordTime.put(file_no, execution_time);
+                        fileWindows.put(file_no,new Pair<>(window.getDate("start_time"),window.getDate("end_time")));
+                    }else{}
+                } catch (Exception e) {
+                }
+            }
         }
     }
 }
