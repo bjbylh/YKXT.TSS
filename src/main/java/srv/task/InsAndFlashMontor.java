@@ -23,11 +23,36 @@ import java.util.TreeMap;
 public class InsAndFlashMontor {
     private static InsAndFlashMontor ourInstance = new InsAndFlashMontor();
 
+    public long storage_capacity = 0L;
+
+    public long v_record = 0L;
+
+    public long v_playback = 0L;
+
     public static InsAndFlashMontor getInstance() {
         return ourInstance;
     }
 
     private InsAndFlashMontor() {
+        MongoClient mongoClient = MangoDBConnector.getClient();
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+
+        MongoCollection<Document> sate_res = mongoDatabase.getCollection("satellite_resource");
+
+        Document first = sate_res.find().first();
+        ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
+
+        for (Document document : properties) {
+
+            if (document.getString("key").equals("storage_capacity")) {
+                storage_capacity = Long.parseLong(document.getString("value")) * 2014 * 1024L;
+            } else if (document.getString("key").equals("a")) {
+                v_record = Long.parseLong(document.getString("v_record"));
+            } else if (document.getString("key").equals("e")) {
+                v_playback = Long.parseLong(document.getString("v_playback"));
+            } else {
+            }
+        }
     }
 
     public void startup() throws IOException, InterruptedException {
@@ -93,8 +118,10 @@ public class InsAndFlashMontor {
             if (pool_inss_image.size() > 0 || pool_inss_trans.size() > 0)
                 procInsPool(pool_inss_image, pool_inss_trans);
 
-            if (pool_files_image.size() > 0 || pool_files_trans.size() > 0)
-                procFilePool(pool_files_image, pool_files_trans);
+            if (pool_files_image.size() > 0 || pool_files_trans.size() > 0) {
+                procFilePool(pool_files_image, pool_files_trans, true);
+                procFilePool(pool_files_image, pool_files_trans, false);
+            }
 
             mongoClient.close();
         }
@@ -157,9 +184,10 @@ public class InsAndFlashMontor {
             return instruction_info.get(instruction_info.size() - 1).getDate("execution_time");
         }
 
-        private void procFilePool(ArrayList<Document> pool_files_image, ArrayList<Document> pool_files_trans) {
+        private void procFilePool(ArrayList<Document> pool_files_image, ArrayList<Document> pool_files_trans, boolean isRT) {
             Date zeroTime = Date.from(Instant.now().minusSeconds(60 * 60 * 24 * 365 * 10L));//时间零点初始化为十年前
 
+            Date stopTime = isRT ? Date.from(Instant.now()) : Date.from(Instant.now().plusSeconds(60 * 60 * 24 * 365 * 10L));
             for (Document d : pool_files_image) {
                 if (d.getString("work_mode").contains("擦除")) {
                     Date execution_time = getExecTime(d);
@@ -171,7 +199,6 @@ public class InsAndFlashMontor {
                         zeroTime = execution_time;
                 }
             }
-
 
             Map<Integer, Pair<Boolean, Boolean>> fileStatus = Maps.newLinkedHashMap();//第一个布尔值表示vaild，第二个表示replayed
             Map<Integer, Date> fileRecordTime = Maps.newLinkedHashMap();
@@ -186,7 +213,7 @@ public class InsAndFlashMontor {
                     if (execution_time == null)
                         continue;
 
-                    if (execution_time.before(zeroTime))
+                    if (execution_time.before(zeroTime) || execution_time.after(stopTime))
                         continue;
 
                     ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
@@ -201,14 +228,16 @@ public class InsAndFlashMontor {
 
                     fileStatus.put(file_no, new Pair<>(false, false));
                     fileRecordTime.put(file_no, execution_time);
-                    fileWindows.put(file_no,new Pair<>(window.getDate("start_time"),window.getDate("end_time")));
+                    fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
 
 
                 } catch (Exception e) {
                 }
             }
 
-            for(Document d : pool_files_trans){
+            long totalSize = 0L;//单位
+
+            for (Document d : pool_files_trans) {
                 try {
 
                     Date execution_time = getExecTime(d);
@@ -223,23 +252,45 @@ public class InsAndFlashMontor {
 
                     Document window = image_windows.get(0);
 
-                    if(d.getString("mode").contains("sequential")){
+                    if (d.getString("mode").contains("sequential")) {
+                        Date start_time = window.getDate("start_time");
+                        Date end_time = window.getDate("end_time");
 
-                    }else if(d.getString("mode").contains("file")){
+                        totalSize += calcSize(start_time, end_time);
+
+                    } else if (d.getString("mode").contains("file")) {
+                        boolean repeat = false;
                         int file_no = Integer.parseInt(d.getString("record_file_no"));
                         if (fileStatus.containsKey(file_no)) {
                             fileStatus.remove(file_no);
                             fileRecordTime.remove(file_no);
                             fileWindows.remove(file_no);
+                            repeat = true;
                         }
 
-                        fileStatus.put(file_no, new Pair<>(false, false));
+                        fileStatus.put(file_no, new Pair<>(false, true));
                         fileRecordTime.put(file_no, execution_time);
-                        fileWindows.put(file_no,new Pair<>(window.getDate("start_time"),window.getDate("end_time")));
-                    }else{}
+                        fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
+
+                        if (!repeat) {
+                            Date start_time = window.getDate("start_time");
+                            Date end_time = window.getDate("end_time");
+
+                            totalSize += calcSize(start_time, end_time);
+                        }
+                    } else {
+                    }
                 } catch (Exception e) {
                 }
             }
+        }
+
+        private long calcSize(Date start_time, Date end_time) {
+            long spanMills = end_time.toInstant().toEpochMilli() - start_time.toInstant().toEpochMilli();
+
+            long spanSec = spanMills / 1000;
+
+            return spanSec * v_playback;
         }
     }
 }
