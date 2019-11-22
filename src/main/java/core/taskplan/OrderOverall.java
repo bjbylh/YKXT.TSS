@@ -4,7 +4,6 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.UpdateOptions;
-import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
@@ -48,6 +47,12 @@ public class OrderOverall {
         ArrayList<Object> OrderSubmitTime = new ArrayList<>();
         ArrayList<Object> OrderNumber = new ArrayList<>();
         ArrayList<Object> MissioNumber = new ArrayList<>();
+
+        ArrayList<Object> Instruction=new ArrayList<>();
+        ArrayList<Object> StationNumber=new ArrayList<>();
+        ArrayList<Object> RecordFileNo=new ArrayList<>();
+        ArrayList<Object> AutoAsignRecordFile=new ArrayList<>();
+
         int OrderMissionNum = 0;
         for (Document document : ImageOrderjsonCopy) {
             ImageRegion.add(document.get("image_region"));
@@ -69,6 +74,13 @@ public class OrderOverall {
             OrderSubmitTime.add(document.get("order_submit_time"));
             OrderNumber.add(document.get("order_number"));
             MissioNumber.add(document.get("mission_number"));
+
+            Instruction.add(document.get("instruction_block_params"));
+            StationNumber.add(document.get("station_number"));
+            RecordFileNo.add(document.get("record_file_no"));
+            AutoAsignRecordFile.add(document.get("auto_asign_record_file"));
+
+
 
             OrderMissionNum = OrderMissionNum + 1;
         }
@@ -124,6 +136,17 @@ public class OrderOverall {
                             break;
                         }
                     }
+                    //判定指令部分
+                    if (CombineFlag == true) {
+                        if (Instruction.get(ConventionalImagModeList.get(i)) == Instruction.get(ConventionalImagModeList.get(j)) &&
+                                StationNumber.get(ConventionalImagModeList.get(i))==StationNumber.get(ConventionalImagModeList.get(j)) &&
+                                RecordFileNo.get(ConventionalImagModeList.get(i))==RecordFileNo.get(ConventionalImagModeList.get(j)) &&
+                                AutoAsignRecordFile.get(ConventionalImagModeList.get(i))==AutoAsignRecordFile.get(ConventionalImagModeList.get(j))) {
+                            CombineFlag=true;
+                        }else {
+                            CombineFlag=false;
+                        }
+                    }
                     if (CombineFlag == true) {
                         CombinedCollection(target_region_i,target_region_j);
                         ImageRegion.set(ConventionalImagModeList.get(i), target_region_i);
@@ -147,8 +170,7 @@ public class OrderOverall {
         //数据传出
         MongoClient mongoClient = MangoDBConnector.getClient();
         //获取名为"temp"的数据库
-        //MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
-        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+        MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
 
         MongoCollection<Document> image_order = mongoDatabase.getCollection("image_order");
         for (int i = 0; i < OrderMissionNum; i++) {
@@ -171,6 +193,12 @@ public class OrderOverall {
                 ImageMissionjson.append("mission_number", mission_number);
                 ImageMissionjson.append("mission_state", "待规划");
                 ImageMissionjson.append("mission_interval_min", Double.toString(MissionIntervalMin));
+
+                ImageMissionjson.append("instruction_block_params",Instruction.get(i));
+                ImageMissionjson.append("station_number",StationNumber.get(i));
+                ImageMissionjson.append("record_file_no",RecordFileNo.get(i));
+                ImageMissionjson.append("auto_asign_record_file",AutoAsignRecordFile.get(i));
+
                 ArrayList<Object> OrderNumber_List = new ArrayList<>();
                 for (int j = 0; j < OverallResultList.get(i); j++) {
                     if(ImageOrderjson.get(OverallMissionNumList.get(i).get(j)).containsKey("_id"))

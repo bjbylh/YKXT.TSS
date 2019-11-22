@@ -235,7 +235,7 @@ public class InsAndFlashMontor {
                 }
             }
 
-            long totalSize = 0L;//单位
+            double totalSize = 0L;//单位
 
             for (Document d : pool_files_trans) {
                 try {
@@ -256,7 +256,7 @@ public class InsAndFlashMontor {
                         Date start_time = window.getDate("start_time");
                         Date end_time = window.getDate("end_time");
 
-                        totalSize += calcSize(start_time, end_time);
+                        totalSize += calcPBSize(start_time, end_time);
 
                     } else if (d.getString("mode").contains("file")) {
                         boolean repeat = false;
@@ -264,33 +264,82 @@ public class InsAndFlashMontor {
                         if (fileStatus.containsKey(file_no)) {
                             fileStatus.remove(file_no);
                             fileRecordTime.remove(file_no);
-                            fileWindows.remove(file_no);
+                            //fileWindows.remove(file_no);
                             repeat = true;
                         }
 
                         fileStatus.put(file_no, new Pair<>(false, true));
                         fileRecordTime.put(file_no, execution_time);
-                        fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
+                        //fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
 
                         if (!repeat) {
                             Date start_time = window.getDate("start_time");
                             Date end_time = window.getDate("end_time");
 
-                            totalSize += calcSize(start_time, end_time);
+                            totalSize += calcPBSize(start_time, end_time);
                         }
                     } else {
                     }
                 } catch (Exception e) {
                 }
+                long pool_size = 64;
+                double flash_usage;
+                double allsize = 0.0;
+
+                Document doc = new Document();
+                doc.append("pool_size", pool_size);
+                for (int i = 0; i < 64; i++) {
+                    Document data = new Document();
+                    if (fileStatus.containsKey(i)) {
+                        data.append("valid", fileStatus.get(i).getKey());
+                        data.append("replayed", fileStatus.get(i).getValue());
+                        double size = 0.0;
+                        if (fileWindows.containsKey(i)) {
+                            size = calcRDSize(fileWindows.get(i).getKey(), fileWindows.get(i).getValue());
+                        }
+                        allsize += size;
+                        data.append("size", size);
+                        data.append("window_start_time", fileWindows.get(i).getKey());
+                        data.append("window_end_time", fileWindows.get(i).getValue());
+                    } else {
+                        data.append("size", 0.0);
+                        data.append("valid", true);
+                        data.append("replayed", false);
+                    }
+
+                    doc.append("file_" + i, data);
+                }
+                flash_usage = allsize / storage_capacity;
+                doc.append("flash_usage", flash_usage);
+                doc.append("space_used", totalSize);
+
+                MongoClient mongoClient = MangoDBConnector.getClient();
+                MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+
+                MongoCollection<Document> pool_files = mongoDatabase.getCollection("pool_files");
+                if (isRT) {
+                    doc.append("type", "REALTIME");
+                } else {
+                    doc.append("type", "FORECAST");
+                }
+                pool_files.insertOne(doc);
             }
         }
 
-        private long calcSize(Date start_time, Date end_time) {
+        private double calcPBSize(Date start_time, Date end_time) {
             long spanMills = end_time.toInstant().toEpochMilli() - start_time.toInstant().toEpochMilli();
 
-            long spanSec = spanMills / 1000;
+            double spanSec = spanMills / 1000.0;
 
             return spanSec * v_playback;
+        }
+
+        private double calcRDSize(Date start_time, Date end_time) {
+            long spanMills = end_time.toInstant().toEpochMilli() - start_time.toInstant().toEpochMilli();
+
+            double spanSec = spanMills / 1000.0;
+
+            return spanSec * v_record;
         }
     }
 }

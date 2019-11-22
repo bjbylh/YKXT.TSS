@@ -124,7 +124,30 @@ public class TaskPlanCore {
                         if (mission_numbners.contains(document.getString("mission_number")))
                             Missionjson.add(document);
                     }
-                    InstructionGeneration.InstructionGenerationII(Missionjson, null, null, ConfigManager.getInstance().fetchInsFilePath());
+
+                    MongoCollection<Document> station_mission = mongoDatabase.getCollection("station_mission");
+                    ArrayList<Document> station_missions = new ArrayList<>();
+
+                    for (Document d : station_mission.find()) {
+                        if (station_mission_numbers.contains(d.getString("mission_number")))
+                            station_missions.add(d);
+                    }
+
+                    MongoCollection<Document> transmission_misison = mongoDatabase.getCollection("transmission_mission");
+
+                    Document Transmissionjson = null;
+
+                    if (Transmission_number != "") {
+                        for (Document mission : transmission_misison.find()) {
+                            if (Transmission_number.equals(mission.getString("transmission_number"))) {
+                                Transmissionjson = mission;
+                                break;
+                            }
+
+                        }
+                    }
+
+                    InstructionGeneration.InstructionGenerationII(Missionjson, Transmissionjson, station_missions, ConfigManager.getInstance().fetchInsFilePath());
                 }
             } catch (Exception e) {
                 System.out.println(e.getMessage());
