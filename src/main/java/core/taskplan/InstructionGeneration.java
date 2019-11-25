@@ -21,7 +21,7 @@ import java.util.Date;
 
 public class InstructionGeneration {
 
-    private static double[] ZeroTime={2000,1,1,0,0,0};//参考时间
+    private static double[] ZeroTime = {2000, 1, 1, 0, 0, 0};//参考时间
 
     public static void InstructionGenerationII(ArrayList<Document> ImageMissionjson, Document TransmissionMissionJson, ArrayList<Document> StationMissionjson, String FilePath) {
 
@@ -31,27 +31,26 @@ public class InstructionGeneration {
         //获取名为"temp"的数据库
         MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
         //指令块模板
-        MongoCollection<Document> Data_TaskInstructionjson=mongoDatabase.getCollection("task_instruction");
-        FindIterable<Document> D_TaskInstructionjson=Data_TaskInstructionjson.find();
-        ArrayList<Document> TaskInstructionjson =new ArrayList<>();
-        for (Document document:D_TaskInstructionjson) {
+        MongoCollection<Document> Data_TaskInstructionjson = mongoDatabase.getCollection("task_instruction");
+        FindIterable<Document> D_TaskInstructionjson = Data_TaskInstructionjson.find();
+        ArrayList<Document> TaskInstructionjson = new ArrayList<>();
+        for (Document document : D_TaskInstructionjson) {
             TaskInstructionjson.add(document);
         }
         //读入指令序列模板
-        MongoCollection<Document> Data_SequenceInstructionjson=mongoDatabase.getCollection("sequence_instruction");
-        FindIterable<Document> D_SequenceInstructionjson=Data_SequenceInstructionjson.find();
-        ArrayList<Document> SequenceInstructionjson =new ArrayList<>();
-        for (Document document:D_SequenceInstructionjson) {
+        MongoCollection<Document> Data_SequenceInstructionjson = mongoDatabase.getCollection("sequence_instruction");
+        FindIterable<Document> D_SequenceInstructionjson = Data_SequenceInstructionjson.find();
+        ArrayList<Document> SequenceInstructionjson = new ArrayList<>();
+        for (Document document : D_SequenceInstructionjson) {
             SequenceInstructionjson.add(document);
         }
         //读入指令码模板
-        MongoCollection<Document> Data_MetaInstrunctionjson=mongoDatabase.getCollection("meta_instrunction");
-        FindIterable<Document> D_MetaInstrunctionjson=Data_MetaInstrunctionjson.find();
-        ArrayList<Document> MetaInstrunctionjson =new ArrayList<>();
-        for (Document document:D_MetaInstrunctionjson) {
+        MongoCollection<Document> Data_MetaInstrunctionjson = mongoDatabase.getCollection("meta_instrunction");
+        FindIterable<Document> D_MetaInstrunctionjson = Data_MetaInstrunctionjson.find();
+        ArrayList<Document> MetaInstrunctionjson = new ArrayList<>();
+        for (Document document : D_MetaInstrunctionjson) {
             MetaInstrunctionjson.add(document);
         }
-
 
 
         //成像任务读入
@@ -62,8 +61,8 @@ public class InstructionGeneration {
         ArrayList<String> MissionLoadNumberArray = new ArrayList<>();
         ArrayList<Date> MissionStarTimeArray = new ArrayList<>();
         ArrayList<Date> MissionEndTimeArray = new ArrayList<>();
-        ArrayList<String> MissionWorkModel=new ArrayList<>();
-        int MissionNum=0;
+        ArrayList<String> MissionWorkModel = new ArrayList<>();
+        int MissionNum = 0;
         for (Document document : ImageMissionjson) {
             try {
                 String MissionNumberArray_i = document.getString("mission_number");
@@ -77,10 +76,10 @@ public class InstructionGeneration {
                         MissionEndTimeArray.add((Date) document1.get("end_time"));
                         break;
                     }
-                }else {
+                } else {
                     MissionLoadNumberArray.add("1");
                     SimpleDateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd");
-                    String stringTime=(int)ZeroTime[0]+"-"+(int)ZeroTime[1]+"-"+(int)ZeroTime[2];
+                    String stringTime = (int) ZeroTime[0] + "-" + (int) ZeroTime[1] + "-" + (int) ZeroTime[2];
                     Date date = dateformat.parse(stringTime);
                     MissionStarTimeArray.add(date);
                     MissionEndTimeArray.add(date);
@@ -91,7 +90,7 @@ public class InstructionGeneration {
                     MissionStateArray.add(false);
                 }
                 MissionWorkModel.add(document.get("work_mode").toString());
-                MissionNum=MissionNum+1;
+                MissionNum = MissionNum + 1;
             } catch (Exception e) {
                 e.printStackTrace();
                 continue;
@@ -118,7 +117,7 @@ public class InstructionGeneration {
         }
 
         //地面站任务读入
-        ArrayList StationMissionRecordFileNoArray=new ArrayList();
+        ArrayList StationMissionRecordFileNoArray = new ArrayList();
         for (Document document : StationMissionjson) {
             try {
                 StationMissionRecordFileNoArray.add(document.get("record_file_no"));
@@ -129,7 +128,7 @@ public class InstructionGeneration {
         }
 
         //指令生成
-        ArrayList<byte[]> InstructionArray=new ArrayList<>();
+        ArrayList<byte[]> InstructionArray = new ArrayList<>();
         for (int i = 0; i < MissionNum; i++) {
             Date time_point = MissionStarTimeArray.get(i);
             //时间转换为doubule型
@@ -139,61 +138,61 @@ public class InstructionGeneration {
             cal.setTime(time_point);
             cal.add(Calendar.HOUR_OF_DAY, -8);
             StringTime = sdf.format(cal.getTime());
-            double[] TimeStarTime=new double[6];
+            double[] TimeStarTime = new double[6];
             TimeStarTime[0] = Double.parseDouble(StringTime.substring(0, 4));
             TimeStarTime[1] = Double.parseDouble(StringTime.substring(5, 7));
             TimeStarTime[2] = Double.parseDouble(StringTime.substring(8, 10));
             TimeStarTime[3] = Double.parseDouble(StringTime.substring(11, 13));
             TimeStarTime[4] = Double.parseDouble(StringTime.substring(14, 16));
             TimeStarTime[5] = Double.parseDouble(StringTime.substring(17, 19));
-            int TimeMiddle=new Double((JD(TimeStarTime)-JD(ZeroTime))*24*60*60).intValue();
+            int TimeMiddle = new Double((JD(TimeStarTime) - JD(ZeroTime)) * 24 * 60 * 60).intValue();
             String KaiShiShiJian = Integer.toHexString(TimeMiddle);
             String ZhiLingID = "85";
             String ZhiLingNum = "0C";
-            String YouXiaoData="";
-            String workmodel=MissionWorkModel.get(i);
-            workmodel=workmodel+"模式";
-            for (Document document:TaskInstructionjson) {
+            String YouXiaoData = "";
+            String workmodel = MissionWorkModel.get(i);
+            workmodel = workmodel + "模式";
+            for (Document document : TaskInstructionjson) {
                 try {
                     //选择指令序列模板
                     if (document.get("name").equals(workmodel)) {
-                        ArrayList<Document> SequenceArray= (ArrayList<Document>) document.get("sequence");
-                        for (Document document1:SequenceArray) {
-                            String sequencecode=document1.getString("sequence_code");
+                        ArrayList<Document> SequenceArray = (ArrayList<Document>) document.get("sequence");
+                        for (Document document1 : SequenceArray) {
+                            String sequencecode = document1.getString("sequence_code");
                             //选择指令码模板
-                            for (Document document2:SequenceInstructionjson) {
+                            for (Document document2 : SequenceInstructionjson) {
                                 try {
                                     if (document2.get("code").equals(sequencecode)) {
-                                        ArrayList<Document> InstsArray=new ArrayList<>();
-                                        InstsArray= (ArrayList<Document>) document2.get("inst");
-                                        for (Document document3:InstsArray) {
-                                            String Inst_code=document3.getString("inst_code");
-                                            for (Document document4:MetaInstrunctionjson) {
+                                        ArrayList<Document> InstsArray = new ArrayList<>();
+                                        InstsArray = (ArrayList<Document>) document2.get("inst");
+                                        for (Document document3 : InstsArray) {
+                                            String Inst_code = document3.getString("inst_code");
+                                            for (Document document4 : MetaInstrunctionjson) {
                                                 if (document4.getString("code").equals(Inst_code)) {
                                                     //选择任务需求
-                                                    Document MissionParams= (Document) MissionInstructionArray.get(i);
-                                                    Document MissionSequenceParams= (Document) MissionParams.get("sequence_params");
-                                                    Document MissionTCGNumber= (Document) MissionSequenceParams.get(sequencecode);
-                                                    Document MissionTCGSequenceParams= (Document) MissionTCGNumber.get("meta_inst_params");
-                                                    Document MissionTBCode= (Document) MissionTCGSequenceParams.get(Inst_code);
-                                                    String CodeHex=MissionTBCode.getString("hex");
-                                                    ArrayList<Document> CodeParams= (ArrayList<Document>) MissionTBCode.get("params");
-                                                    byte[] byteCodeHex=hexStringToBytes(CodeHex);
-                                                    for (Document document5:CodeParams) {
-                                                        int byteIndex=document5.getInteger("byte_index");
-                                                        int byteLength=document5.getInteger("byte_length");
-                                                        Document byteValue= (Document) document5.get("value");
-                                                        String valueHex=byteValue.getString("hex");
-                                                        byte[] bytevalueHex=hexStringToBytes(valueHex);
-                                                        for (int j = byteIndex; j < byteIndex+byteLength; j++) {
+                                                    Document MissionParams = (Document) MissionInstructionArray.get(i);
+                                                    Document MissionSequenceParams = (Document) MissionParams.get("sequence_params");
+                                                    Document MissionTCGNumber = (Document) MissionSequenceParams.get(sequencecode);
+                                                    Document MissionTCGSequenceParams = (Document) MissionTCGNumber.get("meta_inst_params");
+                                                    Document MissionTBCode = (Document) MissionTCGSequenceParams.get(Inst_code);
+                                                    String CodeHex = MissionTBCode.getString("hex");
+                                                    ArrayList<Document> CodeParams = (ArrayList<Document>) MissionTBCode.get("params");
+                                                    byte[] byteCodeHex = hexStringToBytes(CodeHex);
+                                                    for (Document document5 : CodeParams) {
+                                                        int byteIndex = document5.getInteger("byte_index");
+                                                        int byteLength = document5.getInteger("byte_length");
+                                                        Document byteValue = (Document) document5.get("value");
+                                                        String valueHex = byteValue.getString("hex");
+                                                        byte[] bytevalueHex = hexStringToBytes(valueHex);
+                                                        for (int j = byteIndex; j < byteIndex + byteLength; j++) {
                                                             if (j < byteCodeHex.length) {
-                                                                byteCodeHex[j]=bytevalueHex[j-byteIndex];
+                                                                byteCodeHex[j] = bytevalueHex[j - byteIndex];
                                                             }
                                                         }
                                                     }
-                                                    CodeHex=bytesToHexString(byteCodeHex);
+                                                    CodeHex = bytesToHexString(byteCodeHex);
 
-                                                    YouXiaoData=YouXiaoData+CodeHex;
+                                                    YouXiaoData = YouXiaoData + CodeHex;
                                                     break;
                                                 }
                                             }
@@ -238,7 +237,7 @@ public class InstructionGeneration {
             total = "EB90762569" + total + CRCCode;
             byte[] bytes = hexStringToBytes(total);
 
-            InstructionArray.add(i,bytes);
+            InstructionArray.add(i, bytes);
         }
 
         //指令输出
