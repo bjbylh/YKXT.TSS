@@ -115,8 +115,7 @@ public class NewTaskSubscriber extends JedisPubSub {
 
                 }
             }
-
-
+            //todo
 
             mongoClient.close();
 

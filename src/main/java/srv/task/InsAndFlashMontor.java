@@ -206,84 +206,129 @@ public class InsAndFlashMontor {
             Map<Integer, Date> fileRecordTime = Maps.newLinkedHashMap();
             Map<Integer, Pair<Date, Date>> fileWindows = Maps.newLinkedHashMap();
 
+            TreeMap<Date, Pair<Boolean, Document>> all_pool = new TreeMap<>();
+
             for (Document d : pool_files_image) {
-                try {
-                    int file_no = Integer.parseInt(d.getString("record_file_no"));
+                Date execution_time = getExecTime(d);
 
-                    Date execution_time = getExecTime(d);
+                if (execution_time == null)
+                    continue;
 
-                    if (execution_time == null)
-                        continue;
+                if (execution_time.before(zeroTime) || execution_time.after(stopTime))
+                    continue;
 
-                    if (execution_time.before(zeroTime) || execution_time.after(stopTime))
-                        continue;
-
-                    ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
-
-                    Document window = image_windows.get(0);
-
-                    if (fileStatus.containsKey(file_no)) {
-                        fileStatus.remove(file_no);
-                        fileRecordTime.remove(file_no);
-                        fileWindows.remove(file_no);
-                    }
-
-                    fileStatus.put(file_no, new Pair<>(false, false));
-                    fileRecordTime.put(file_no, execution_time);
-                    fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
-
-
-                } catch (Exception e) {
+                int i = 1;
+                while (all_pool.containsKey(execution_time)) {
+                    execution_time = Date.from(execution_time.toInstant().plusSeconds(i));
+                    i++;
                 }
+
+                all_pool.put(execution_time, new Pair(true, d));
+            }
+
+
+            for (Document d : pool_files_trans) {
+                Date execution_time = getExecTime(d);
+
+                if (execution_time == null)
+                    continue;
+
+                if (execution_time.before(zeroTime) || execution_time.after(stopTime))
+                    continue;
+
+                if (all_pool.containsKey(execution_time))
+                    execution_time = Date.from(execution_time.toInstant().plusSeconds(1));
+
+                int i = 1;
+                while (all_pool.containsKey(execution_time)) {
+                    execution_time = Date.from(execution_time.toInstant().plusSeconds(i));
+                    i++;
+                }
+
+                all_pool.put(execution_time, new Pair(false, d));
             }
 
             double totalSize = 0L;//单位
+            ArrayList<Document> stepRcd = new ArrayList<>();
 
-            for (Document d : pool_files_trans) {
-                try {
-
-                    Date execution_time = getExecTime(d);
-
-                    if (execution_time == null)
-                        continue;
-
-                    if (execution_time.before(zeroTime))
-                        continue;
-
-                    ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
-
-                    Document window = image_windows.get(0);
-
-                    if (d.getString("mode").contains("sequential")) {
-                        Date start_time = window.getDate("start_time");
-                        Date end_time = window.getDate("end_time");
-
-                        totalSize += calcPBSize(start_time, end_time);
-
-                    } else if (d.getString("mode").contains("file")) {
-                        boolean repeat = false;
+            for (Date date : all_pool.keySet()) {
+                Document d = all_pool.get(date).getValue();
+                if (all_pool.get(date).getKey()) {
+                    try {
                         int file_no = Integer.parseInt(d.getString("record_file_no"));
+
+                        Date execution_time = getExecTime(d);
+
+                        if (execution_time == null)
+                            continue;
+
+                        if (execution_time.before(zeroTime) || execution_time.after(stopTime))
+                            continue;
+
+                        ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
+
+                        Document window = image_windows.get(0);
+
                         if (fileStatus.containsKey(file_no)) {
                             fileStatus.remove(file_no);
                             fileRecordTime.remove(file_no);
-                            //fileWindows.remove(file_no);
-                            repeat = true;
+                            fileWindows.remove(file_no);
                         }
 
-                        fileStatus.put(file_no, new Pair<>(false, true));
+                        fileStatus.put(file_no, new Pair<>(false, false));
                         fileRecordTime.put(file_no, execution_time);
-                        //fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
+                        fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
 
-                        if (!repeat) {
+
+                    } catch (Exception e) {
+                    }
+                } else {
+                    try {
+
+                        Date execution_time = getExecTime(d);
+
+                        if (execution_time == null)
+                            continue;
+
+                        if (execution_time.before(zeroTime))
+                            continue;
+
+                        ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
+
+                        Document window = image_windows.get(0);
+
+                        if (d.getString("mode").contains("sequential")) {
                             Date start_time = window.getDate("start_time");
                             Date end_time = window.getDate("end_time");
 
                             totalSize += calcPBSize(start_time, end_time);
+
+                        } else if (d.getString("mode").contains("file")) {
+                            boolean repeat = false;
+                            int file_no = Integer.parseInt(d.getString("record_file_no"));
+                            if (fileStatus.containsKey(file_no)) {
+                                fileStatus.remove(file_no);
+                                fileRecordTime.remove(file_no);
+                                //fileWindows.remove(file_no);
+                                repeat = true;
+                            }
+
+                            fileStatus.put(file_no, new Pair<>(false, true));
+                            fileRecordTime.put(file_no, execution_time);
+                            //fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
+
+                            if (!repeat) {
+                                Date start_time = window.getDate("start_time");
+                                Date end_time = window.getDate("end_time");
+
+                                totalSize += calcPBSize(start_time, end_time);
+                            }
+                        } else {
                         }
-                    } else {
+                    } catch (Exception e) {
                     }
-                } catch (Exception e) {
                 }
+
                 long pool_size = 64;
                 double flash_usage;
                 double allsize = 0.0;
@@ -315,17 +360,103 @@ public class InsAndFlashMontor {
                 doc.append("flash_usage", flash_usage);
                 doc.append("space_used", totalSize);
 
-                MongoClient mongoClient = MangoDBConnector.getClient();
-                MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
-
-                MongoCollection<Document> pool_files = mongoDatabase.getCollection("pool_files");
-                if (isRT) {
-                    doc.append("type", "REALTIME");
-                } else {
-                    doc.append("type", "FORECAST");
-                }
-                pool_files.insertOne(doc);
+                stepRcd.add(doc);
             }
+
+//            for (Document d : pool_files_image) {
+//                try {
+//                    int file_no = Integer.parseInt(d.getString("record_file_no"));
+//
+//                    Date execution_time = getExecTime(d);
+//
+//                    if (execution_time == null)
+//                        continue;
+//
+//                    if (execution_time.before(zeroTime) || execution_time.after(stopTime))
+//                        continue;
+//
+//                    ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
+//
+//                    Document window = image_windows.get(0);
+//
+//                    if (fileStatus.containsKey(file_no)) {
+//                        fileStatus.remove(file_no);
+//                        fileRecordTime.remove(file_no);
+//                        fileWindows.remove(file_no);
+//                    }
+//
+//                    fileStatus.put(file_no, new Pair<>(false, false));
+//                    fileRecordTime.put(file_no, execution_time);
+//                    fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
+//
+//
+//                } catch (Exception e) {
+//                }
+//            }
+
+
+//            for (Document d : pool_files_trans) {
+//                try {
+//
+//                    Date execution_time = getExecTime(d);
+//
+//                    if (execution_time == null)
+//                        continue;
+//
+//                    if (execution_time.before(zeroTime))
+//                        continue;
+//
+//                    ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
+//
+//                    Document window = image_windows.get(0);
+//
+//                    if (d.getString("mode").contains("sequential")) {
+//                        Date start_time = window.getDate("start_time");
+//                        Date end_time = window.getDate("end_time");
+//
+//                        totalSize += calcPBSize(start_time, end_time);
+//
+//                    } else if (d.getString("mode").contains("file")) {
+//                        boolean repeat = false;
+//                        int file_no = Integer.parseInt(d.getString("record_file_no"));
+//                        if (fileStatus.containsKey(file_no)) {
+//                            fileStatus.remove(file_no);
+//                            fileRecordTime.remove(file_no);
+//                            //fileWindows.remove(file_no);
+//                            repeat = true;
+//                        }
+//
+//                        fileStatus.put(file_no, new Pair<>(false, true));
+//                        fileRecordTime.put(file_no, execution_time);
+//                        //fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
+//
+//                        if (!repeat) {
+//                            Date start_time = window.getDate("start_time");
+//                            Date end_time = window.getDate("end_time");
+//
+//                            totalSize += calcPBSize(start_time, end_time);
+//                        }
+//                    } else {
+//                    }
+//                } catch (Exception e) {
+//                }
+
+//            }
+            Document save = new Document();
+
+            MongoClient mongoClient = MangoDBConnector.getClient();
+            MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+
+            MongoCollection<Document> pool_files = mongoDatabase.getCollection("pool_files");
+            if (isRT) {
+                save.append("type", "REALTIME");
+            } else {
+                save.append("type", "FORECAST");
+            }
+
+            save.append("data", stepRcd);
+            pool_files.insertOne(save);
+            mongoClient.close();
         }
 
         private double calcPBSize(Date start_time, Date end_time) {
