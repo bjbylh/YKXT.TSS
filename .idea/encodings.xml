@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Encoding" defaultCharsetForPropertiesFiles="UTF-8">
+    <file url="file://$PROJECT_DIR$/src/main/java/com/cast/wss/client/Appender.java" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/src/main/java/com/cast/wss/client/AppenderRef.java" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/src/main/java/com/cast/wss/client/Encoder.java" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/src/main/java/com/cast/wss/client/Logger.java" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/src/main/java/com/cast/wss/client/SpringProfile.java" charset="GBK" />
     <file url="file://$PROJECT_DIR$/src/main/java/common/redis/subscribe/NewTaskSubscriber.java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/java/core/taskplan/TaskPlanCore.java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/java/srv/task/TaskInit.java" charset="UTF-8" />

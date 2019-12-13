@@ -29,6 +29,6 @@ public class Server {
         //HeartBeatService.getInstance().startup();
 
         //指令状态及内存占用计算线程
- //       InsAndFlashMontor.getInstance().startup();
+        //InsAndFlashMontor.getInstance().startup();
     }
 }

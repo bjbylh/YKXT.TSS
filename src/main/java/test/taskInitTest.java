@@ -1,6 +1,6 @@
 package test;
 
-import java.util.UUID;
+import com.cast.wss.client.*;
 
 /**
  * Created by lihan on 2018/11/19.
@@ -37,34 +37,34 @@ public class taskInitTest {
 //        //写入
 //        MongoClient mongoClient = MangoDBConnector.getClient();
 //        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
-//        FindIterable<Document> image_mission = mongoDatabase.getCollection(fileName).find();
-//        try {
-//            writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file, false), "UTF-8"));
-//            for(Document d : image_mission) {
-//                d.remove("_id");
-//                writer.write(d.toJson());
-//                writer.newLine();
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        } finally {
-//            try {
-//                if (writer != null) {
-//                    writer.close();
-//                }
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
-//        System.out.println("文件写入成功！");
+//        Document main_task = mongoDatabase.getCollection("main_task").find().first();
+//        Object tp_info = main_task.get("tp_info");
+//        String s = tp_info.getClass().toString();
+//        System.out.println(s);
+//
+//        Object name = main_task.get("name");
+//        s = name.getClass().toString();
+//        System.out.println(s);
+        ObjectFactory objectFactory = new ObjectFactory();
+        HeadType headType = objectFactory.createHeadType();
+        headType.setCreationTime("2010-10-10 00:00:00.000");
+
+        DtplanType dtplanType = objectFactory.createDtplanType();
+        dtplanType.setHead(headType);
+
+        PlanType planType = objectFactory.createPlanType();
+        MissionType missionType = objectFactory.createMissionType();
+        missionType.setSatelliteID("XX-1");
+        missionType.setEndTime("2010-10-10 00:00:00.000");
+        missionType.setStartTime("2010-10-10 00:00:00.000");
+        missionType.setStationID("1");
+        missionType.setTplanID("111");
+
+        planType.setMission(missionType);
+
+        dtplanType.setPlan(planType);
 
 
-        for (int i = 0; i < 9; i++) {
-            //注意replaceAll前面的是正则表达式
-            String uuid = UUID.randomUUID().toString();
-            System.out.println(uuid);
-//            System.out.println(uuid.length());
-        }
-
+        System.out.println(dtplanType.toString());
     }
 }

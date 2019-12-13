@@ -4,12 +4,16 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.UpdateOptions;
 import common.FilePathUtil;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -63,37 +67,44 @@ public class InstructionGeneration {
         ArrayList<Date> MissionEndTimeArray = new ArrayList<>();
         ArrayList<String> MissionWorkModel = new ArrayList<>();
         int MissionNum = 0;
-        for (Document document : ImageMissionjson) {
-            try {
-                String MissionNumberArray_i = document.getString("mission_number");
-                MissionNumberArray.add(MissionNumberArray_i);
-                MissionInstructionArray.add(document.get("mission_params"));
-                ArrayList<Document> ImageWindow = (ArrayList<Document>) document.get("image_window");
-                if (ImageWindow != null) {
-                    for (Document document1 : ImageWindow) {
-                        MissionLoadNumberArray.add(document1.get("load_number").toString());
-                        MissionStarTimeArray.add((Date) document1.get("start_time"));
-                        MissionEndTimeArray.add((Date) document1.get("end_time"));
-                        break;
+        if (ImageMissionjson != null) {
+            for (Document document : ImageMissionjson) {
+                try {
+                    if (document.containsKey("mission_params")) {
+                        MissionInstructionArray.add(document.get("mission_params"));
+                        String MissionNumberArray_i = document.get("mission_number").toString();
+                        MissionNumberArray.add(MissionNumberArray_i);
+                        ArrayList<Document> ImageWindow = (ArrayList<Document>) document.get("image_window");
+                        if (ImageWindow != null) {
+                            for (Document document1 : ImageWindow) {
+                                MissionLoadNumberArray.add(document1.get("load_number").toString());
+                                MissionStarTimeArray.add((Date) document1.get("start_time"));
+                                MissionEndTimeArray.add((Date) document1.get("end_time"));
+                                break;
+                            }
+                        } else {
+                            MissionLoadNumberArray.add("1");
+                            SimpleDateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd");
+                            String stringTime = (int) ZeroTime[0] + "-" + (int) ZeroTime[1] + "-" + (int) ZeroTime[2];
+                            Date date = dateformat.parse(stringTime);
+                            MissionStarTimeArray.add(date);
+                            MissionEndTimeArray.add(date);
+                        }
+                        if (document.get("mission_state").equals("待执行")) {
+                            MissionStateArray.add(true);
+                        } else {
+                            MissionStateArray.add(false);
+                        }
+                        MissionWorkModel.add(document.get("work_mode").toString());
+                        MissionNum = MissionNum + 1;
+                    }else {
+                        continue;
                     }
-                } else {
-                    MissionLoadNumberArray.add("1");
-                    SimpleDateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd");
-                    String stringTime = (int) ZeroTime[0] + "-" + (int) ZeroTime[1] + "-" + (int) ZeroTime[2];
-                    Date date = dateformat.parse(stringTime);
-                    MissionStarTimeArray.add(date);
-                    MissionEndTimeArray.add(date);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    continue;
                 }
-                if (document.get("mission_state").equals("待执行")) {
-                    MissionStateArray.add(true);
-                } else {
-                    MissionStateArray.add(false);
-                }
-                MissionWorkModel.add(document.get("work_mode").toString());
-                MissionNum = MissionNum + 1;
-            } catch (Exception e) {
-                e.printStackTrace();
-                continue;
             }
         }
 
@@ -101,108 +112,331 @@ public class InstructionGeneration {
         ArrayList<String> TransMissionStationNameArray = new ArrayList<>();
         ArrayList<Date> TransMissionStarTimeArray = new ArrayList<>();
         ArrayList<Date> TransMissionEndTimeArray = new ArrayList<>();
-        try {
-            if (TransmissionMissionJson.get("fail_reason").equals("不可见")) {
-            } else {
-                ArrayList<Document> TransMissionWindow = (ArrayList<Document>) TransmissionMissionJson.get("transmission_window");
-                for (Document document : TransMissionWindow) {
-                    TransMissionStationNameArray.add(document.get("station_name").toString());
-                    TransMissionStarTimeArray.add((Date) document.get("start_time"));
-                    TransMissionEndTimeArray.add((Date) document.get("end_time"));
+        if (TransmissionMissionJson != null) {
+            try {
+                if (TransmissionMissionJson.get("fail_reason").equals("不可见")) {
+                } else {
+                    if (TransmissionMissionJson.containsKey("transmission_window")) {
+                        ArrayList<Document> TransMissionWindow = (ArrayList<Document>) TransmissionMissionJson.get("transmission_window");
+                        if (TransMissionWindow != null) {
+                            for (Document document : TransMissionWindow) {
+                                TransMissionStationNameArray.add(document.get("station_name").toString());
+                                TransMissionStarTimeArray.add((Date) document.get("start_time"));
+                                TransMissionEndTimeArray.add((Date) document.get("end_time"));
+                            }
+                        }
+                    }
                 }
-            }
 
-        } catch (Exception e) {
-            e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         //地面站任务读入
         ArrayList StationMissionRecordFileNoArray = new ArrayList();
-        for (Document document : StationMissionjson) {
-            try {
-                StationMissionRecordFileNoArray.add(document.get("record_file_no"));
-            } catch (Exception e) {
-                e.printStackTrace();
-                continue;
+        if (StationMissionjson != null) {
+            for (Document document : StationMissionjson) {
+                try {
+                    if (document.containsKey("record_file_no")) {
+                        StationMissionRecordFileNoArray.add(document.get("record_file_no"));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    continue;
+                }
             }
         }
 
         //指令生成
         ArrayList<byte[]> InstructionArray = new ArrayList<>();
+        ArrayList<Byte> ZhiLingIDArray = new ArrayList<Byte>();
+        ArrayList<ArrayList<String>> MissionInstructionCode=new ArrayList<>();
+        ArrayList<ArrayList<Byte>> MissionInstructionId=new ArrayList<>();
+        ArrayList<ArrayList<Date>> MissionInstructionTime=new ArrayList<>();
         for (int i = 0; i < MissionNum; i++) {
+            ArrayList<String> MissionInstructionCodeChild=new ArrayList<>();
+            ArrayList<Byte> MissionInstructionIdChild=new ArrayList<>();
+            ArrayList<Date> MissionInstructionTimeChild=new ArrayList<>();
+            double InstDelta_tAll=0;
+            double InstDelta_tLastAll=0;
             Date time_point = MissionStarTimeArray.get(i);
-            //时间转换为doubule型
-            String StringTime;
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            Calendar cal = Calendar.getInstance();
-            cal.setTime(time_point);
-            cal.add(Calendar.HOUR_OF_DAY, -8);
-            StringTime = sdf.format(cal.getTime());
-            double[] TimeStarTime = new double[6];
-            TimeStarTime[0] = Double.parseDouble(StringTime.substring(0, 4));
-            TimeStarTime[1] = Double.parseDouble(StringTime.substring(5, 7));
-            TimeStarTime[2] = Double.parseDouble(StringTime.substring(8, 10));
-            TimeStarTime[3] = Double.parseDouble(StringTime.substring(11, 13));
-            TimeStarTime[4] = Double.parseDouble(StringTime.substring(14, 16));
-            TimeStarTime[5] = Double.parseDouble(StringTime.substring(17, 19));
-            int TimeMiddle = new Double((JD(TimeStarTime) - JD(ZeroTime)) * 24 * 60 * 60).intValue();
-            String KaiShiShiJian = Integer.toHexString(TimeMiddle);
-            String ZhiLingID = "85";
-            String ZhiLingNum = "0C";
-            String YouXiaoData = "";
+
+            String ZhilingKuai = "";
+            byte ZhiLingIDNum = 0;
+
             String workmodel = MissionWorkModel.get(i);
             workmodel = workmodel + "模式";
             for (Document document : TaskInstructionjson) {
                 try {
-                    //选择指令序列模板
+                    //选择指令块模板
                     if (document.get("name").equals(workmodel)) {
                         ArrayList<Document> SequenceArray = (ArrayList<Document>) document.get("sequence");
+                        //指令块中包含的指令序列
                         for (Document document1 : SequenceArray) {
-                            String sequencecode = document1.getString("sequence_code");
-                            //选择指令码模板
-                            for (Document document2 : SequenceInstructionjson) {
-                                try {
-                                    if (document2.get("code").equals(sequencecode)) {
-                                        ArrayList<Document> InstsArray = new ArrayList<>();
-                                        InstsArray = (ArrayList<Document>) document2.get("inst");
-                                        for (Document document3 : InstsArray) {
-                                            String Inst_code = document3.getString("inst_code");
-                                            for (Document document4 : MetaInstrunctionjson) {
-                                                if (document4.getString("code").equals(Inst_code)) {
-                                                    //选择任务需求
+                            String YingYongShuJu = "";
+
+                            //判定该序列是否执行
+                            Boolean SequenceFlag = false;
+                            Boolean AlternativeFlag = document1.containsKey("alternative");
+                            if (AlternativeFlag) {
+                                String Related_id = document1.get("related_param_id").toString();
+                                //搜索任务中相应id的值
+                                String TaskParamsValue = "";
+                                Document MissionParams = (Document) MissionInstructionArray.get(i);
+                                ArrayList<Document> MissionSequenceParams = (ArrayList<Document>) MissionParams.get("task_params");
+                                for (Document TaskParams : MissionSequenceParams) {
+                                    if (TaskParams.get("id").toString().equals(Related_id)) {
+                                        TaskParamsValue = TaskParams.get("value").toString();
+                                        break;
+                                    }
+                                }
+                                //判定是否执行该序列
+                                if ( document1.containsKey("when")) {
+                                    if (document1.get("when").toString().equals(TaskParamsValue)) {
+                                        SequenceFlag = true;
+                                    }                           
+                                }else if (document1.containsKey("when_or")) {
+                                    ArrayList<String> MissionSequenceWhenOr= (ArrayList<String>) document1.get("when_or");
+                                    for (String MissionSequenceWhenOrChild:MissionSequenceWhenOr) {
+                                        if (MissionSequenceWhenOrChild.equals(TaskParamsValue)) {
+                                            SequenceFlag = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            } else {
+                                SequenceFlag = true;
+                            }
+
+                            //执行该序列
+                            if (SequenceFlag) {
+                                byte ZhilingNum = 0;
+                                String YouXiaoData = "";
+                                InstDelta_tLastAll=0;
+
+                                String sequencecode = document1.get("sequence_code").toString();
+                                //选择指令码模板
+                                for (Document document2 : SequenceInstructionjson) {
+                                    try {
+                                        if (document2.get("code").equals(sequencecode)) {
+                                            ArrayList<Document> InstsArray = new ArrayList<>();
+                                            InstsArray = (ArrayList<Document>) document2.get("inst");
+                                            for (Document document3 : InstsArray) {
+                                                String InstCode = "";
+                                                //判断执行哪种指令码
+                                                if (document3.containsKey("alternative")) {
+                                                    //是否执行种类
+                                                    String MetaRelated_id = document3.get("related_param_id").toString();
+                                                    //搜索任务中相应id的值
+                                                    String SequenceParamsValue = "";
                                                     Document MissionParams = (Document) MissionInstructionArray.get(i);
                                                     Document MissionSequenceParams = (Document) MissionParams.get("sequence_params");
-                                                    Document MissionTCGNumber = (Document) MissionSequenceParams.get(sequencecode);
-                                                    Document MissionTCGSequenceParams = (Document) MissionTCGNumber.get("meta_inst_params");
-                                                    Document MissionTBCode = (Document) MissionTCGSequenceParams.get(Inst_code);
-                                                    String CodeHex = MissionTBCode.getString("hex");
-                                                    ArrayList<Document> CodeParams = (ArrayList<Document>) MissionTBCode.get("params");
-                                                    byte[] byteCodeHex = hexStringToBytes(CodeHex);
-                                                    for (Document document5 : CodeParams) {
-                                                        int byteIndex = document5.getInteger("byte_index");
-                                                        int byteLength = document5.getInteger("byte_length");
-                                                        Document byteValue = (Document) document5.get("value");
-                                                        String valueHex = byteValue.getString("hex");
-                                                        byte[] bytevalueHex = hexStringToBytes(valueHex);
-                                                        for (int j = byteIndex; j < byteIndex + byteLength; j++) {
-                                                            if (j < byteCodeHex.length) {
-                                                                byteCodeHex[j] = bytevalueHex[j - byteIndex];
+                                                    Document MissionSequenceParams_TCG = (Document) MissionSequenceParams.get(sequencecode);
+                                                    ArrayList<Document> MissionSequenceParamsChild = (ArrayList<Document>) MissionSequenceParams_TCG.get("sequence_params");
+                                                    for (Document SequenceParams : MissionSequenceParamsChild) {
+                                                        if (SequenceParams.get("id").toString().equals(MetaRelated_id)) {
+                                                            SequenceParamsValue = SequenceParams.get("value").toString();
+                                                            break;
+                                                        }
+                                                    }
+                                                    if ( document3.containsKey("when")) {
+                                                        if (document3.get("when").toString().equals(SequenceParamsValue)) {
+                                                            InstCode = document3.get("inst_code").toString();
+                                                        }
+                                                    }else if (document3.containsKey("when_or")) {
+                                                        ArrayList<String> MissionCodeWhenOr= (ArrayList<String>) document3.get("when_or");
+                                                        for (String MissionCodeWhenOrChild:MissionCodeWhenOr) {
+                                                            if (MissionCodeWhenOrChild.equals(SequenceParamsValue)) {
+                                                                InstCode = document3.get("inst_code").toString();
+                                                                break;
                                                             }
                                                         }
                                                     }
-                                                    CodeHex = bytesToHexString(byteCodeHex);
+                                                } else if (document3.containsKey("select")) {
+                                                    //列表选择执行种类
+                                                    String MetaRelated_id = document3.get("related_param_id").toString();
+                                                    //搜索任务中相应id的值
+                                                    String SequenceParamsValue = "";
+                                                    Document MissionParams = (Document) MissionInstructionArray.get(i);
+                                                    Document MissionSequenceParams = (Document) MissionParams.get("sequence_params");
+                                                    Document MissionSequenceParams_TCG = (Document) MissionSequenceParams.get(sequencecode);
+                                                    ArrayList<Document> MissionSequenceParamsChild = (ArrayList<Document>) MissionSequenceParams_TCG.get("sequence_params");
+                                                    for (Document SequenceParams : MissionSequenceParamsChild) {
+                                                        if (SequenceParams.get("id").toString().equals(MetaRelated_id)) {
+                                                            SequenceParamsValue = SequenceParams.get("value").toString();
+                                                            break;
+                                                        }
+                                                    }
+                                                    InstCode = SequenceParamsValue;
+                                                } else {
+                                                    //变参执行种类
+                                                    InstCode = document3.get("inst_code").toString();
+                                                }
+                                                //执行间隔
+                                                String InstDelta_t="0";
+                                                Document delta_tDocument= (Document) document3.get("delta_t");
+                                                if (delta_tDocument.containsKey("related_param_id")) {
+                                                    String delta_tId=delta_tDocument.get("related_param_id").toString();
+                                                    //搜索任务中相应id的值
+                                                    String DeltaParamsValue = "";
+                                                    Document MissionParams = (Document) MissionInstructionArray.get(i);
+                                                    Document MissionSequenceParams = (Document) MissionParams.get("sequence_params");
+                                                    Document MissionSequenceParams_TCG = (Document) MissionSequenceParams.get(sequencecode);
+                                                    ArrayList<Document> MissionSequenceParamsChild = (ArrayList<Document>) MissionSequenceParams_TCG.get("sequence_params");
+                                                    for (Document SequenceParams : MissionSequenceParamsChild) {
+                                                        if (SequenceParams.get("id").toString().equals(delta_tId)) {
+                                                            DeltaParamsValue = SequenceParams.get("value").toString();
+                                                            break;
+                                                        }
+                                                    }
+                                                    if (delta_tDocument.containsKey("mapping")) {
+                                                        Document delta_tMappingDocument= (Document) delta_tDocument.get("mapping");
+                                                        if (delta_tMappingDocument.containsKey(DeltaParamsValue)) {
+                                                            InstDelta_t=delta_tMappingDocument.get(DeltaParamsValue).toString();
+                                                        }
+                                                    }
+                                                }else {
+                                                    InstDelta_t = document3.get("delta_t").toString();
+                                                }
+                                                InstDelta_tLastAll=InstDelta_tLastAll+Integer.parseInt(InstDelta_t)*0.125;
+                                                //执行该指令
+                                                if (InstCode != "") {
+                                                    for (Document document4 : MetaInstrunctionjson) {
+                                                        if (document4.get("code").toString().equals(InstCode)) {
+                                                            String MetaHex = document4.get("hex").toString();
+                                                            byte[] byteMetaHex = hexStringToBytes(MetaHex);
+                                                            ArrayList<Document> MetaParams = (ArrayList<Document>) document4.get("params");
+                                                            for (Document MetaParamsChild : MetaParams) {
+                                                                if (MetaParamsChild.get("tag").toString().equals("ui")) {
+                                                                    //任务参数读取
+                                                                    String MetaParamsCode = MetaParamsChild.get("code").toString();
+                                                                    //搜索任务中相应的code值
+                                                                    Document MissionParams = (Document) MissionInstructionArray.get(i);
+                                                                    Document MissionSequenceParams = (Document) MissionParams.get("sequence_params");
+                                                                    Document MissionSequenceParams_TCG = (Document) MissionSequenceParams.get(sequencecode);
+                                                                    Document MissionMetaParams = (Document) MissionSequenceParams_TCG.get("meta_inst_params");
+                                                                    Document MissionMetaParamsChild = (Document) MissionMetaParams.get(InstCode);
+                                                                    ArrayList<Document> MissionMetaParamsChildParams = (ArrayList<Document>) MissionMetaParamsChild.get("params");
+                                                                    for (Document MissionMetaParamsChildParamsChild : MissionMetaParamsChildParams) {
+                                                                        if (MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsCode)) {
+                                                                            String MetaParamsCodeValue = MissionMetaParamsChildParamsChild.get("value").toString();
+                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                                            int byteLength = MetaParamsChild.getInteger("byte_length");
+                                                                            byte[] bytevalueHex = hexStringToBytes(MetaParamsCodeValue);
+                                                                            for (int j = byteIndex; j < byteIndex + byteLength; j++) {
+                                                                                if (j < byteMetaHex.length && j - byteIndex < bytevalueHex.length) {
+                                                                                    byteMetaHex[j] = bytevalueHex[j - byteIndex];
+                                                                                }
+                                                                            }
+                                                                            break;
+                                                                        }
+                                                                    }
+                                                                } else {
+                                                                    //规划参数读取
+                                                                    String MetaParamsLabel = MetaParamsChild.get("label").toString();
+                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                                    int byteLength = MetaParamsChild.getInteger("byte_length");
+                                                                    double attitudeCode_x = 0;
+                                                                    double attitudeCode_y = 0;
+                                                                    double attitudeCode_z = 0;
+                                                                    //读取姿态表中姿态数据
+                                                                    try {
+                                                                        //指令块模板
+                                                                        MongoCollection<Document> Data_NormalAttitudejson = mongoDatabase.getCollection("normal_attitude");
+                                                                        Date Find_time_point=time_point;
+                                                                        Bson queryBsonAttitude= Filters.eq("time_point",Find_time_point);
+                                                                        FindIterable<Document> D_NormalAttitudejson = Data_TaskInstructionjson.find(queryBsonAttitude);
+                                                                        ArrayList<Document> NormalAttitudejson = new ArrayList<>();
+                                                                        for (Document D_NormalAttitudejsonChild : D_NormalAttitudejson) {
+                                                                            NormalAttitudejson.add(D_NormalAttitudejsonChild);
+                                                                            Document AttitudeJson= (Document) D_NormalAttitudejsonChild.get("Attitude_EastSouthDown_312");
+                                                                            attitudeCode_x=AttitudeJson.getDouble("roll_angle");
+                                                                            attitudeCode_y=AttitudeJson.getDouble("pitch_angle");
+                                                                            attitudeCode_z=AttitudeJson.getDouble("yaw_angle");
 
-                                                    YouXiaoData = YouXiaoData + CodeHex;
-                                                    break;
+                                                                        }
+
+                                                                    } catch (Exception e) {
+                                                                        e.printStackTrace();
+                                                                    }
+                                                                    attitudeCode_x = 0;
+                                                                    attitudeCode_y = 0;
+                                                                    attitudeCode_z = 0;
+                                                                    byte[] attitudeCodeByte_x = new byte[4];
+                                                                    byte[] attitudeCodeByte_y = new byte[4];
+                                                                    byte[] attitudeCodeByte_z = new byte[4];
+                                                                    attitudeCodeByte_x = double2Bytes(attitudeCode_x);
+                                                                    attitudeCodeByte_y = double2Bytes(attitudeCode_y);
+                                                                    attitudeCodeByte_z = double2Bytes(attitudeCode_z);
+                                                                    if (MetaParamsLabel.equals("偏航角")) {
+                                                                        //z轴
+                                                                        if (byteLength == 4) {
+                                                                            for (int j = byteIndex; j < byteIndex + byteLength; j++) {
+                                                                                if (j < byteMetaHex.length && j - byteIndex < attitudeCodeByte_z.length) {
+                                                                                    byteMetaHex[j] = attitudeCodeByte_z[j - byteIndex];
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    } else if (MetaParamsLabel.equals("俯仰角")) {
+                                                                        //y轴
+                                                                        if (byteLength == 4) {
+                                                                            for (int j = byteIndex; j < byteIndex + byteLength; j++) {
+                                                                                if (j < byteMetaHex.length && j - byteIndex < attitudeCodeByte_z.length) {
+                                                                                    byteMetaHex[j] = attitudeCodeByte_y[j - byteIndex];
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    } else if (MetaParamsLabel.equals("滚转角")) {
+                                                                        //x轴
+                                                                        if (byteLength == 4) {
+                                                                            for (int j = byteIndex; j < byteIndex + byteLength; j++) {
+                                                                                if (j < byteMetaHex.length && j - byteIndex < attitudeCodeByte_z.length) {
+                                                                                    byteMetaHex[j] = attitudeCodeByte_x[j - byteIndex];
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                            MetaHex = bytesToHexString(byteMetaHex);
+                                                            byte[] YouXiaoChangDuByte = new byte[]{(byte) (byteMetaHex.length)};
+                                                            String YouXiaoChangDuString = bytesToHexString(YouXiaoChangDuByte);
+                                                            int ZhiXingJianGeInt = Integer.parseInt(InstDelta_t);
+                                                            byte[] ZhiXingJianGeByte = new byte[]{(byte) ((ZhiXingJianGeInt) & 0xFF), (byte) ((ZhiXingJianGeInt >> 8) & 0xFF)};
+                                                            String ZhiXingJianGeString = bytesToHexString(ZhiXingJianGeByte);
+                                                            String APIDString = "FFFF";//????????????
+                                                            YouXiaoData = YouXiaoData + APIDString + YouXiaoChangDuString + MetaHex + ZhiXingJianGeString;
+                                                            ZhilingNum = (byte) (ZhilingNum + 1);
+                                                            break;
+                                                        }
+                                                    }
                                                 }
                                             }
+                                            break;
                                         }
-                                        break;
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                        continue;
                                     }
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                    continue;
                                 }
+                                ZhiLingIDNum = (byte) (ZhiLingIDNum + 1);
+                                byte[] ZhiLingXuLieIDByte = new byte[]{ZhiLingIDNum};
+                                String ZhiLingXuLieIDString = bytesToHexString(ZhiLingXuLieIDByte);
+                                byte[] ZhiLingGeShu = new byte[]{ZhilingNum};
+                                String ZhiLingGeShuString = bytesToHexString(ZhiLingGeShu);
+                                Instant time_ZhiXing= time_point.toInstant();
+                                time_ZhiXing=time_ZhiXing.plusMillis((long)(InstDelta_tAll*1000));
+                                Date time_ZhixingDate=Date.from(time_ZhiXing);
+                                String KaiShiShiJian=time2String(time_ZhixingDate);
+                                YingYongShuJu = KaiShiShiJian + ZhiLingXuLieIDString + ZhiLingGeShuString + YouXiaoData;
+                                ZhilingKuai = ZhilingKuai + YingYongShuJu;
+
+                                MissionInstructionCodeChild.add(sequencecode);
+                                MissionInstructionIdChild.add(ZhiLingIDNum);
+                                MissionInstructionTimeChild.add(time_ZhixingDate);
+
+                                InstDelta_tAll=InstDelta_tAll+InstDelta_tLastAll;
                             }
                         }
 
@@ -214,15 +448,16 @@ public class InstructionGeneration {
                 }
             }
 
-            String YingYongShuJu = KaiShiShiJian + ZhiLingID + ZhiLingNum + YouXiaoData;
+
+            //String YingYongShuJu = KaiShiShiJian + ZhiLingID + ZhiLingNum + YouXiaoData;
             String ShuJuQuTou = "10562347";
-            long BaoChang = (ShuJuQuTou + YingYongShuJu).length() / 2 + 2;
+            long BaoChang = (ShuJuQuTou + ZhilingKuai).length() / 2 + 2;
             String BaoChangstr = Long.toHexString(BaoChang);
             for (int j = 0; j < 4; j++) {
                 BaoChangstr = "0" + BaoChangstr;
             }
             String BaoZhuDaoTou = "1D81C001" + BaoChang;
-            String total = BaoZhuDaoTou + ShuJuQuTou + YingYongShuJu + ISO(BaoZhuDaoTou + ShuJuQuTou + YingYongShuJu);
+            String total = BaoZhuDaoTou + ShuJuQuTou + ZhilingKuai + ISO(BaoZhuDaoTou + ShuJuQuTou + ZhilingKuai);
             int count = total.length();
             for (int j = total.length(); j < 126 * 2; j++) {
                 total = total + "A";
@@ -237,7 +472,12 @@ public class InstructionGeneration {
             total = "EB90762569" + total + CRCCode;
             byte[] bytes = hexStringToBytes(total);
 
+            ZhiLingIDArray.add(i, ZhiLingIDNum);
             InstructionArray.add(i, bytes);
+
+            MissionInstructionCode.add(i,MissionInstructionCodeChild);
+            MissionInstructionId.add(i,MissionInstructionIdChild);
+            MissionInstructionTime.add(i,MissionInstructionTimeChild);
         }
 
         //指令输出
@@ -266,6 +506,32 @@ public class InstructionGeneration {
 
             String realPath = FilePathUtil.getRealFilePath(FilePath + FileName);
             bytesTotxt(InstructionArray.get(i), realPath);
+
+
+            //数据库传出
+            ArrayList<Document> InstructionInfojsonArry = new ArrayList<>();
+            if (MissionInstructionCode.get(i).size()>0) {
+                for (int j = 0; j < MissionInstructionCode.get(i).size(); j++) {
+                    Document InstructionInfojsonObject = new Document();
+                    InstructionInfojsonObject.append("sequence_code",MissionInstructionCode.get(i).get(j));
+                    InstructionInfojsonObject.append("sequence_id", MissionInstructionId.get(i).get(j));
+                    InstructionInfojsonObject.append("execution_time", MissionInstructionTime.get(i).get(j));
+                    InstructionInfojsonObject.append("valid",true);
+                    InstructionInfojsonArry.add(InstructionInfojsonObject);
+                }
+            }else {
+                Document InstructionInfojsonObject = new Document();
+                InstructionInfojsonObject.append("sequence_code","");
+                InstructionInfojsonObject.append("sequence_id", "");
+                InstructionInfojsonObject.append("execution_time","");
+                InstructionInfojsonObject.append("valid","");
+                InstructionInfojsonArry.add(InstructionInfojsonObject);
+            }
+            ImageMissionjson.get(i).append("instruction_info", InstructionInfojsonArry);
+            Document modifiers = new Document();
+            modifiers.append("$set", ImageMissionjson.get(i));
+            MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
+            image_mission.updateOne(new Document("mission_number", ImageMissionjson.get(i).get("mission_number").toString()), modifiers, new UpdateOptions().upsert(true));
         }
     }
 
@@ -337,6 +603,48 @@ public class InstructionGeneration {
     //char字符数据类型转化为byte字节数据类型
     private static byte charToByte(char c) {
         return (byte) "0123456789ABCDEF".indexOf(c);
+    }
+
+    //double型数据转化为byte数组，长度为4个字节
+    private static byte[] double2Bytes(double d) {
+        float dd = (float) d;
+        int value = Float.floatToRawIntBits(dd);
+        byte[] byteRet = new byte[4];
+        for (int i = 0; i < 4; i++) {
+            byteRet[i] = (byte) ((value >> 8 * i) & 0xFF);
+        }
+        return byteRet;
+    }
+
+    //byte数组转化为double型数据，长度为四个字节
+    private static double bytes2Double(byte[] arr) {
+        int value = 0;
+        for (int i = 0; i < 4; i++) {
+            value |= ((int) (arr[i] & 0xFF)) << (8 * i);
+        }
+        return (double) (Float.intBitsToFloat(value));
+    }
+
+    //时间转化为开始时间字符串
+    private static String time2String(Date time_point){
+        //时间转换为doubule型
+        String StringTime;
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(time_point);
+        cal.add(Calendar.HOUR_OF_DAY, -8);
+        StringTime = sdf.format(cal.getTime());
+        double[] TimeStarTime = new double[6];
+        TimeStarTime[0] = Double.parseDouble(StringTime.substring(0, 4));
+        TimeStarTime[1] = Double.parseDouble(StringTime.substring(5, 7));
+        TimeStarTime[2] = Double.parseDouble(StringTime.substring(8, 10));
+        TimeStarTime[3] = Double.parseDouble(StringTime.substring(11, 13));
+        TimeStarTime[4] = Double.parseDouble(StringTime.substring(14, 16));
+        TimeStarTime[5] = Double.parseDouble(StringTime.substring(17, 19));
+        int TimeMiddle = new Double((JD(TimeStarTime) - JD(ZeroTime)) * 24 * 60 * 60).intValue();
+        String KaiShiShiJian = Integer.toHexString(TimeMiddle);
+
+        return KaiShiShiJian;
     }
 
     //读取csv文件

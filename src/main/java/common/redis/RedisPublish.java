@@ -27,7 +27,7 @@ public class RedisPublish {
     public static void newRTOrbitGorecastTask() {
         Jedis jedis = RedisConnector.getJedis();
         jedis.publish(Topic.CMD_RECV, "{\"Head\":{\"id\":\"MAG@1569553316613\",\"time\":1569553316613,\"type\":\"CHECK_QUERY\",\"from\":\"MAG\",\"to\":\"TSS\"},\"Data\":{\"imageorder\":\"20190927105710220\",\"stationmission\":\"20190924120243292,20190924140138824\"}}");
-                //jedis.publish(Topic.CMD_RECV, RedisDataEntity.GenNewTask());
+        //jedis.publish(Topic.CMD_RECV, RedisDataEntity.GenNewTask());
         jedis.close();
     }
 
@@ -40,6 +40,14 @@ public class RedisPublish {
     public static void checkResult(String id, Map<Integer, Map<String, Boolean>> trueorfasle) {
         Jedis jedis = RedisConnector.getJedis();
         String ret = RedisDataEntity.GenCheckResult(id, trueorfasle);
+        System.out.println(ret);
+        jedis.publish(Topic.CMD_RET, ret);
+        jedis.close();
+    }
+
+    public static void CommonReturn(String id, Boolean isOK, String details, MsgType msgType) {
+        Jedis jedis = RedisConnector.getJedis();
+        String ret = RedisDataEntity.GenCommonRet(id, isOK, details, msgType);
         System.out.println(ret);
         jedis.publish(Topic.CMD_RET, ret);
         jedis.close();

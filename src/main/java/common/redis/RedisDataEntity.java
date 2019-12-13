@@ -75,12 +75,6 @@ public class RedisDataEntity {
         JsonObject data = new JsonObject();
 
         JsonArray jsonArray = new JsonArray();
-//        for (String mission_number : trueorfalse.keySet()) {
-//            JsonObject jsonObject = new JsonObject();
-//            jsonObject.addProperty("order_number", mission_number);
-//            jsonObject.addProperty("return", trueorfalse.get(mission_number).toString());
-//            jsonArray.add(jsonObject);
-//        }
 
         if (trueorfalse.size() == 2) {
             for (String mission_number : trueorfalse.get(0).keySet()) {
@@ -109,6 +103,18 @@ public class RedisDataEntity {
             jsonArray.add(jsonObject);
         }
         data.addProperty("content", jsonArray.toString());
+        ret.add("Head", head);
+        ret.add("Data", data);
+        return ret.toString();
+    }
+
+    public static String GenCommonRet(String id, Boolean isOK, String details, MsgType msgType) {
+        JsonObject ret = new JsonObject();
+        JsonObject head = GenHead(msgType, "TSS", "MAG", id);
+        JsonObject data = new JsonObject();
+
+        data.addProperty("result", isOK.toString());
+        data.addProperty("details",details);
         ret.add("Head", head);
         ret.add("Data", data);
         return ret.toString();

@@ -46,13 +46,14 @@ public class InsAndFlashMontor {
 
             if (document.getString("key").equals("storage_capacity")) {
                 storage_capacity = Long.parseLong(document.getString("value")) * 2014 * 1024L;
-            } else if (document.getString("key").equals("a")) {
-                v_record = Long.parseLong(document.getString("v_record"));
-            } else if (document.getString("key").equals("e")) {
-                v_playback = Long.parseLong(document.getString("v_playback"));
+            } else if (document.getString("key").equals("v_record")) {
+                v_record = Long.parseLong(document.getString("value"));
+            } else if (document.getString("key").equals("v_playback")) {
+                v_playback = Long.parseLong(document.getString("value"));
             } else {
             }
         }
+        mongoClient.close();
     }
 
     public void startup() throws IOException, InterruptedException {
@@ -157,6 +158,7 @@ public class InsAndFlashMontor {
             insertD.append("sequences", data);
 
             pool_instruction.insertOne(insertD);
+            mongoClient.close();
         }
 
         private void insertInsData(ArrayList<Document> pool_inss, Map<Date, Document> insPool) {
