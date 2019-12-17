@@ -64,7 +64,6 @@ public class taskInitTest {
 
         dtplanType.setPlan(planType);
 
-
         System.out.println(dtplanType.toString());
     }
 }

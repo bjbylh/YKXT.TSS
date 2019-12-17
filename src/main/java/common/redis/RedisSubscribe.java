@@ -2,7 +2,7 @@ package common.redis;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPubSub;
-import common.redis.subscribe.NewTaskSubscriber;
+import common.redis.subscribe.RedisTaskSubscriber;
 
 /**
  * Created by lihan on 2018/11/15.
@@ -35,7 +35,7 @@ public class RedisSubscribe extends Thread {
     }
 
     public static void main(String[] args) {
-        NewTaskSubscriber subscriber = new NewTaskSubscriber();
+        RedisTaskSubscriber subscriber = new RedisTaskSubscriber();
         RedisSubscribe redisSubscribe = new RedisSubscribe(subscriber, MsgType.NEW_TASK.name());
         redisSubscribe.run();
     }

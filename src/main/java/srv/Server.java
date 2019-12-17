@@ -2,7 +2,7 @@ package srv;
 
 import common.def.Topic;
 import common.redis.TaskBuilderService;
-import common.redis.subscribe.NewTaskSubscriber;
+import common.redis.subscribe.RedisTaskSubscriber;
 import srv.task.TaskMonitor;
 
 import java.io.IOException;
@@ -16,7 +16,7 @@ public class Server {
         TaskMonitor.getInstance().startup();
 
         //启动新任务监听线程
-        NewTaskSubscriber newTaskSubscriber = new NewTaskSubscriber();
+        RedisTaskSubscriber newTaskSubscriber = new RedisTaskSubscriber();
         TaskBuilderService newTaskBuilderService = new TaskBuilderService(newTaskSubscriber, Topic.CMD_RECV);
         newTaskBuilderService.startup();
 

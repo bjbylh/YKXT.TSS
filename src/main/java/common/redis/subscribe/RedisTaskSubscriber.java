@@ -33,12 +33,12 @@ import java.util.Map;
 /**
  * Created by lihan on 2018/11/15.
  */
-public class NewTaskSubscriber extends JedisPubSub {
+public class RedisTaskSubscriber extends JedisPubSub {
     private Date startTime = Date.from(Instant.now().plusSeconds(24 * 60 * 60 * 10000));
     private Date endTime = Date.from(Instant.now().minusSeconds(24 * 60 * 60 * 10000));
     private Instant BASE_TIME = ZonedDateTime.of(1949, 12, 31, 0, 0, 0, 0, ZoneOffset.ofHours(8)).toInstant();
 
-    public NewTaskSubscriber() {
+    public RedisTaskSubscriber() {
     }
 
     @Override
@@ -191,7 +191,7 @@ public class NewTaskSubscriber extends JedisPubSub {
         JsonObject json = new JsonObject();
         json.addProperty("content", xmlString);
         String id = "0";
-        NewTaskSubscriber n = new NewTaskSubscriber();
+        RedisTaskSubscriber n = new RedisTaskSubscriber();
         n.procOrbitDataImport(json, id);
     }
 
