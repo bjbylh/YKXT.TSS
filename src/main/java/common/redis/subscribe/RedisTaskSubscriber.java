@@ -68,7 +68,11 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
             } else if (asString.equals(MsgType.INS_CLEAR.name())) {
 
+                procInsClear(json, id);
+
             } else if (asString.equals(MsgType.INS_GEN.name())) {
+
+                procInsGen(json, id);
 
             } else if (asString.equals(MsgType.TRANSMISSION_EXPORT.name())) {
 
@@ -93,13 +97,22 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
     }
 
-    private void procTransmissionExport(JsonObject json, String id){
+    private void procInsClear(JsonObject json, String id) {
+        RedisPublish.CommonReturn(id, true, "", MsgType.INS_CLEAR_FINISHED);
+    }
+
+    private void procInsGen(JsonObject json, String id) {
+        RedisPublish.CommonReturn(id, true, "", MsgType.INS_GEN_FINISHED);
+    }
+
+
+    private void procTransmissionExport(JsonObject json, String id) {
         try {
             String ids = json.get("content").getAsString();
             String[] transmission_numbers_array = ids.split(",");
 
             ArrayList<String> transmission_numbers = new ArrayList<>();
-            for(String s : transmission_numbers_array){
+            for (String s : transmission_numbers_array) {
                 transmission_numbers.add(s);
             }
 
@@ -110,14 +123,16 @@ public class RedisTaskSubscriber extends JedisPubSub {
             //卫星资源表
             FindIterable<Document> transmission_missions = mongoDatabase.getCollection("transmission_mission").find();
 
-            for(Document transmission_mission : transmission_missions){
-                if(transmission_numbers.contains(transmission_mission.getString("mission_number"))){
+            for (Document transmission_mission : transmission_missions) {
+                if (transmission_numbers.contains(transmission_mission.getString("mission_number"))) {
 
                 }
             }
             //todo
 
             mongoClient.close();
+            RedisPublish.CommonReturn(id, true, "", MsgType.ORBIT_DATA_IMPORT_FINISHED);
+
 
         } catch (Exception e) {
             String message = e.getMessage();
@@ -149,22 +164,25 @@ public class RedisTaskSubscriber extends JedisPubSub {
                         d.append("value", Date.from(fileTime));
                     } else if (d.getString("key").equals("a")) {
                         d.append("value", String.valueOf(Double.parseDouble(parser.get("A")) / 1000.0));
-                    }else if (d.getString("key").equals("e")) {
+                    } else if (d.getString("key").equals("e")) {
                         d.append("value", parser.get("E"));
-                    }else if (d.getString("key").equals("i")) {
+                    } else if (d.getString("key").equals("i")) {
                         d.append("value", parser.get("I"));
-                    }else if (d.getString("key").equals("RAAN")) {
+                    } else if (d.getString("key").equals("RAAN")) {
                         d.append("value", parser.get("O"));
-                    }else if (d.getString("key").equals("perigee_angle")) {
+                    } else if (d.getString("key").equals("perigee_angle")) {
                         d.append("value", parser.get("W"));
-                    }else if (d.getString("key").equals("mean_anomaly")) {
+                    } else if (d.getString("key").equals("mean_anomaly")) {
                         d.append("value", parser.get("M"));
-                    }else continue;
+                    } else continue;
                 }
             }
             Data_Satllitejson.updateOne(Filters.eq("_id", Satllitejson.getObjectId("_id")), new Document("$set", newSateInfo));
 
             mongoClient.close();
+
+            RedisPublish.CommonReturn(id, true, "", MsgType.ORBIT_DATA_IMPORT_FINISHED);
+
 
         } catch (Exception e) {
             String message = e.getMessage();
