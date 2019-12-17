@@ -94,12 +94,12 @@ public class InsAndFlashMontor {
                     if (instruction_info.size() > 0) {
                         pool_inss_image.add(document);
 
-                        if (document.getString("work_mode").contains("记录") || document.getString("work_mode").contains("擦除")) {
-                            pool_files_image.add(document);
-                        }
-                    }
-                }
+            if (document.getString("work_mode").contains("记录") || document.getString("work_mode").contains("擦除")) {
+                pool_files_image.add(document);
             }
+        }
+    }
+}
 
             MongoCollection<Document> transmission_mission = mongoDatabase.getCollection("transmission_mission");
             FindIterable<Document> transmission_missions = transmission_mission.find();
@@ -363,85 +363,6 @@ public class InsAndFlashMontor {
                 stepRcd.add(doc);
             }
 
-//            for (Document d : pool_files_image) {
-//                try {
-//                    int file_no = Integer.parseInt(d.getString("record_file_no"));
-//
-//                    Date execution_time = getExecTime(d);
-//
-//                    if (execution_time == null)
-//                        continue;
-//
-//                    if (execution_time.before(zeroTime) || execution_time.after(stopTime))
-//                        continue;
-//
-//                    ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
-//
-//                    Document window = image_windows.get(0);
-//
-//                    if (fileStatus.containsKey(file_no)) {
-//                        fileStatus.remove(file_no);
-//                        fileRecordTime.remove(file_no);
-//                        fileWindows.remove(file_no);
-//                    }
-//
-//                    fileStatus.put(file_no, new Pair<>(false, false));
-//                    fileRecordTime.put(file_no, execution_time);
-//                    fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
-//
-//
-//                } catch (Exception e) {
-//                }
-//            }
-
-
-//            for (Document d : pool_files_trans) {
-//                try {
-//
-//                    Date execution_time = getExecTime(d);
-//
-//                    if (execution_time == null)
-//                        continue;
-//
-//                    if (execution_time.before(zeroTime))
-//                        continue;
-//
-//                    ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
-//
-//                    Document window = image_windows.get(0);
-//
-//                    if (d.getString("mode").contains("sequential")) {
-//                        Date start_time = window.getDate("start_time");
-//                        Date end_time = window.getDate("end_time");
-//
-//                        totalSize += calcPBSize(start_time, end_time);
-//
-//                    } else if (d.getString("mode").contains("file")) {
-//                        boolean repeat = false;
-//                        int file_no = Integer.parseInt(d.getString("record_file_no"));
-//                        if (fileStatus.containsKey(file_no)) {
-//                            fileStatus.remove(file_no);
-//                            fileRecordTime.remove(file_no);
-//                            //fileWindows.remove(file_no);
-//                            repeat = true;
-//                        }
-//
-//                        fileStatus.put(file_no, new Pair<>(false, true));
-//                        fileRecordTime.put(file_no, execution_time);
-//                        //fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
-//
-//                        if (!repeat) {
-//                            Date start_time = window.getDate("start_time");
-//                            Date end_time = window.getDate("end_time");
-//
-//                            totalSize += calcPBSize(start_time, end_time);
-//                        }
-//                    } else {
-//                    }
-//                } catch (Exception e) {
-//                }
-
-//            }
             Document save = new Document();
 
             MongoClient mongoClient = MangoDBConnector.getClient();
