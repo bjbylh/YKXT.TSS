@@ -3,6 +3,7 @@ package srv;
 import common.def.Topic;
 import common.redis.TaskBuilderService;
 import common.redis.subscribe.RedisTaskSubscriber;
+import srv.task.InsAndFlashMontor;
 import srv.task.TaskMonitor;
 
 import java.io.IOException;
@@ -29,6 +30,6 @@ public class Server {
         //HeartBeatService.getInstance().startup();
 
         //指令状态及内存占用计算线程
-        //InsAndFlashMontor.getInstance().startup();
+        InsAndFlashMontor.getInstance().startup();
     }
 }

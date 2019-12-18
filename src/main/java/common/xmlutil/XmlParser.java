@@ -12,7 +12,7 @@ import java.util.Iterator;
 /**
  * Created by lihan on 2019/12/12.
  */
-public class xmlParser {
+public class XmlParser {
     public static HashMap<String, String> parser(String xmlString) {
 
         HashMap<String, String> ret = new HashMap<>();
@@ -67,22 +67,22 @@ public class xmlParser {
 
 
     public static void main(String[] args) throws DocumentException {
-        String xmlString = "<?xml version='1.0' encoding=\"gb2312\" ?>\n" +
+        String xmlString = "\uFEFF<?xml version='1.0' encoding=\"gb2312\" ?>\n" +
                 "<ORBIT>\n" +
-                "  <J2000>\n" +
-                "    <OSCU>\n" +
-                "      <JD>25540</JD>\n" +
-                "      <JS>32400.000000</JS>\n" +
-                "      <A>7139979.794400</A>\n" +
-                "      <E>0.0005256608</E>\n" +
-                "      <I>98.6705509000</I>\n" +
-                "      <O>45.7002402000</O>\n" +
-                "      <W>265.5190993000</W>\n" +
-                "      <M>182.8945976000</M>\n" +
-                "    </OSCU>\n" +
-                "  </J2000>\n" +
-                "</ORBIT>";
-        HashMap<String, String> parser = xmlParser.parser(xmlString);
+                "    <J2000>\n" +
+                "        <OSCU>\n" +
+                "            <JD>25540</JD>\n" +
+                "            <JS>32400.000000</JS>\n" +
+                "            <A>7139979.794400</A>\n" +
+                "            <E>0.0005256608</E>\n" +
+                "            <I>98.6705509000</I>\n" +
+                "            <O>45.7002402000</O>\n" +
+                "            <W>265.5190993000</W>\n" +
+                "            <M>182.8945976000</M>\n" +
+                "        </OSCU>\n" +
+                "    </J2000>\n" +
+                "</ORBIT>".substring(1);
+        HashMap<String, String> parser = XmlParser.parser(xmlString);
         System.out.println();
     }
 }

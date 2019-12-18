@@ -1,5 +1,6 @@
 package common.redis.subscribe;
 
+import com.cast.wss.client.*;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mongodb.MongoClient;
@@ -7,20 +8,24 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
+import common.ConfigManager;
 import common.def.TaskType;
 import common.def.TempletType;
 import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import common.redis.MsgType;
 import common.redis.RedisPublish;
-import common.xmlutil.xmlParser;
+import common.xmlutil.XmlParser;
 import core.taskplan.VisibilityCalculation;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import redis.clients.jedis.JedisPubSub;
 import srv.task.TaskInit;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -70,6 +75,10 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
                 procInsClear(json, id);
 
+            } else if (asString.equals(MsgType.FILE_CLEAR.name())) {
+
+                procFileClear(json, id);
+
             } else if (asString.equals(MsgType.INS_GEN.name())) {
 
                 procInsGen(json, id);
@@ -101,6 +110,10 @@ public class RedisTaskSubscriber extends JedisPubSub {
         RedisPublish.CommonReturn(id, true, "", MsgType.INS_CLEAR_FINISHED);
     }
 
+    private void procFileClear(JsonObject json, String id) {
+        RedisPublish.CommonReturn(id, true, "", MsgType.FILE_CLEAR_FINISHED);
+    }
+
     private void procInsGen(JsonObject json, String id) {
         RedisPublish.CommonReturn(id, true, "", MsgType.INS_GEN_FINISHED);
     }
@@ -120,18 +133,54 @@ public class RedisTaskSubscriber extends JedisPubSub {
             //获取名为"temp"的数据库
             MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
+            MongoCollection<Document> sate_res = mongoDatabase.getCollection("satellite_resource");
+
+            String sat_code = sate_res.find().first().getString("sat_code");
+
+
             //卫星资源表
             FindIterable<Document> transmission_missions = mongoDatabase.getCollection("transmission_mission").find();
 
-            for (Document transmission_mission : transmission_missions) {
-                if (transmission_numbers.contains(transmission_mission.getString("mission_number"))) {
+            ObjectFactory objectFactory = new ObjectFactory();
 
+            DtplanType dtplanType = objectFactory.createDtplanType();
+
+            HeadType headType = objectFactory.createHeadType();
+            headType.setCreationTime(Instant.now().toString());
+
+            dtplanType.setHead(headType);
+
+            PlanType planType = objectFactory.createPlanType();
+            for (Document transmission_mission : transmission_missions) {
+                if (transmission_numbers.contains(transmission_mission.getString("transmission_number"))) {
+
+                    if (transmission_mission.containsKey("transmission_window")) {
+                        ArrayList<Document> transmission_window = (ArrayList<Document>) transmission_mission.get("transmission_window");
+
+                        for (Document window : transmission_window) {
+                            MissionType missionType = objectFactory.createMissionType();
+                            missionType.setTplanID(transmission_mission.getString("transmission_number"));
+                            missionType.setStationID(window.getString("station_name"));
+                            missionType.setStartTime(Instant.ofEpochMilli(window.getDate("start_time").getTime()).toString());
+                            missionType.setEndTime(Instant.ofEpochMilli(window.getDate("end_time").getTime()).toString());
+                            missionType.setSatelliteID(sat_code);
+                            planType.setMission(missionType);
+                        }
+                    }
                 }
             }
-            //todo
+            dtplanType.setPlan(planType);
+
+            String filename = "Plan_" + Instant.now().toEpochMilli() + ".xml";
+            String f = ConfigManager.getInstance().fetchXmlFilePath() + filename;
+
+            File file = new File(f);
+            Writer w = new FileWriter(file);
+            w.write(dtplanType.toString());
+            w.close();
 
             mongoClient.close();
-            RedisPublish.CommonReturn(id, true, "", MsgType.ORBIT_DATA_IMPORT_FINISHED);
+            RedisPublish.CommonReturn(id, true, f, MsgType.TRANSMISSION_EXPORT_FINISHED);
 
 
         } catch (Exception e) {
@@ -143,7 +192,14 @@ public class RedisTaskSubscriber extends JedisPubSub {
     private void procOrbitDataImport(JsonObject json, String id) {
         try {
             String xmlString = json.get("content").getAsString();
-            HashMap<String, String> parser = xmlParser.parser(xmlString);
+            xmlString = xmlString.replace("\r", "").replace("\n", "");
+            HashMap<String, String> parser = XmlParser.parser(xmlString);
+
+            if (parser.containsKey("ERROR")) {
+                String message = parser.get("ERROR");
+                RedisPublish.CommonReturn(id, false, message, MsgType.ORBIT_DATA_IMPORT_FINISHED);
+                return;
+            }
 
             MongoClient mongoClient = MangoDBConnector.getClient();
             //获取名为"temp"的数据库
@@ -177,7 +233,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
                     } else continue;
                 }
             }
-            Data_Satllitejson.updateOne(Filters.eq("_id", Satllitejson.getObjectId("_id")), new Document("$set", newSateInfo));
+            //Data_Satllitejson.updateOne(Filters.eq("_id", Satllitejson.getObjectId("_id")), new Document("$set", newSateInfo));
 
             mongoClient.close();
 
@@ -188,29 +244,6 @@ public class RedisTaskSubscriber extends JedisPubSub {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.ORBIT_DATA_IMPORT_FINISHED);
         }
-    }
-
-    public static void main(String[] args) {
-        String xmlString = "<?xml version='1.0' encoding=\"gb2312\" ?>\n" +
-                "<ORBIT>\n" +
-                "  <J2000>\n" +
-                "    <OSCU>\n" +
-                "      <JD>25540</JD>\n" +
-                "      <JS>32400.000000</JS>\n" +
-                "      <A>7139979.794400</A>\n" +
-                "      <E>0.0005256608</E>\n" +
-                "      <I>98.6705509000</I>\n" +
-                "      <O>45.7002402000</O>\n" +
-                "      <W>265.5190993000</W>\n" +
-                "      <M>182.8945976000</M>\n" +
-                "    </OSCU>\n" +
-                "  </J2000>\n" +
-                "</ORBIT>";
-        JsonObject json = new JsonObject();
-        json.addProperty("content", xmlString);
-        String id = "0";
-        RedisTaskSubscriber n = new RedisTaskSubscriber();
-        n.procOrbitDataImport(json, id);
     }
 
     private void procNewTask(JsonObject json, String id) {

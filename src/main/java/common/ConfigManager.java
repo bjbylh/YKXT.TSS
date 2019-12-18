@@ -42,6 +42,10 @@ public class ConfigManager {
         return bundle.getString("INS_PATH");
     }
 
+    public String fetchXmlFilePath() {
+        return bundle.getString("XML_PATH");
+    }
+
     public boolean fetchDebug() {
         if (bundle.getString("DEBUG").toLowerCase().equals("true"))
             return true;

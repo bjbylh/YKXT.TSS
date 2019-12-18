@@ -52,6 +52,7 @@ public class OrderOverall {
         ArrayList<Object> StationNumber=new ArrayList<>();
         ArrayList<Object> RecordFileNo=new ArrayList<>();
         ArrayList<Object> AutoAsignRecordFile=new ArrayList<>();
+        ArrayList<Object> MissionParams=new ArrayList<>();
 
         int OrderMissionNum = 0;
         for (Document document : ImageOrderjsonCopy) {
@@ -79,6 +80,7 @@ public class OrderOverall {
             StationNumber.add(document.get("station_number"));
             RecordFileNo.add(document.get("record_file_no"));
             AutoAsignRecordFile.add(document.get("auto_asign_record_file"));
+            MissionParams.add(document.get("mission_params"));
 
 
 
@@ -141,7 +143,8 @@ public class OrderOverall {
                         if (Instruction.get(ConventionalImagModeList.get(i)) == Instruction.get(ConventionalImagModeList.get(j)) &&
                                 StationNumber.get(ConventionalImagModeList.get(i))==StationNumber.get(ConventionalImagModeList.get(j)) &&
                                 RecordFileNo.get(ConventionalImagModeList.get(i))==RecordFileNo.get(ConventionalImagModeList.get(j)) &&
-                                AutoAsignRecordFile.get(ConventionalImagModeList.get(i))==AutoAsignRecordFile.get(ConventionalImagModeList.get(j))) {
+                                AutoAsignRecordFile.get(ConventionalImagModeList.get(i))==AutoAsignRecordFile.get(ConventionalImagModeList.get(j)) &&
+                                MissionParams.get(ConventionalImagModeList.get(i))==MissionParams.get(ConventionalImagModeList.get(j))) {
                             CombineFlag=true;
                         }else {
                             CombineFlag=false;
@@ -198,6 +201,8 @@ public class OrderOverall {
                 ImageMissionjson.append("station_number",StationNumber.get(i));
                 ImageMissionjson.append("record_file_no",RecordFileNo.get(i));
                 ImageMissionjson.append("auto_asign_record_file",AutoAsignRecordFile.get(i));
+                ImageMissionjson.append("mission_params",MissionParams.get(i));
+
 
                 ArrayList<Object> OrderNumber_List = new ArrayList<>();
                 for (int j = 0; j < OverallResultList.get(i); j++) {

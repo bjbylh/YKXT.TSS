@@ -1142,9 +1142,11 @@ public class MissionPlanning {
 
                 for (int j = 0; j < PlanningTransNumList.get(i); j++) {
                     Document TranWindowjsonObject = new Document();
-                    TranWindowjsonObject.append("station_name", StationSerialNumber[StationNumber_ForMissionOut]);
+                    //TranWindowjsonObject.append("station_name", StationSerialNumber[StationNumber_ForMissionOut]);
+                    TranWindowjsonObject.append("station_name", StationCode.get(StationNumber_ForMissionOut));
                     TranWindowjsonObject.append("start_time", Time_Point[PlanningTransTimePeriodList.get(i)[j][0]]);
                     TranWindowjsonObject.append("end_time", Time_Point[PlanningTransTimePeriodList.get(i)[j][1]]);
+                    TranWindowjsonObject.append("fail_reason", "");
                     TranWindowjsonArry.add(TranWindowjsonObject);
                 }
                 if (PlanningTransNumList.get(i) == 0) {

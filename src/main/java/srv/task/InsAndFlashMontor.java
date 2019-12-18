@@ -5,11 +5,17 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.UpdateOptions;
+import common.ConfigManager;
+import common.FilePathUtil;
 import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import javafx.util.Pair;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 
+import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -66,7 +72,7 @@ public class InsAndFlashMontor {
             while (true) {
                 try {
                     check();
-                    Thread.sleep(1000);
+                    Thread.sleep(10000);
                 } catch (IOException | InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -94,12 +100,12 @@ public class InsAndFlashMontor {
                     if (instruction_info.size() > 0) {
                         pool_inss_image.add(document);
 
-            if (document.getString("work_mode").contains("记录") || document.getString("work_mode").contains("擦除")) {
-                pool_files_image.add(document);
+                        if (document.getString("work_mode").contains("记录") || document.getString("work_mode").contains("擦除")) {
+                            pool_files_image.add(document);
+                        }
+                    }
+                }
             }
-        }
-    }
-}
 
             MongoCollection<Document> transmission_mission = mongoDatabase.getCollection("transmission_mission");
             FindIterable<Document> transmission_missions = transmission_mission.find();
@@ -130,24 +136,19 @@ public class InsAndFlashMontor {
         private void procInsPool(ArrayList<Document> pool_inss_image, ArrayList<Document> pool_inss_trans) {
             Map<Date, Document> insPool = new TreeMap<>();
 
-            insertInsData(pool_inss_image, insPool);
+            Date now = Date.from(Instant.now().minusSeconds(3600 * 24 * 365 * 10L));
 
-            insertInsData(pool_inss_trans, insPool);
+            insertInsData(pool_inss_image, insPool, now);
 
-            Date now = Date.from(Instant.now());
-
-            for (Date date : insPool.keySet()) {
-                if (date.before(now))
-                    insPool.remove(date);
-            }
+            insertInsData(pool_inss_trans, insPool, now);
 
             MongoClient mongoClient = MangoDBConnector.getClient();
             MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
             MongoCollection<Document> pool_instruction = mongoDatabase.getCollection("pool_instruction");
-            for (Document d : pool_instruction.find()) {
-                pool_instruction.deleteOne(d);
-            }
+//            for (Document d : pool_instruction.find()) {
+//                pool_instruction.deleteOne(d);
+//            }
 
             ArrayList<Document> data = new ArrayList<>();
             for (Document d : insPool.values()) {
@@ -157,11 +158,18 @@ public class InsAndFlashMontor {
             Document insertD = new Document();
             insertD.append("sequences", data);
 
-            pool_instruction.insertOne(insertD);
+            if (pool_instruction.count() <= 0)
+                pool_instruction.insertOne(insertD);
+            else {
+                Document first = pool_instruction.find().first();
+                Document modifiers = new Document();
+                modifiers.append("$set", insertD);
+                pool_instruction.updateOne(new Document("_id", first.getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
+            }
             mongoClient.close();
         }
 
-        private void insertInsData(ArrayList<Document> pool_inss, Map<Date, Document> insPool) {
+        private void insertInsData(ArrayList<Document> pool_inss, Map<Date, Document> insPool, Date now) {
             for (Document d : pool_inss) {
                 ArrayList<Document> instruction_info = (ArrayList<Document>) d.get("instruction_info");
                 for (Document ins : instruction_info) {
@@ -172,7 +180,26 @@ public class InsAndFlashMontor {
                         newIns.append("mission_number", d.getString("mission_number"));
                         Date t = newIns.getDate("execution_time");
 
-                        insPool.put(t, newIns);
+                        if (t.before(now))
+                            continue;
+
+                        if (!insPool.containsKey(t))
+                            insPool.put(t, newIns);
+                    } else {
+                        //todo 删除文件
+                        String filename = FilePathUtil.getRealFilePath(ConfigManager.getInstance().fetchInsFilePath() + newIns.getString("sequence_code"));
+
+                        File f = new File(filename);
+
+                        if (f.exists() && f.isFile()) {
+                            if (!f.getName().contains(".deprecated")) {
+                                try {
+                                    f.renameTo(new File(filename + ".deprecated"));
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -369,14 +396,27 @@ public class InsAndFlashMontor {
             MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
             MongoCollection<Document> pool_files = mongoDatabase.getCollection("pool_files");
+            Bson queryBson;
+
             if (isRT) {
                 save.append("type", "REALTIME");
+                queryBson = Filters.eq("type","REALTIME");
             } else {
                 save.append("type", "FORECAST");
+                queryBson = Filters.eq("type","FORECAST");
             }
 
             save.append("data", stepRcd);
-            pool_files.insertOne(save);
+
+            if (pool_files.count(queryBson) <= 0)
+                pool_files.insertOne(save);
+            else {
+                Document first = pool_files.find(queryBson).first();
+                Document modifiers = new Document();
+                modifiers.append("$set", save);
+                pool_files.updateOne(new Document("_id", first.getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
+            }
+
             mongoClient.close();
         }
 

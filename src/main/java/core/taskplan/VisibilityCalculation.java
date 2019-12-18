@@ -815,7 +815,7 @@ public class VisibilityCalculation {
                     StationWindowjsonObject.append("amount_window", StationVisibilityTimePeriodNumList.get(i));
                     StationWindowjsonObject.append("window_number", j + 1);
                     StationWindowjsonObject.append("window_start_time", OrbitTimeDateList.get(StationVisibilityTimePeriodList.get(i).get(j)[0]));
-                    StationWindowjsonObject.append("window_end_time", StationVisibilityTimePeriodList.get(i).get(j)[1]);
+                    StationWindowjsonObject.append("window_end_time", OrbitTimeDateList.get(StationVisibilityTimePeriodList.get(i).get(j)[1]));
                     ArrayList<String> StationMissionNumberArray = new ArrayList<>();
                     for (int k = 0; k < StationMissionNum; k++) {
                         StationMissionNumberArray.add(k, StationMissionSerialNumberList.get(k));
