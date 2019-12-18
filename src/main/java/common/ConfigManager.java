@@ -35,7 +35,7 @@ public class ConfigManager {
     }
 
     public String fetchJsonPath() {
-        return bundle.getString("PATH");
+        return bundle.getString("TASK_PATH");
     }
 
     public String fetchInsFilePath() {
