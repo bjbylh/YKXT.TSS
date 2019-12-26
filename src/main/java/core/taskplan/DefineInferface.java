@@ -4,6 +4,7 @@ package core.taskplan;
 import com.mongodb.client.FindIterable;
 import org.bson.Document;
 
+import java.time.Instant;
 import java.util.HashSet;
 
 /**
@@ -26,19 +27,21 @@ public interface DefineInferface {
     /**
      * 固存擦除指令生成接口
      *
-     * @param isClearAll 是否清空所有文件
-     * @param filenos    isClearAll 为true时，该字段被忽略，为false时，表示要清空的文件编号（0-63）
-     * @param FilePath   指令生成路径
-     * @return 指令文件存储路径（全路径）
-     */
-    String FileClearInsGenInf(Boolean isClearAll, HashSet<Integer> filenos, String FilePath);
-
-    /**
-     * 星上指令清空接口
-     *
-     * @param insno    待清空的指令序号
+     * @param Mission  任务数据
      * @param FilePath 指令生成路径
      * @return 指令文件存储路径（全路径）
      */
-    String InsClearInsGenInf(HashSet<Integer> insno, String FilePath);
+    String FileClearInsGenInf(Document Mission, String FilePath);
+
+    /**
+     * @param type       0区间左、1区间右，2区间中间，3全部删除
+     * @param start
+     * @param end
+     * @param insno
+     * @param FilePath
+     * @param isTimeSpan 0:id,1:时间段
+     * @param exetime 指令执行时间
+     * @return
+     */
+    String InsClearInsGenInf(int isTimeSpan, int type, Instant exetime, Instant start, Instant end, HashSet<Integer> insno, String FilePath);
 }

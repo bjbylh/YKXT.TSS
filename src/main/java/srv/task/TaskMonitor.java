@@ -51,7 +51,7 @@ public class TaskMonitor {
             while (true) {
                 try {
                     check();
-                    Thread.sleep(1000 * 60);
+                    Thread.sleep(1000 * 30);
                 } catch (IOException | InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -71,7 +71,7 @@ public class TaskMonitor {
             query.put("status", new BasicDBObject("$in", saleChannel));
 
 
-            FindIterable<Document> main_task = tasks.find();
+            FindIterable<Document> main_task = tasks.find(query);
 
 //            for(Document d : main_task){
 //                System.out.println(d.toString());
@@ -100,7 +100,6 @@ public class TaskMonitor {
                         } else {
                             tasks.updateOne(Filters.eq("_id", document.get("_id")), new Document("$set", new Document("status", MainTaskStatus.ERROR.name())));
                         }
-
 
                     } else if (document.getString("type").equals(TaskType.CRONTAB.name())) {
                         System.out.println("Found a new CRONTAB TASK, Task Info:" + document.toString());

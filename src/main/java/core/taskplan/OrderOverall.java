@@ -54,6 +54,9 @@ public class OrderOverall {
         ArrayList<Object> AutoAsignRecordFile=new ArrayList<>();
         ArrayList<Object> MissionParams=new ArrayList<>();
 
+        ArrayList<Object> ScanHeightOrbit=new ArrayList<>();
+        ArrayList<Object> RollBias=new ArrayList<>();
+
         int OrderMissionNum = 0;
         for (Document document : ImageOrderjsonCopy) {
             ImageRegion.add(document.get("image_region"));
@@ -82,7 +85,8 @@ public class OrderOverall {
             AutoAsignRecordFile.add(document.get("auto_asign_record_file"));
             MissionParams.add(document.get("mission_params"));
 
-
+            ScanHeightOrbit.add(document.get("scan_height_orbit"));
+            RollBias.add(document.get("scan_roll_bias"));
 
             OrderMissionNum = OrderMissionNum + 1;
         }
@@ -203,6 +207,9 @@ public class OrderOverall {
                 ImageMissionjson.append("auto_asign_record_file",AutoAsignRecordFile.get(i));
                 ImageMissionjson.append("mission_params",MissionParams.get(i));
 
+                ImageMissionjson.append("scan_height_orbit",ScanHeightOrbit.get(i));
+                ImageMissionjson.append("scan_roll_bias",RollBias.get(i));
+
 
                 ArrayList<Object> OrderNumber_List = new ArrayList<>();
                 for (int j = 0; j < OverallResultList.get(i); j++) {
@@ -223,7 +230,6 @@ public class OrderOverall {
                 missions.add(mission_number);
             }
         }
-        mongoClient.close();
 
         return missions;
     }

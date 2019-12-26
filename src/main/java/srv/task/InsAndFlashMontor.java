@@ -35,13 +35,17 @@ public class InsAndFlashMontor {
 
     public long v_playback = 0L;
 
+    private MongoClient mongoClient = null;
+
+    private MongoDatabase mongoDatabase = null;
+
     public static InsAndFlashMontor getInstance() {
         return ourInstance;
     }
 
     private InsAndFlashMontor() {
-        MongoClient mongoClient = MangoDBConnector.getClient();
-        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+        mongoClient = MangoDBConnector.getClient();
+        mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
         MongoCollection<Document> sate_res = mongoDatabase.getCollection("satellite_resource");
 
@@ -51,7 +55,7 @@ public class InsAndFlashMontor {
         for (Document document : properties) {
 
             if (document.getString("key").equals("storage_capacity")) {
-                storage_capacity = Long.parseLong(document.getString("value")) * 2014 * 1024L;
+                storage_capacity = Long.parseLong(document.getString("value")) * 1024 * 1024L;
             } else if (document.getString("key").equals("v_record")) {
                 v_record = Long.parseLong(document.getString("value"));
             } else if (document.getString("key").equals("v_playback")) {
@@ -59,7 +63,7 @@ public class InsAndFlashMontor {
             } else {
             }
         }
-        mongoClient.close();
+//        mongoClient.close();
     }
 
     public void startup() throws IOException, InterruptedException {
@@ -72,16 +76,18 @@ public class InsAndFlashMontor {
             while (true) {
                 try {
                     check();
-                    Thread.sleep(10000);
-                } catch (IOException | InterruptedException e) {
+                    Thread.sleep(5000);
+                } catch (Exception e) {
+                    if (mongoClient == null) {
+                        mongoClient = MangoDBConnector.getClient();
+                        mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+                    }
                     e.printStackTrace();
                 }
             }
         }
 
         private void check() throws IOException {
-            MongoClient mongoClient = MangoDBConnector.getClient();
-            MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
             ArrayList<Document> pool_inss_image = new ArrayList<>();
             ArrayList<Document> pool_files_image = new ArrayList<>();
@@ -97,7 +103,7 @@ public class InsAndFlashMontor {
                     if (!document.containsKey("instruction_info"))
                         continue;
                     ArrayList<Document> instruction_info = (ArrayList<Document>) document.get("instruction_info");
-                    if (instruction_info.size() > 0) {
+                    if (instruction_info != null && instruction_info.size() > 0) {
                         pool_inss_image.add(document);
 
                         if (document.getString("work_mode").contains("记录") || document.getString("work_mode").contains("擦除")) {
@@ -111,11 +117,11 @@ public class InsAndFlashMontor {
             FindIterable<Document> transmission_missions = transmission_mission.find();
 
             for (Document document : transmission_missions) {
-                if (!document.containsKey("document") || document.getString("fail_reason").equals("")) {
-                    if (!document.containsKey("instruction_info"))
+                if (!document.containsKey("fail_reason") || document.getString("fail_reason").equals("")) {
+                    if (!document.containsKey("instruction_info") || !document.getString("fail_reason").equals(""))
                         continue;
                     ArrayList<Document> instruction_info = (ArrayList<Document>) document.get("instruction_info");
-                    if (instruction_info.size() > 0) {
+                    if (instruction_info != null && instruction_info.size() > 0) {
                         pool_inss_trans.add(document);
                         pool_files_trans.add(document);
                     }
@@ -130,20 +136,17 @@ public class InsAndFlashMontor {
                 procFilePool(pool_files_image, pool_files_trans, false);
             }
 
-            mongoClient.close();
+//            mongoClient.close();
         }
 
         private void procInsPool(ArrayList<Document> pool_inss_image, ArrayList<Document> pool_inss_trans) {
             Map<Date, Document> insPool = new TreeMap<>();
 
-            Date now = Date.from(Instant.now().minusSeconds(3600 * 24 * 365 * 10L));
+            Date now = Date.from(Instant.now()/*.minusSeconds(3600 * 24 * 365 * 10L)*/);
 
             insertInsData(pool_inss_image, insPool, now);
 
             insertInsData(pool_inss_trans, insPool, now);
-
-            MongoClient mongoClient = MangoDBConnector.getClient();
-            MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
             MongoCollection<Document> pool_instruction = mongoDatabase.getCollection("pool_instruction");
 //            for (Document d : pool_instruction.find()) {
@@ -166,7 +169,7 @@ public class InsAndFlashMontor {
                 modifiers.append("$set", insertD);
                 pool_instruction.updateOne(new Document("_id", first.getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
             }
-            mongoClient.close();
+//            mongoClient.close();
         }
 
         private void insertInsData(ArrayList<Document> pool_inss, Map<Date, Document> insPool, Date now) {
@@ -187,16 +190,17 @@ public class InsAndFlashMontor {
                             insPool.put(t, newIns);
                     } else {
                         //todo 删除文件
-                        String filename = FilePathUtil.getRealFilePath(ConfigManager.getInstance().fetchInsFilePath() + newIns.getString("sequence_code"));
+                        String filename = FilePathUtil.getRealFilePath(ConfigManager.getInstance().fetchInsFilePath() + d.getString("mission_number"));
+                        //+ newIns.getString("sequence_code"));
 
                         File f = new File(filename);
 
-                        if (f.exists() && f.isFile()) {
-                            if (!f.getName().contains(".deprecated")) {
-                                try {
-                                    f.renameTo(new File(filename + ".deprecated"));
-                                } catch (Exception e) {
-                                    e.printStackTrace();
+                        if (f.exists() && f.isDirectory()) {
+                            File[] files = f.listFiles();
+                            for (File file : files) {
+                                if (file.getName().contains(newIns.getString("sequence_code")) && !file.getName().contains("delete")) {
+                                    String newfilename = FilePathUtil.getRealFilePath(filename + "\\" + file.getName() + ".delete");
+                                    file.renameTo(new File(newfilename));
                                 }
                             }
                         }
@@ -214,11 +218,15 @@ public class InsAndFlashMontor {
         }
 
         private void procFilePool(ArrayList<Document> pool_files_image, ArrayList<Document> pool_files_trans, boolean isRT) {
-            Date zeroTime = Date.from(Instant.now().minusSeconds(60 * 60 * 24 * 365 * 10L));//时间零点初始化为十年前
+            Instant instant = Instant.now();
 
-            Date stopTime = isRT ? Date.from(Instant.now()) : Date.from(Instant.now().plusSeconds(60 * 60 * 24 * 365 * 10L));
+            Date now = Date.from(instant);
+
+            Date zeroTime = Date.from(instant.minusSeconds(60 * 60 * 24 * 365 * 10L));//时间零点初始化为十年前
+
+            Date stopTime = isRT ? Date.from(instant) : Date.from(instant.plusSeconds(60 * 60 * 24 * 365 * 10L));
             for (Document d : pool_files_image) {
-                if (d.getString("work_mode").contains("擦除")) {
+                if (d.getString("work_mode").contains("擦除") && d.getBoolean("clear_all")) {
                     Date execution_time = getExecTime(d);
 
                     if (execution_time == null)
@@ -241,7 +249,7 @@ public class InsAndFlashMontor {
                 if (execution_time == null)
                     continue;
 
-                if (execution_time.before(zeroTime) || execution_time.after(stopTime))
+                if (execution_time.equals(zeroTime) || execution_time.before(zeroTime) || execution_time.after(stopTime))
                     continue;
 
                 int i = 1;
@@ -260,7 +268,7 @@ public class InsAndFlashMontor {
                 if (execution_time == null)
                     continue;
 
-                if (execution_time.before(zeroTime) || execution_time.after(stopTime))
+                if (execution_time.equals(zeroTime) || execution_time.before(zeroTime) || execution_time.after(stopTime))
                     continue;
 
                 if (all_pool.containsKey(execution_time))
@@ -280,46 +288,54 @@ public class InsAndFlashMontor {
 
             for (Date date : all_pool.keySet()) {
                 Document d = all_pool.get(date).getValue();
+                Date execution_time = getExecTime(d);
                 if (all_pool.get(date).getKey()) {
                     try {
-                        int file_no = Integer.parseInt(d.getString("record_file_no"));
 
-                        Date execution_time = getExecTime(d);
+                        if (d.getString("work_mode").contains("擦除")) {
+                            ArrayList<String> filenos = (ArrayList<String>) d.get("clear_filenos");
 
-                        if (execution_time == null)
-                            continue;
+                            for (String file_no : filenos) {
+                                if (fileStatus.containsKey(Integer.parseInt(file_no))) {
 
-                        if (execution_time.before(zeroTime) || execution_time.after(stopTime))
-                            continue;
+                                    boolean isReplayed = fileStatus.get(Integer.parseInt(file_no)).getValue();//判断是否被计算过
 
-                        ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
+                                    if (isReplayed) {
+                                        ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
+                                        Document window = image_windows.get(0);
+                                        Date start_time = window.getDate("start_time");
+                                        Date end_time = window.getDate("end_time");
+                                        totalSize -= calcPBSize(start_time, end_time);
+                                    }
 
-                        Document window = image_windows.get(0);
+                                    fileStatus.remove(Integer.parseInt(file_no));
+                                    fileRecordTime.remove(Integer.parseInt(file_no));
+                                    fileWindows.remove(Integer.parseInt(file_no));
+                                }
+                            }
 
-                        if (fileStatus.containsKey(file_no)) {
-                            fileStatus.remove(file_no);
-                            fileRecordTime.remove(file_no);
-                            fileWindows.remove(file_no);
+                        } else {
+                            int file_no = Integer.parseInt(d.getString("record_file_no"));
+
+                            ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
+
+                            Document window = image_windows.get(0);
+
+                            if (fileStatus.containsKey(file_no)) {
+                                fileStatus.remove(file_no);
+                                fileRecordTime.remove(file_no);
+                                fileWindows.remove(file_no);
+                            }
+
+                            fileStatus.put(file_no, new Pair<>(false, false));
+                            fileRecordTime.put(file_no, execution_time);
+                            fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
                         }
-
-                        fileStatus.put(file_no, new Pair<>(false, false));
-                        fileRecordTime.put(file_no, execution_time);
-                        fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
-
 
                     } catch (Exception e) {
                     }
                 } else {
                     try {
-
-                        Date execution_time = getExecTime(d);
-
-                        if (execution_time == null)
-                            continue;
-
-                        if (execution_time.before(zeroTime))
-                            continue;
-
                         ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
 
                         Document window = image_windows.get(0);
@@ -331,20 +347,20 @@ public class InsAndFlashMontor {
                             totalSize += calcPBSize(start_time, end_time);
 
                         } else if (d.getString("mode").contains("file")) {
-                            boolean repeat = false;
+                            boolean needCalc = false;
                             int file_no = Integer.parseInt(d.getString("record_file_no"));
                             if (fileStatus.containsKey(file_no)) {
+                                //fileWindows.remove(file_no);
+                                needCalc = !fileStatus.get(file_no).getValue();//判断是否需要计算容量
                                 fileStatus.remove(file_no);
                                 fileRecordTime.remove(file_no);
-                                //fileWindows.remove(file_no);
-                                repeat = true;
                             }
 
                             fileStatus.put(file_no, new Pair<>(false, true));
                             fileRecordTime.put(file_no, execution_time);
                             //fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
 
-                            if (!repeat) {
+                            if (needCalc) {
                                 Date start_time = window.getDate("start_time");
                                 Date end_time = window.getDate("end_time");
 
@@ -361,6 +377,7 @@ public class InsAndFlashMontor {
                 double allsize = 0.0;
 
                 Document doc = new Document();
+                doc.append("time_stamp", execution_time);
                 doc.append("pool_size", pool_size);
                 for (int i = 0; i < 64; i++) {
                     Document data = new Document();
@@ -385,25 +402,22 @@ public class InsAndFlashMontor {
                 }
                 flash_usage = allsize / storage_capacity;
                 doc.append("flash_usage", flash_usage);
-                doc.append("space_used", totalSize);
+                doc.append("replayed_size", totalSize);
 
                 stepRcd.add(doc);
             }
 
             Document save = new Document();
 
-            MongoClient mongoClient = MangoDBConnector.getClient();
-            MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
-
             MongoCollection<Document> pool_files = mongoDatabase.getCollection("pool_files");
             Bson queryBson;
 
             if (isRT) {
                 save.append("type", "REALTIME");
-                queryBson = Filters.eq("type","REALTIME");
+                queryBson = Filters.eq("type", "REALTIME");
             } else {
                 save.append("type", "FORECAST");
-                queryBson = Filters.eq("type","FORECAST");
+                queryBson = Filters.eq("type", "FORECAST");
             }
 
             save.append("data", stepRcd);
@@ -416,8 +430,6 @@ public class InsAndFlashMontor {
                 modifiers.append("$set", save);
                 pool_files.updateOne(new Document("_id", first.getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
             }
-
-            mongoClient.close();
         }
 
         private double calcPBSize(Date start_time, Date end_time) {

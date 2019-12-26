@@ -47,8 +47,7 @@ public class ConfigManager {
     }
 
     public boolean fetchDebug() {
-        if (bundle.getString("DEBUG").toLowerCase().equals("true"))
-            return true;
+        if (bundle.getString("DEBUG").toLowerCase().equals("true")) return true;
         else return false;
     }
 }

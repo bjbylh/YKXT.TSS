@@ -16,6 +16,8 @@ import common.mongo.MangoDBConnector;
 import common.redis.MsgType;
 import common.redis.RedisPublish;
 import common.xmlutil.XmlParser;
+import core.taskplan.FileClearInsGenInf;
+import core.taskplan.InsClearInsGenInf;
 import core.taskplan.VisibilityCalculation;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -27,13 +29,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.text.ParseException;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 /**
  * Created by lihan on 2018/11/15.
@@ -42,6 +40,9 @@ public class RedisTaskSubscriber extends JedisPubSub {
     private Date startTime = Date.from(Instant.now().plusSeconds(24 * 60 * 60 * 10000));
     private Date endTime = Date.from(Instant.now().minusSeconds(24 * 60 * 60 * 10000));
     private Instant BASE_TIME = ZonedDateTime.of(1949, 12, 31, 0, 0, 0, 0, ZoneOffset.ofHours(8)).toInstant();
+    private DateTimeFormatter sf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private OffsetDateTime odt = OffsetDateTime.now(ZoneId.ofOffset("UTC", ZoneOffset.UTC));
+    private ZoneOffset zoneOffset = odt.getOffset();
 
     public RedisTaskSubscriber() {
     }
@@ -107,15 +108,123 @@ public class RedisTaskSubscriber extends JedisPubSub {
     }
 
     private void procInsClear(JsonObject json, String id) {
-        RedisPublish.CommonReturn(id, true, "", MsgType.INS_CLEAR_FINISHED);
+        try {
+            String[] content = json.get("content").getAsString().split(",");
+            int isTimeSpan = json.get("type").getAsInt();
+            String exeStartTime = json.get("exe_time").getAsString();
+
+            LocalDateTime exeStartTime_r = LocalDateTime.parse(exeStartTime, sf);
+
+            Instant exeStartTime_i = exeStartTime_r.toInstant(zoneOffset);
+            int type = -1;
+            Instant start_i = Instant.now();
+            Instant end_i = Instant.now();
+            HashSet<Integer> insnos = new HashSet<>();
+            if (isTimeSpan == 1) {
+                int rawtype = Integer.parseInt(content[0]);
+
+                String start = content[1];
+                LocalDateTime start_r = LocalDateTime.parse(start, sf);
+                start_i = start_r.toInstant(zoneOffset);
+
+                String end = content[2];
+                LocalDateTime end_r = LocalDateTime.parse(end, sf);
+                end_i = end_r.toInstant(zoneOffset);
+
+
+                if (rawtype == 34)
+                    type = 0;
+                else if (rawtype == 17)
+                    type = 1;
+                else if (rawtype == 51)
+                    type = 2;
+                else if (rawtype == 68)
+                    type = 3;
+                else
+                    throw new Exception("错误的数据类型");
+            } else {
+                for (String insno : content) {
+                    insnos.add(Integer.parseInt(insno));
+                }
+            }
+
+            String rst = InsClearInsGenInf.InsClearInsGenInfII(isTimeSpan, type, exeStartTime_i, start_i, end_i, insnos, ConfigManager.getInstance().fetchInsFilePath());
+
+            RedisPublish.CommonReturn(id, true, rst, MsgType.INS_CLEAR_FINISHED);
+
+        } catch (Exception e) {
+            String message = e.getMessage();
+            RedisPublish.CommonReturn(id, false, message, MsgType.INS_CLEAR_FINISHED);
+        }
     }
 
     private void procFileClear(JsonObject json, String id) {
-        RedisPublish.CommonReturn(id, true, "", MsgType.FILE_CLEAR_FINISHED);
+        try {
+            String mission_number = json.get("content").getAsString();
+
+            MongoClient mongoClient = MangoDBConnector.getClient();
+            //获取名为"temp"的数据库
+            MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+
+            FindIterable<Document> image_missions = mongoDatabase.getCollection("image_mission").find();
+
+            for (Document d : image_missions) {
+                if (d.getString("mission_number").contains(mission_number)) {
+
+                    String rst = FileClearInsGenInf.FileClearInsGenInfII(d, ConfigManager.getInstance().fetchInsFilePath());
+                    //todo
+                    RedisPublish.CommonReturn(id, true, rst, MsgType.FILE_CLEAR_FINISHED);
+
+                    break;
+                }
+            }
+
+            mongoClient.close();
+        } catch (Exception e) {
+            String message = e.getMessage();
+            RedisPublish.CommonReturn(id, false, message, MsgType.FILE_CLEAR_FINISHED);
+        }
     }
 
     private void procInsGen(JsonObject json, String id) {
-        RedisPublish.CommonReturn(id, true, "", MsgType.INS_GEN_FINISHED);
+        try {
+            String order_number = json.get("image_order_num").getAsString();
+            String station_mission_num = json.get("station_mission_num").getAsString();
+
+            Document image_order = null;
+            Document station_mission = null;
+            MongoClient mongoClient = MangoDBConnector.getClient();
+            //获取名为"temp"的数据库
+            MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+
+            FindIterable<Document> image_order1 = mongoDatabase.getCollection("image_order").find();
+
+            for (Document d : image_order1) {
+                if (d.getString("order_number").equals(order_number)) {
+                    image_order = d;
+                    break;
+                }
+
+            }
+
+            FindIterable<Document> station_mission1 = mongoDatabase.getCollection("station_mission").find();
+
+            for (Document d : station_mission1) {
+                if (d.getString("mission_number").equals(station_mission_num)) {
+                    station_mission = d;
+                    break;
+                }
+
+            }
+
+            mongoClient.close();
+            RedisPublish.CommonReturn(id, true, "", MsgType.INS_GEN_FINISHED);
+
+
+        } catch (Exception e) {
+            String message = e.getMessage();
+            RedisPublish.CommonReturn(id, false, message, MsgType.INS_GEN_FINISHED);
+        }
     }
 
 

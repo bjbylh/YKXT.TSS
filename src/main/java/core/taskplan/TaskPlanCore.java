@@ -299,7 +299,7 @@ public class TaskPlanCore {
 
             updateSubStatus(subid, SubTaskStatus.SUSPEND);
             RedisPublish.dbRefresh(id);
-            return checkIfStopped(id, 0);
+            return checkIfStopped(id, 1);
         }
 
         private boolean MOD_MISSION_PLANNING(String subid) {
@@ -338,11 +338,32 @@ public class TaskPlanCore {
                 }
             }
 
-            MissionPlanning.MissionPlanningII(this.Satllitejson, this.GroundStationjson, this.D_orbitjson, this.count, Missionjson, Transmissionjson, station_missions);
+            Document poolFiles = null;
+
+            MongoCollection<Document> pool_files = mongoDatabase.getCollection("pool_files");
+
+            Bson queryBson = null;
+
+            if (taskType == TaskType.REALTIME) {
+                queryBson = Filters.eq("type", "REALTIME");
+            } else {
+                queryBson = Filters.eq("type", "FORECAST");
+            }
+
+            Document file = null;
+
+            try {
+                Document first = pool_files.find(queryBson).first();
+                ArrayList<Document> data = (ArrayList<Document>) first.get("data");
+                file = data.get(data.size() - 1);
+            } catch (Exception e) {
+            }
+            MissionPlanning.MissionPlanningII(this.Satllitejson, this.GroundStationjson, this.D_orbitjson, this.count, Missionjson, Transmissionjson, station_missions, file);
 
             updateSubStatus(subid, SubTaskStatus.SUSPEND);
             RedisPublish.dbRefresh(id);
-            return checkIfStopped(id, 0);
+
+            return checkIfStopped(id, 2);
 
         }
 
@@ -391,7 +412,7 @@ public class TaskPlanCore {
 
             updateSubStatus(subid, SubTaskStatus.SUSPEND);
             RedisPublish.dbRefresh(id);
-            return checkIfStopped(id, 0);
+            return checkIfStopped(id, 3);
         }
 
         private boolean MOD_ENERGY_CALCULATION(String subid) {
@@ -431,12 +452,11 @@ public class TaskPlanCore {
 
             updateSubStatus(subid, SubTaskStatus.SUSPEND);
             RedisPublish.dbRefresh(id);
-            return checkIfStopped(id, 0);
+            return checkIfStopped(id, 4);
         }
 
         private ArrayList<String> getOrderList(String subid) {
-            MongoClient mongoClient = MangoDBConnector.getClient();
-            MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+
 
             MongoCollection<Document> sub_task = mongoDatabase.getCollection("sub_task");
 
@@ -464,7 +484,7 @@ public class TaskPlanCore {
 
                 params = (ArrayList<String>) first.get("param");
             }
-            mongoClient.close();
+//            mongoClient.close();
             return params;
         }
 
