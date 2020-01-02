@@ -4,7 +4,7 @@ public class K4420 implements SequenceTime {
 
     @Override
     public String ExecutionTime(TimeVariable timeVariable, String TaskName) {
-        if (TaskName == "TASK01") {
+        if (TaskName == "TASK01" || TaskName == "TASK02") {
             double time1=timeVariable.T0-timeVariable.TGF;
             double time2=timeVariable.T0-timeVariable.TDG1-timeVariable.TDG2;
             double time=(time1<time2?time1:time2)<timeVariable.T1?(time1<time2?time1:time2):timeVariable.T1;//三个值取最小值

@@ -147,6 +147,25 @@ public class TaskPlanCore {
                         }
                     }
 
+                    Date normal_orbit_startTime = Date.from(Instant.now().plusSeconds(24 * 60 * 60 * 10000));
+                    Date normal_orbit_endTime = Date.from(Instant.now().minusSeconds(24 * 60 * 60 * 10000));
+
+                    for (Document d : Missionjson) {
+                        if (d.containsKey("image_window")) {
+                            ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
+                            Document window = image_windows.get(0);
+                            normal_orbit_startTime = window.getDate("start_time");
+                            normal_orbit_endTime = window.getDate("end_time");
+                        }
+                    }
+
+                    MongoCollection<Document> normal_attitude = mongoDatabase.getCollection("normal_attitude");
+
+                    Bson queryBson = Filters.and(Filters.gte("time_point", normal_orbit_startTime), Filters.lte("time_point", normal_orbit_endTime));
+
+                    FindIterable<Document> normal_orbit_orbitjson = normal_attitude.find(Filters.and(queryBson));
+                    long normal_orbit_count = normal_attitude.count(Filters.and(queryBson));
+
                     InstructionGeneration.InstructionGenerationII(Missionjson, Transmissionjson, station_missions, ConfigManager.getInstance().fetchInsFilePath());
                 }
             } catch (Exception e) {
@@ -198,11 +217,30 @@ public class TaskPlanCore {
 
                     orders.add(order);
 
-                    if (order.getString("mission_number") != null) {
-                        MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
-                        Document filter = new Document();
-                        filter.append("mission_number", order.getString("mission_number"));
-                        image_mission.deleteOne(filter);
+                    try {
+                        if (order.getString("mission_number") != null) {
+                            MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
+                            Document filter = new Document();
+                            filter.append("mission_number", order.getString("mission_number"));
+                            Document first = image_mission.find(filter).first();
+
+                            if (first != null && first.containsKey("instruction_info")) {
+
+                                ArrayList<Document> instruction_infos = (ArrayList<Document>) first.get("instruction_info");
+                                if (instruction_infos.size() > 0) {
+                                    for (Document doc : instruction_infos) {
+                                        doc.append("valid", false);
+                                    }
+                                }
+                            }
+
+                            Document modifiers = new Document();
+                            modifiers.append("$set", first);
+//
+                            image_mission.updateOne(new Document("_id", first.getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
             }

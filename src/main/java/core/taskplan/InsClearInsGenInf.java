@@ -1,5 +1,6 @@
 package core.taskplan;
 
+
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -100,12 +101,9 @@ public class InsClearInsGenInf {
 
         //包
         String ShuJuQuTou = "10562347";
-        long BaoChang = (ShuJuQuTou + str).length() / 2 + 2;
-        String BaoChangstr = Long.toHexString(BaoChang);
-        for (int j = 0; j < 4; j++) {
-            BaoChangstr = "0" + BaoChangstr;
-        }
-        String BaoZhuDaoTou = "1D81C001" + BaoChang;
+        int BaoChang = (ShuJuQuTou + str).length() / 2 + 2;
+        String BaoChangstr = String.format("%04X",BaoChang);
+        String BaoZhuDaoTou = "1D81C001" + BaoChangstr;
         String total = BaoZhuDaoTou + ShuJuQuTou + str + ISO(BaoZhuDaoTou + ShuJuQuTou + str);
 
         //添加填充域
@@ -158,7 +156,7 @@ public class InsClearInsGenInf {
         String StringTime = sdf.format(cal.getTime());
 
         String DateString = StringTime.substring(0, 4) + StringTime.substring(5, 7) + StringTime.substring(8, 10) + StringTime.substring(11, 13) + StringTime.substring(14, 16);
-        String FileName = FileFolder+"\\"+SequNume+"-InsClear-" + DateString + "-"+ZhiLingIDNum;
+        String FileName = FileFolder+"\\"+ZhiLingIDNum+"-"+SequNume+"-InsClear-" + DateString;
         file = new File(FileName);
         if (file.exists()) {
             file.delete();

@@ -8,6 +8,7 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.UpdateOptions;
 import common.ConfigManager;
 import common.def.TaskType;
 import common.def.TempletType;
@@ -18,6 +19,7 @@ import common.redis.RedisPublish;
 import common.xmlutil.XmlParser;
 import core.taskplan.FileClearInsGenInf;
 import core.taskplan.InsClearInsGenInf;
+import core.taskplan.InsGenWithoutTaskPlanInf;
 import core.taskplan.VisibilityCalculation;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -207,6 +209,34 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
             }
 
+            if (image_order != null) {
+                try {
+                    if (image_order.getString("mission_number") != null) {
+                        MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
+                        Document filter = new Document();
+                        filter.append("mission_number", image_order.getString("mission_number"));
+                        Document first = image_mission.find(filter).first();
+
+                        if (first != null && first.containsKey("instruction_info")) {
+
+                            ArrayList<Document> instruction_infos = (ArrayList<Document>) first.get("instruction_info");
+                            if (instruction_infos.size() > 0) {
+                                for (Document doc : instruction_infos) {
+                                    doc.append("valid", false);
+                                }
+                            }
+                        }
+
+                        Document modifiers = new Document();
+                        modifiers.append("$set", first);
+//
+                        image_mission.updateOne(new Document("_id", first.getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
             FindIterable<Document> station_mission1 = mongoDatabase.getCollection("station_mission").find();
 
             for (Document d : station_mission1) {
@@ -217,8 +247,38 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
             }
 
+            if(station_mission != null){
+                try {
+                    if (station_mission.getString("transmission_number") != null) {
+                        MongoCollection<Document> transmission_mission = mongoDatabase.getCollection("transmission_mission");
+                        Document filter = new Document();
+                        filter.append("transmission_number", station_mission.getString("transmission_number"));
+                        Document first = transmission_mission.find(filter).first();
+
+                        if (first != null && first.containsKey("instruction_info")) {
+
+                            ArrayList<Document> instruction_infos = (ArrayList<Document>) first.get("instruction_info");
+                            if (instruction_infos.size() > 0) {
+                                for (Document doc : instruction_infos) {
+                                    doc.append("valid", false);
+                                }
+                            }
+                        }
+
+                        Document modifiers = new Document();
+                        modifiers.append("$set", first);
+//
+                        transmission_mission.updateOne(new Document("_id", first.getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            String s = InsGenWithoutTaskPlanInf.InsGenWithoutTaskPlanInf(image_order, station_mission, ConfigManager.getInstance().fetchInsFilePath());
+
             mongoClient.close();
-            RedisPublish.CommonReturn(id, true, "", MsgType.INS_GEN_FINISHED);
+            RedisPublish.CommonReturn(id, true, s, MsgType.INS_GEN_FINISHED);
 
 
         } catch (Exception e) {

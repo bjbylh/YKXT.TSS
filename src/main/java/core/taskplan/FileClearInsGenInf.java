@@ -179,12 +179,9 @@ public class FileClearInsGenInf {
             HashMap<String,byte[]> InstructionArrayChild=new HashMap<>();
             for (Map.Entry<String,String> entry:FileClear.entrySet()) {
                 String ShuJuQuTou = "10562347";
-                long BaoChang = (ShuJuQuTou + entry.getValue()).length() / 2 + 2;
-                String BaoChangstr = Long.toHexString(BaoChang);
-                for (int j = 0; j < 4; j++) {
-                    BaoChangstr = "0" + BaoChangstr;
-                }
-                String BaoZhuDaoTou = "1D81C001" + BaoChang;
+                int BaoChang = (ShuJuQuTou + entry.getValue()).length() / 2 + 2;
+                String BaoChangstr = String.format("%04X",BaoChang);
+                String BaoZhuDaoTou = "1D81C001" + BaoChangstr;
                 String total = BaoZhuDaoTou + ShuJuQuTou + entry.getValue() + ISO(BaoZhuDaoTou + ShuJuQuTou + entry.getValue());
 
                 //添加填充域
@@ -241,7 +238,7 @@ public class FileClearInsGenInf {
                 String StringTime = sdf.format(cal.getTime());
 
                 String DateString = StringTime.substring(0, 4) + StringTime.substring(5, 7) + StringTime.substring(8, 10) + StringTime.substring(11, 13) + StringTime.substring(14, 16);
-                String FileName = Instruction.getKey()+"-"+DateString + "-"+MissionNumber+"-"+FileSequenID.get(Instruction.getKey());
+                String FileName = FileSequenID.get(Instruction.getKey())+"-"+Instruction.getKey()+"-"+DateString + "-"+MissionNumber;
                 String realPath = FilePathUtil.getRealFilePath(FileFolder+"\\" + FileName);
                 bytesTotxt(Instruction.getValue(), realPath);
             }

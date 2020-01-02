@@ -142,13 +142,13 @@ public class VisibilityCalculation {
                             if (document1 != null) {
                                 ArrayList<Document> sensors= (ArrayList<Document>) document1.get("sensors");
                                 for (Document document2: sensors){
-                                    if (document1.getString("name").equals("高分相机1")) {
+                                    if (document2.getString("name").equals("高分相机A")) {
                                         MissionLoadType_iList[0] = 1;
-                                    } else if (document1.getString("name").equals("高分相机2")) {
+                                    } else if (document2.getString("name").equals("高分相机B")) {
                                         MissionLoadType_iList[1] = 1;
-                                    } else if (document1.getString("name").equals("多光谱相机1")) {
+                                    } else if (document2.getString("name").equals("多光谱相机A")) {
                                         MissionLoadType_iList[2] = 1;
-                                    } else if (document1.getString("name").equals("多光谱相机2")) {
+                                    } else if (document2.getString("name").equals("多光谱相机B")) {
                                         MissionLoadType_iList[3] = 1;
                                     }
                                 }
@@ -218,6 +218,7 @@ public class VisibilityCalculation {
         ArrayList<double[]> StationMissionStopList = new ArrayList<double[]>();
         ArrayList<String> StationMissionSerialNumberList = new ArrayList<String>();
         StationMissionNum = 0;
+        Date StationstartTimeDateForName=new Date();
         try {
             for (Document document : StationMissionjson) {
                 try {
@@ -226,6 +227,7 @@ public class VisibilityCalculation {
                     StationMissionStationNumberList.add(StationMissionNum, StationMissionStationNumber_iList);
                     //读取数传任务期望时间
                     Date time_point = document.getDate("expected_start_time");
+                    StationstartTimeDateForName=time_point;
                     double[] StationMissionStar_iList = new double[6];
                     StationMissionStar_iList = DateToDouble(time_point);
                     StationMissionStarList.add(StationMissionNum, StationMissionStar_iList);
@@ -827,7 +829,13 @@ public class VisibilityCalculation {
             return null;
         } else {
             ArrayList<String> mission_numbers = new ArrayList<>();
-            String transmission_number = "tn_" + Instant.now().toEpochMilli();
+
+            SimpleDateFormat dateFormat=new SimpleDateFormat("yyyyMMddHHmmss");
+            Date startTimeDate= StationstartTimeDateForName;
+            String startTimestr=dateFormat.format(startTimeDate);
+            String imageModelstr="CS";
+
+            String transmission_number = "tn_" + startTimestr+"_"+imageModelstr+"_"+ Instant.now().toEpochMilli();
 
             int StationMissionNum_Send=0;
             for (Document d : StationMissionjson) {
@@ -953,13 +961,13 @@ public class VisibilityCalculation {
                             if (document1 != null) {
                                 ArrayList<Document> sensors= (ArrayList<Document>) document1.get("sensors");
                                 for (Document document2: sensors){
-                                    if (document1.getString("name").equals("高分相机1")) {
+                                    if (document2.getString("name").equals("高分相机A")) {
                                         MissionLoadType_iList[0] = 1;
-                                    } else if (document1.getString("name").equals("高分相机2")) {
+                                    } else if (document2.getString("name").equals("高分相机B")) {
                                         MissionLoadType_iList[1] = 1;
-                                    } else if (document1.getString("name").equals("多光谱相机1")) {
+                                    } else if (document2.getString("name").equals("多光谱相机A")) {
                                         MissionLoadType_iList[2] = 1;
-                                    } else if (document1.getString("name").equals("多光谱相机2")) {
+                                    } else if (document2.getString("name").equals("多光谱相机B")) {
                                         MissionLoadType_iList[3] = 1;
                                     }
                                 }

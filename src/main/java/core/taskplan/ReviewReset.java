@@ -180,9 +180,7 @@ public class ReviewReset {
                     Attitude_AngVel[AttitudeDataNum][0] = Double.parseDouble(document.get("V_roll_angle").toString());
                     Attitude_AngVel[AttitudeDataNum][1] = Double.parseDouble(document.get("V_pitch_angle").toString());
                     Attitude_AngVel[AttitudeDataNum][2] = Double.parseDouble(document.get("V_yaw_angle").toString());
-
                     AttitudeDataNum = AttitudeDataNum + 1;
-
                     if(AttitudeDataNum >= AttitudeDataCount)
                         break;
                 } catch (Exception e) {
@@ -342,7 +340,11 @@ public class ReviewReset {
             double ChargeCurrent;
             if (Eclipse_Flag == true) {
                 //处于光照区
-                ChargeCurrent = ChargeCurrentCalculation(r_sun, Orbital_SatPosition[i], Orbital_SatVelocity[i], Attitude_EulerAng[i], PowerEfficiency, PowerGenerationMax);
+                double[] Attitude_EulerAngTemp=new double[]{0,0,0};
+                if (i > Attitude_EulerAng.length) {
+                    Attitude_EulerAngTemp=new double[]{0,0,0};
+                }
+                ChargeCurrent = ChargeCurrentCalculation(r_sun, Orbital_SatPosition[i], Orbital_SatVelocity[i], Attitude_EulerAngTemp, PowerEfficiency, PowerGenerationMax);
             } else {
                 //处于阴影区
                 ChargeCurrent = 0;

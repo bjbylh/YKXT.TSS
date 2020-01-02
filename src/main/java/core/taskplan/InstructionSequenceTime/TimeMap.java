@@ -9,6 +9,10 @@ public class TimeMap {
         //成像任务
         TCKG01 tckg01=new TCKG01();
         timemap.put("TCKG01",tckg01);
+        TCKG01_A tckg01_a=new TCKG01_A();
+        timemap.put("TCKG01_A",tckg01_a);
+        TCKG01_B tckg01_b=new TCKG01_B();
+        timemap.put("TCKG01_B",tckg01_b);
         TCAG01 tcag01=new TCAG01();
         timemap.put("TCAG01",tcag01);
         TCAG02 tcag02=new TCAG02();
@@ -39,6 +43,14 @@ public class TimeMap {
         timemap.put("TCGFG02",tcgfg02);
         TCDGG02 tcdgg02=new TCDGG02();
         timemap.put("TCDGG02",tcdgg02);
+        TCDGG02_1 tcdgg02_1=new TCDGG02_1();
+        timemap.put("TCDGG02_1",tcdgg02_1);
+        TCDGG02_2 tcdgg02_2=new TCDGG02_2();
+        timemap.put("TCDGG02_2",tcdgg02_2);
+        TCDGG02_3 tcdgg02_3=new TCDGG02_3();
+        timemap.put("TCDGG02_3",tcdgg02_3);
+        TCDGG02_4 tcdgg02_4=new TCDGG02_4();
+        timemap.put("TCDGG02_4",tcdgg02_4);
         TCGFG03 tcgfg03=new TCGFG03();
         timemap.put("TCGFG03",tcgfg03);
         TCDGG03 tcdgg03=new TCDGG03();
@@ -49,8 +61,13 @@ public class TimeMap {
         timemap.put("TCA305_01",tca305_01);
         TCA305_02 tca305_02=new TCA305_02();
         timemap.put("TCA305_02",tca305_02);
+        timemap.put("TCA305-2",tca305_02);
+        TCA305_03 tca305_03=new TCA305_03();
+        timemap.put("TCA305-3",tca305_03);
         TCKG02 tckg02=new TCKG02();
         timemap.put("TCKG02",tckg02);
+        TCDFG06 tcdfg06=new TCDFG06();
+        timemap.put("TCDFG06",tcdfg06);
 
         //任务暂停
         TCGFG06 tcgfg06=new TCGFG06();

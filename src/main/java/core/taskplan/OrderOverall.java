@@ -7,8 +7,10 @@ import com.mongodb.client.model.UpdateOptions;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 
 import static java.lang.Math.*;
 
@@ -182,8 +184,24 @@ public class OrderOverall {
         MongoCollection<Document> image_order = mongoDatabase.getCollection("image_order");
         for (int i = 0; i < OrderMissionNum; i++) {
             if (OverallResultList.get(i) != 0) {
+                SimpleDateFormat dateFormat=new SimpleDateFormat("yyyyMMddHHmmss");
+                Date startTimeDate= (Date) ExpectedStartTime.get(i);
+                String startTimestr=dateFormat.format(startTimeDate);
+                String imageModelstr=ImageMode.get(i).toString();
+                if (imageModelstr.equals("常规")) {
+                    imageModelstr="CG";
+                }else if (imageModelstr.equals("凝视")) {
+                    imageModelstr="NS";
+                }else if (imageModelstr.equals("临边观测")) {
+                    imageModelstr="LB";
+                }else if (imageModelstr.equals("恒星定标")) {
+                    imageModelstr="DB";
+                }else if (imageModelstr.equals("定标")) {
+                    imageModelstr="DB";
+                }
+                String mission_number = "im_" + startTimestr+"_"+imageModelstr+"_"+ Instant.now().toEpochMilli();
+
                 Document ImageMissionjson = new Document();
-                String mission_number = "im_" + Instant.now().toEpochMilli();
                 ImageMissionjson.append("image_region", ImageRegion.get(i));
                 ImageMissionjson.append("region", Region.get(i));
                 ImageMissionjson.append("name", Name.get(i));
