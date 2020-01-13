@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<InterFaceFile>
+    <FileHeader>
+        <messageType>TRTASK</messageType>
+        <messageID>000000</messageID>
+        <originatorAddress>MPSS</originatorAddress>
+        <recipientAddress>TRGS-JD-11</recipientAddress>
+        <creationTime>2020-01-10T17:05:00.028</creationTime>
+    </FileHeader>
+    <FileBody>
+        <trPlanID>000000000</trPlanID>
+        <satellite>XX1101</satellite>
+        <tmType>2</tmType>
+        <sensorType>GF/DGP</sensorType>
+        <downlinkChannel>7</downlinkChannel>
+        <receptionType>LIVERECEPTION</receptionType>
+        <orbitID>0</orbitID>
+        <isQuickView>FALSE</isQuickView>
+        <isCloud>FALSE</isCloud>
+        <receiveStartTime>2020-01-09T16:19:08</receiveStartTime>
+        <receiveStopTime>2020-01-10T00:00:00</receiveStopTime>
+        <satelliteCaptureStartTime>2020-01-09T16:19:08</satelliteCaptureStartTime>
+        <satelliteCaptureStopTime>2020-01-10T00:00:00</satelliteCaptureStopTime>
+        <taskCount>1</taskCount>
+    </FileBody>
+</InterFaceFile>
