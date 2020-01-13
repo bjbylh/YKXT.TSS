@@ -54,37 +54,52 @@ public class InsClearInsGenInf {
             }
         }
 
-        String str78910="100B8121";
-        String strAPID="0411";
-        String str=strAPID+str78910;
+        String str="";
         String SequNume="";
         if (isTimeSpan == 0) {
             //指定ID删除
-            int IDNum=insno.size();
-            str=str+String.format("%02X",IDNum);
+            String str78910="100B812101";
+            String strAPID="0411";
+            strAPID="";
             for (Integer idChild:insno) {
-                str=str+String.format("%02X",idChild);
+                str78910=str78910+String.format("%04X",idChild);
             }
+            int IDNum=str78910.length()/2;
+            str=strAPID+String.format("%02X",IDNum)+str78910;
             SequNume="TCS291";
         }else if (isTimeSpan == 1) {
             //指定时间段删除
+            String str78910="100B8221";
+            String strAPID="0411";
+            strAPID="";
             int startint= (int) (start.getEpochSecond()-zerostart.getEpochSecond());
             int endint= (int) (end.getEpochSecond()-zerostart.getEpochSecond());
             if (type == 0) {
                 //区间左
-                str=str+"11"+String.format("%08X",startint)+String.format("%08X",endint);
+                str78910=str78910+"11"+String.format("%08X",startint)+String.format("%08X",endint);
             }else if (type == 1) {
                 //区间右
-                str=str+"22"+String.format("%08X",startint)+String.format("%08X",endint);
+                str78910=str78910+"22"+String.format("%08X",startint)+String.format("%08X",endint);
             }else if (type == 2) {
                 //区间中间
-                str=str+"33"+String.format("%08X",startint)+String.format("%08X",endint);
+                str78910=str78910+"33"+String.format("%08X",startint)+String.format("%08X",endint);
             }else if (type == 3) {
                 //全部删除
-                str=str+"44"+String.format("%08X",startint)+String.format("%08X",endint);
+                str78910=str78910+"44"+String.format("%08X",startint)+String.format("%08X",endint);
             }
+            int IDNum=str78910.length()/2;
+            str=strAPID+String.format("%02X",IDNum)+str78910;
             SequNume="TCS291";
+        }else if (isTimeSpan == 2) {
+            //全部删除
+            String str78910="100B8521";
+            String strAPID="0411";
+            strAPID="";
+            int IDNum=4;
+            str=strAPID+String.format("%02X",IDNum)+str78910;
+            SequNume="TCS296";
         }
+
 
         //序列
         int ZhiLingIDNum = SequenceID.SequenceId;
@@ -93,17 +108,33 @@ public class InsClearInsGenInf {
             SequenceID.SequenceId=0;
         }
         String ZhiLingXuLieIDString = String.format("%02X",ZhiLingIDNum);
+        ZhiLingXuLieIDString="00"+ZhiLingXuLieIDString;
         String ZhiLingGeShuString = "01";
         int exetimeint= (int) (exetime.getEpochSecond()-zerostart.getEpochSecond());
         String KaiShiShiJian=String.format("%08X",exetimeint);
 
-        str = KaiShiShiJian + ZhiLingXuLieIDString + ZhiLingGeShuString + str;
+        //str = KaiShiShiJian + ZhiLingXuLieIDString + ZhiLingGeShuString + str;
 
         //包
-        String ShuJuQuTou = "10562347";
-        int BaoChang = (ShuJuQuTou + str).length() / 2 + 2;
+        String ShuJuQuTou = "";
+        int BaoChang = (ShuJuQuTou + str).length() / 2 + 2-1;
         String BaoChangstr = String.format("%04X",BaoChang);
-        String BaoZhuDaoTou = "1D81C001" + BaoChangstr;
+        int BaoXuLieIDNum = SequenceID.PackageId;
+        SequenceID.PackageId=SequenceID.PackageId+1;
+        if (SequenceID.PackageId > 16383) {
+            SequenceID.PackageId=0;
+        }
+        String BaoXuLieIDStr=Integer.toBinaryString(BaoXuLieIDNum);
+        if (BaoXuLieIDStr.length() < 14) {
+            for (int i_id = BaoXuLieIDStr.length(); i_id < 14; i_id++) {
+                BaoXuLieIDStr="0"+BaoXuLieIDStr;
+            }
+        }else {
+            BaoXuLieIDStr=BaoXuLieIDStr.substring(BaoXuLieIDStr.length()-14);
+        }
+        BaoXuLieIDStr="11"+BaoXuLieIDStr;
+        BaoXuLieIDStr=Integer.toHexString(Integer.parseInt(BaoXuLieIDStr,2)).toUpperCase();
+        String BaoZhuDaoTou = "1C11" +BaoXuLieIDStr+ BaoChangstr;
         String total = BaoZhuDaoTou + ShuJuQuTou + str + ISO(BaoZhuDaoTou + ShuJuQuTou + str);
 
         //添加填充域
@@ -129,9 +160,13 @@ public class InsClearInsGenInf {
 
         byte[] MainBuff = hexStringToBytes(total);
         int a = getCRC_0xFFFF(MainBuff, MainBuff.length);
-        String CRCCode = Integer.toHexString(a).toUpperCase();
-        for (int j = CRCCode.length(); j < 4; j++) {
-            CRCCode = "0" + CRCCode;
+        String CRCCode = String.format("%04X",a).toUpperCase();
+        if (CRCCode.length() > 4) {
+            CRCCode=CRCCode.substring(CRCCode.length()-4);
+        }else if (CRCCode.length() < 4) {
+            for (int j = CRCCode.length(); j < 4; j++) {
+                CRCCode = "0" + CRCCode;
+            }
         }
         total = "EB90762569" + total + CRCCode;
         byte[] bytes = hexStringToBytes(total);
@@ -187,31 +222,34 @@ public class InsClearInsGenInf {
         }
     }
 
-    //????
+    //ISO和校验算法
     private static String ISO(String Frame) {
         int C0 = 0;
         int C1 = 0;
         for (int i = 0; i < Frame.length(); i = i + 2) {
             int B = Integer.parseInt(Frame.substring(i, i + 2), 16);
-            C0 = C0 + B;
-            C1 = C1 + C0;
+            C0 = (C0 + B)%255;
+            C1 = (C1 + C0)%255;
         }
-        int CK1 = -(C0 + C1);
+        int CK1 = (-(C0 + C1))%255;
+        if (CK1 < 0) {
+            CK1=CK1+255;
+        }
         int CK2 = C1;
-        String CK1tot = Integer.toHexString(CK1);
-        String CK2tot = Integer.toHexString(CK2);
-        if (CK1tot.length() % 2 == 1) {
-            CK1tot = "0" + CK1tot;
+        String CK1tot = String.format("%02X",CK1).toUpperCase();
+        String CK2tot = String.format("%02X",CK2).toUpperCase();
+        String CK1str=CK1tot;
+        String CK2str=CK2tot;
+        if (CK1tot.length() > 2) {
+            CK1str = CK1tot.substring(CK1tot.length() - 2);
         }
-        if (CK2tot.length() % 2 == 1) {
-            CK2tot = "0" + CK2tot;
+        if (CK2tot.length() > 2) {
+            CK2str = CK2tot.substring(CK2tot.length() - 2);
         }
-        String CK1str = CK1tot.substring(0, 2);
-        String CK2str = CK2tot.substring(CK2tot.length() - 2, CK2tot.length());
-        if (CK1str == "00") {
+        if (CK1str.equals("00")) {
             CK1str = "FF";
         }
-        if (CK2str == "00") {
+        if (CK2str.equals("00")) {
             CK2str = "FF";
         }
         return CK1str + CK2str;

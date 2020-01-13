@@ -39,7 +39,7 @@ public interface DefineInferface {
      * @param end
      * @param insno
      * @param FilePath
-     * @param isTimeSpan 0:id,1:时间段
+     * @param isTimeSpan 0:id,1:时间段,3:表示全部删除
      * @param exetime 指令执行时间
      * @return
      */

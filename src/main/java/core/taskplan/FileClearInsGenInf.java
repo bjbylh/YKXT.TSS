@@ -156,9 +156,15 @@ public class FileClearInsGenInf {
             MissionInstructionTime.put("TCA303",TCA303Time);
 
             //
+            String TCS297="1002802105";
+            String LengtTCS297="05";
+            String APIDTCS297="0411";
+            String strTCS297=APIDTCS297+LengtTCS297+TCS297;
+
             String TCS205="100E812196";
             String LengtTCS205="05";
             String APIDTCS205="0412";
+            String strTCS205=APIDTCS205+LengtTCS205+TCS205;
             //序列
             ZhiLingIDNum = SequenceID.SequenceId;
             SequenceID.SequenceId=SequenceID.SequenceId+1;
@@ -166,22 +172,44 @@ public class FileClearInsGenInf {
                 SequenceID.SequenceId=0;
             }
             ZhiLingXuLieIDString = String.format("%02X",ZhiLingIDNum);
-            ZhiLingGeShuString = "01";
+            ZhiLingXuLieIDString="00"+ZhiLingXuLieIDString;
             exetimeint= (int) (exetime.getEpochSecond()-zerostart.getEpochSecond());
             KaiShiShiJian=String.format("%08X",exetimeint);
-            TCS205 = KaiShiShiJian + ZhiLingXuLieIDString + ZhiLingGeShuString + APIDTCS205+LengtTCS205+TCS205;
-            FileClear.put("TCS205",TCS205);
+            String TCKG02;
+            if (Mission.containsKey("transmission_power_off") && Mission.get("transmission_power_off")!=null && Mission.get("transmission_power_off").equals("0")) {
+                ZhiLingGeShuString = "01";
+                TCKG02 = KaiShiShiJian + ZhiLingXuLieIDString + ZhiLingGeShuString + strTCS205;
+            }else {
+                ZhiLingGeShuString = "02";
+                TCKG02 = KaiShiShiJian + ZhiLingXuLieIDString + ZhiLingGeShuString + strTCS297+strTCS205;
+            }
+            FileClear.put("TCKG02",TCKG02);
             int ZhiLingIDNumTCS205=ZhiLingIDNum;
-            FileSequenID.put("TCS205",ZhiLingIDNumTCS205);
+            FileSequenID.put("TCKG02",ZhiLingIDNumTCS205);
             Date TCS205Time= Date.from(exetime);
-            MissionInstructionTime.put("TCS205",TCS205Time);
+            MissionInstructionTime.put("TCKG02",TCS205Time);
 
             HashMap<String,byte[]> InstructionArrayChild=new HashMap<>();
             for (Map.Entry<String,String> entry:FileClear.entrySet()) {
-                String ShuJuQuTou = "10562347";
-                int BaoChang = (ShuJuQuTou + entry.getValue()).length() / 2 + 2;
+                String ShuJuQuTou = "100B8021";
+                int BaoChang = (ShuJuQuTou + entry.getValue()).length() / 2 + 2-1;
                 String BaoChangstr = String.format("%04X",BaoChang);
-                String BaoZhuDaoTou = "1D81C001" + BaoChangstr;
+                int BaoXuLieIDNum = SequenceID.PackageId;
+                SequenceID.PackageId=SequenceID.PackageId+1;
+                if (SequenceID.PackageId > 16383) {
+                    SequenceID.PackageId=0;
+                }
+                String BaoXuLieIDStr=Integer.toBinaryString(BaoXuLieIDNum);
+                if (BaoXuLieIDStr.length() < 14) {
+                    for (int i_id = BaoXuLieIDStr.length(); i_id < 14; i_id++) {
+                        BaoXuLieIDStr="0"+BaoXuLieIDStr;
+                    }
+                }else {
+                    BaoXuLieIDStr=BaoXuLieIDStr.substring(BaoXuLieIDStr.length()-14);
+                }
+                BaoXuLieIDStr="11"+BaoXuLieIDStr;
+                BaoXuLieIDStr=Integer.toHexString(Integer.parseInt(BaoXuLieIDStr,2)).toUpperCase();
+                String BaoZhuDaoTou = "1C11" +BaoXuLieIDStr+ BaoChangstr;
                 String total = BaoZhuDaoTou + ShuJuQuTou + entry.getValue() + ISO(BaoZhuDaoTou + ShuJuQuTou + entry.getValue());
 
                 //添加填充域
@@ -207,9 +235,13 @@ public class FileClearInsGenInf {
 
                 byte[] MainBuff = hexStringToBytes(total);
                 int a = getCRC_0xFFFF(MainBuff, MainBuff.length);
-                String CRCCode = Integer.toHexString(a).toUpperCase();
-                for (int j = CRCCode.length(); j < 4; j++) {
-                    CRCCode = "0" + CRCCode;
+                String CRCCode = String.format("%04X",a).toUpperCase();
+                if (CRCCode.length() > 4) {
+                    CRCCode=CRCCode.substring(CRCCode.length()-4);
+                }else if (CRCCode.length() < 4) {
+                    for (int j = CRCCode.length(); j < 4; j++) {
+                        CRCCode = "0" + CRCCode;
+                    }
                 }
                 total = "EB90762569" + total + CRCCode;
                 byte[] bytes = hexStringToBytes(total);
@@ -407,31 +439,34 @@ public class FileClearInsGenInf {
         return TimeMiddle;
     }
 
-    //????
+    //ISO和校验算法
     private static String ISO(String Frame) {
         int C0 = 0;
         int C1 = 0;
         for (int i = 0; i < Frame.length(); i = i + 2) {
             int B = Integer.parseInt(Frame.substring(i, i + 2), 16);
-            C0 = C0 + B;
-            C1 = C1 + C0;
+            C0 = (C0 + B)%255;
+            C1 = (C1 + C0)%255;
         }
-        int CK1 = -(C0 + C1);
+        int CK1 = (-(C0 + C1))%255;
+        if (CK1 < 0) {
+            CK1=CK1+255;
+        }
         int CK2 = C1;
-        String CK1tot = Integer.toHexString(CK1);
-        String CK2tot = Integer.toHexString(CK2);
-        if (CK1tot.length() % 2 == 1) {
-            CK1tot = "0" + CK1tot;
+        String CK1tot = String.format("%02X",CK1).toUpperCase();
+        String CK2tot = String.format("%02X",CK2).toUpperCase();
+        String CK1str=CK1tot;
+        String CK2str=CK2tot;
+        if (CK1tot.length() > 2) {
+            CK1str = CK1tot.substring(CK1tot.length() - 2);
         }
-        if (CK2tot.length() % 2 == 1) {
-            CK2tot = "0" + CK2tot;
+        if (CK2tot.length() > 2) {
+            CK2str = CK2tot.substring(CK2tot.length() - 2);
         }
-        String CK1str = CK1tot.substring(0, 2);
-        String CK2str = CK2tot.substring(CK2tot.length() - 2, CK2tot.length());
-        if (CK1str == "00") {
+        if (CK1str.equals("00")) {
             CK1str = "FF";
         }
-        if (CK2str == "00") {
+        if (CK2str.equals("00")) {
             CK2str = "FF";
         }
         return CK1str + CK2str;

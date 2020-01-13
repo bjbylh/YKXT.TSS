@@ -68,6 +68,8 @@ public class TimeMap {
         timemap.put("TCKG02",tckg02);
         TCDFG06 tcdfg06=new TCDFG06();
         timemap.put("TCDFG06",tcdfg06);
+        TCGDG07 tcgdg07=new TCGDG07();
+        timemap.put("TCGDG07",tcgdg07);
 
         //任务暂停
         TCGFG06 tcgfg06=new TCGFG06();
@@ -92,6 +94,12 @@ public class TimeMap {
         timemap.put("TCAG06",tcag06);
         TCA303 tca303=new TCA303();
         timemap.put("TCA303",tca303);
+
+        //定标任务
+        TCGFG04 tcgfg04=new TCGFG04();
+        timemap.put("TCGFG04",tcgfg04);
+        TCDGG04 tcdgg04=new TCDGG04();
+        timemap.put("TCDGG04",tcdgg04);
 
         return timemap;
     }

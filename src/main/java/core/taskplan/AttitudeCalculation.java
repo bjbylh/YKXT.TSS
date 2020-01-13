@@ -6,9 +6,11 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
+import javax.print.Doc;
 import javax.swing.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -16,9 +18,6 @@ import java.util.Calendar;
 import java.util.Date;
 
 import static java.lang.Math.*;
-
-//import common.mongo.DbDefine;
-//import common.mongo.MangoDBConnector;
 
 //import common.mongo.DbDefine;
 //import common.mongo.MangoDBConnector;

@@ -63,6 +63,7 @@ public class TaskPlanCore {
         ArrayList<String> params2 = new ArrayList<>();
 
         private ArrayList<String> orderList;
+        private ArrayList<String> stationList;
 
         public proc(String taskId) {
             this.id = taskId;
@@ -166,7 +167,7 @@ public class TaskPlanCore {
                     FindIterable<Document> normal_orbit_orbitjson = normal_attitude.find(Filters.and(queryBson));
                     long normal_orbit_count = normal_attitude.count(Filters.and(queryBson));
 
-                    InstructionGeneration.InstructionGenerationII(Missionjson, Transmissionjson, station_missions, ConfigManager.getInstance().fetchInsFilePath());
+                    InstructionGeneration.InstructionGenerationII(Missionjson, Transmissionjson, station_missions, normal_orbit_orbitjson, normal_orbit_count, ConfigManager.getInstance().fetchInsFilePath());
                 }
             } catch (Exception e) {
                 System.out.println(e.getMessage());
@@ -222,22 +223,79 @@ public class TaskPlanCore {
                             MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
                             Document filter = new Document();
                             filter.append("mission_number", order.getString("mission_number"));
-                            Document first = image_mission.find(filter).first();
+                            FindIterable<Document> firsts = image_mission.find(filter);
 
-                            if (first != null && first.containsKey("instruction_info")) {
+                            for (Document first : firsts) {
 
-                                ArrayList<Document> instruction_infos = (ArrayList<Document>) first.get("instruction_info");
-                                if (instruction_infos.size() > 0) {
-                                    for (Document doc : instruction_infos) {
-                                        doc.append("valid", false);
+                                if (first != null && first.containsKey("instruction_info")) {
+
+                                    ArrayList<Document> instruction_infos = (ArrayList<Document>) first.get("instruction_info");
+                                    if (instruction_infos.size() > 0) {
+                                        for (Document doc : instruction_infos) {
+                                            doc.append("valid", false);
+                                        }
                                     }
+                                }
+
+                                Document modifiers = new Document();
+                                modifiers.append("$set", first);
+//
+                                image_mission.updateOne(new Document("_id", first.getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+
+            stationList = getStationList(subid);
+
+            ArrayList<Document> stationlists = new ArrayList<>();
+
+            MongoCollection<Document> station_missionss = mongoDatabase.getCollection("station_mission");
+            FindIterable<Document> station_missionss_doc = station_missionss.find();
+            for (Document stationmissions : station_missionss_doc) {
+                if (stationList.contains(stationmissions.getString("mission_number"))) {
+                    Date expected_start_time = stationmissions.getDate("expected_start_time");
+                    if (expected_start_time.before(startTime))
+                        startTime = expected_start_time;
+
+                    Date expected_end_time = stationmissions.getDate("expected_end_time");
+                    if (expected_end_time.after(endTime))
+                        endTime = expected_end_time;
+
+                    stationlists.add(stationmissions);
+
+                    try {
+                        if (stationmissions.getString("mission_number") != null) {
+                            MongoCollection<Document> transmission_missionss = mongoDatabase.getCollection("transmission_mission");
+                            FindIterable<Document> documents1 = transmission_missionss.find();
+
+                            for (Document first : documents1) {
+
+                                ArrayList<String> mns = (ArrayList<String>) first.get("mission_numbers");
+
+                                if (mns.contains(stationmissions.getString("mission_number"))) {
+                                    if (first != null && first.containsKey("instruction_info")) {
+
+                                        ArrayList<Document> instruction_infos = (ArrayList<Document>) first.get("instruction_info");
+                                        if (instruction_infos.size() > 0) {
+                                            for (Document doc : instruction_infos) {
+                                                doc.append("valid", false);
+                                            }
+                                        }
+                                    }
+
+                                    Document modifiers = new Document();
+                                    modifiers.append("$set", first);
+//
+                                    transmission_missionss.updateOne(new Document("_id", first.getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
                                 }
                             }
 
-                            Document modifiers = new Document();
-                            modifiers.append("$set", first);
-//
-                            image_mission.updateOne(new Document("_id", first.getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
+
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -521,6 +579,39 @@ public class TaskPlanCore {
                 Document first = sub_task.find(condtion).first();
 
                 params = (ArrayList<String>) first.get("param");
+            }
+//            mongoClient.close();
+            return params;
+        }
+
+        private ArrayList<String> getStationList(String subid) {
+
+
+            MongoCollection<Document> sub_task = mongoDatabase.getCollection("sub_task");
+
+            ArrayList<String> params;
+            if (taskType == TaskType.CRONTAB) {
+                MongoCollection<Document> station_mission = mongoDatabase.getCollection("station_mission");
+
+                Date s = Date.from(now.plusSeconds(60 * 60 * 24));
+                Date e = Date.from(now.plusSeconds(60 * 60 * 24 * 2));
+
+                BasicDBObject query = new BasicDBObject();
+                query.put("expected_start_time", new BasicDBObject("$lte", e));
+                query.put("expected_end_time", new BasicDBObject("$gte", s));
+
+                FindIterable<Document> documents = station_mission.find(query);
+                params = new ArrayList<>();
+                for (Document d : documents) {
+                    params.add(d.getObjectId("_id").toString());
+                }
+            } else {
+                Document condtion = new Document();
+                condtion.append("_id", new ObjectId(subid));
+
+                Document first = sub_task.find(condtion).first();
+
+                params = (ArrayList<String>) first.get("param2");
             }
 //            mongoClient.close();
             return params;

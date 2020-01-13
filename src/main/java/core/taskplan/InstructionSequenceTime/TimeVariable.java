@@ -9,6 +9,7 @@ public class TimeVariable {
 
     public double TSC;       //当前任务选择的数传开机指令序列的执行时长              TCAG01序列
     public double TGF;       //当前任务选择的高分相机成像开机指令序列的执行时长       TCGFG01序列
+    public double TGF2;      //当前任务选择的高分相机工作模式设置指令序列的执行时长   TCGFG02序列
     public double TDG1;      //当前任务选择的多光谱相机成像开机指令序列的执行时长     TCDGG01序列
     public double TDG2;      //当前任务选择的多光谱相机工作模式设置指令序列的执行时长  TCDGG02序列
     public double T4401;     //侧摆时长

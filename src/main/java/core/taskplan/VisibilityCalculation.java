@@ -17,7 +17,6 @@ import java.util.*;
 import static java.lang.Math.*;
 
 //import common.mongo.DbDefine;
-//import common.mongo.MangoDBConnector;
 
 //import common.mongo.MangoDBConnector;
 
@@ -181,12 +180,12 @@ public class VisibilityCalculation {
                     //读取是否为实传模式
                     //读取所需地面站
                     String MissionTransferStation_iList=null;
-                    int MissionWorkMode_iList = 0;
-                    if (document.getString("work_mode").equals("实传")) {
+                    int MissionWorkMode_iList = 1;
+                    if (document.getString("work_mode").equals("记录")) {
+                        MissionWorkMode_iList = 0;
+                    } else {
                         MissionWorkMode_iList = 1;
                         MissionTransferStation_iList=document.get("station_number").toString();
-                    } else {
-                        MissionWorkMode_iList = 0;
                     }
                     MissionWorkModeList.add(MissionNumber, MissionWorkMode_iList);
                     MissionTransferStationList.add(MissionNumber,MissionTransferStation_iList);
@@ -217,6 +216,9 @@ public class VisibilityCalculation {
         ArrayList<double[]> StationMissionStarList = new ArrayList<double[]>();
         ArrayList<double[]> StationMissionStopList = new ArrayList<double[]>();
         ArrayList<String> StationMissionSerialNumberList = new ArrayList<String>();
+        ArrayList<Object> StationMissionModeList=new ArrayList<>();
+        ArrayList<Object> StationMissionRecordFileNoList=new ArrayList<>();
+        ArrayList<Object> StationMissionAutoAssignRecordFileList=new ArrayList<>();
         StationMissionNum = 0;
         Date StationstartTimeDateForName=new Date();
         try {
@@ -238,6 +240,9 @@ public class VisibilityCalculation {
                     //读取传输任务编号
                     String StationMissionSerialNumber_iList = document.getString("mission_number");
                     StationMissionSerialNumberList.add(StationMissionNum, StationMissionSerialNumber_iList);
+                    StationMissionModeList.add(document.get("mode"));
+                    StationMissionRecordFileNoList.add(document.get("record_file_no"));
+                    StationMissionAutoAssignRecordFileList.add(document.get("auto_assign_record_file"));
 
                     //任务数量加1
                     StationMissionNum = StationMissionNum + 1;
@@ -538,7 +543,7 @@ public class VisibilityCalculation {
                                             int[] VisibilityTimeperiod_iiiListMid=new int[2];
                                             VisibilityTimeperiod_iiiListMid[0]=VisibilityTimeperiod_iiiList[0];
                                             VisibilityTimeperiod_iiiListMid[1]=VisibilityTimeperiod_iiiList[1];
-                                            VisibilityTimeperiod_iiList.add(Load_i,VisibilityTimeperiod_iiiListMid);
+                                            VisibilityTimeperiod_iiList.add(TimePeriodNum_iiList,VisibilityTimeperiod_iiiListMid);
                                             TimePeriodNum_iiList=TimePeriodNum_iiList+1;
                                             break;
                                         }
@@ -548,7 +553,7 @@ public class VisibilityCalculation {
                                     int[] VisibilityTimeperiod_iiiListMid=new int[2];
                                     VisibilityTimeperiod_iiiListMid[0]=VisibilityTimeperiod_iiiList[0];
                                     VisibilityTimeperiod_iiiListMid[1]=VisibilityTimeperiod_iiiList[1];
-                                    VisibilityTimeperiod_iiList.add(Load_i,VisibilityTimeperiod_iiiListMid);
+                                    VisibilityTimeperiod_iiList.add(TimePeriodNum_iiList,VisibilityTimeperiod_iiiListMid);
                                     TimePeriodNum_iiList=TimePeriodNum_iiList+1;
                                 }
 
@@ -897,6 +902,11 @@ public class VisibilityCalculation {
                 Transmissionjson.append("fail_reason", "");
             }
             Transmissionjson.append("station_info", stationInfos);
+            if (StationMissionModeList.size()>0) {
+                Transmissionjson.append("mode", StationMissionModeList.get(0));
+                Transmissionjson.append("record_file_no", StationMissionRecordFileNoList.get(0));
+                Transmissionjson.append("auto_assign_record_file", StationMissionAutoAssignRecordFileList.get(0));
+            }
             transmission_misison.insertOne(Transmissionjson);
             mongoClient.close();
 
@@ -1003,9 +1013,9 @@ public class VisibilityCalculation {
                     int MissionWorkMode_iList = 1;
                     if (document.getString("work_mode").equals("记录")) {
                         MissionWorkMode_iList = 0;
-                        MissionTransferStation_iList=document.get("station_number").toString();
                     } else {
                         MissionWorkMode_iList = 1;
+                        MissionTransferStation_iList=document.get("station_number").toString();
                     }
                     MissionWorkModeList.add(MissionNumber, MissionWorkMode_iList);
                     MissionTransferStationList.add(MissionNumber,MissionTransferStation_iList);

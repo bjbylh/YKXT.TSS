@@ -1,6 +1,6 @@
 package test;
 
-import com.cast.wss.client.*;
+
 
 /**
  * Created by lihan on 2018/11/19.
@@ -45,25 +45,25 @@ public class taskInitTest {
 //        Object name = main_task.get("name");
 //        s = name.getClass().toString();
 //        System.out.println(s);
-        ObjectFactory objectFactory = new ObjectFactory();
-        HeadType headType = objectFactory.createHeadType();
-        headType.setCreationTime("2010-10-10 00:00:00.000");
-
-        DtplanType dtplanType = objectFactory.createDtplanType();
-        dtplanType.setHead(headType);
-
-        PlanType planType = objectFactory.createPlanType();
-        MissionType missionType = objectFactory.createMissionType();
-        missionType.setSatelliteID("XX-1");
-        missionType.setEndTime("2010-10-10 00:00:00.000");
-        missionType.setStartTime("2010-10-10 00:00:00.000");
-        missionType.setStationID("1");
-        missionType.setTplanID("111");
-
-        planType.setMission(missionType);
-
-        dtplanType.setPlan(planType);
-
-        System.out.println(dtplanType.toString());
+//        ObjectFactory objectFactory = new ObjectFactory();
+//        HeadType headType = objectFactory.createHeadType();
+//        headType.setCreationTime("2010-10-10 00:00:00.000");
+//
+//        DtplanType dtplanType = objectFactory.createDtplanType();
+//        dtplanType.setHead(headType);
+//
+//        PlanType planType = objectFactory.createPlanType();
+//        MissionType missionType = objectFactory.createMissionType();
+//        missionType.setSatelliteID("XX-1");
+//        missionType.setEndTime("2010-10-10 00:00:00.000");
+//        missionType.setStartTime("2010-10-10 00:00:00.000");
+//        missionType.setStationID("1");
+//        missionType.setTplanID("111");
+//
+//        planType.setMission(missionType);
+//
+//        dtplanType.setPlan(planType);
+//
+//        System.out.println(dtplanType.toString());
     }
 }

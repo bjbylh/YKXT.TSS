@@ -7,14 +7,13 @@ import com.mongodb.client.model.UpdateOptions;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
+import javax.print.Doc;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 
 import static java.lang.Math.*;
-
-//import common.mongo.MangoDBConnector;
 
 public class OrderOverall {
     private static double Re = 6371393;                  //地球半径，单位为：米
@@ -55,6 +54,7 @@ public class OrderOverall {
         ArrayList<Object> RecordFileNo=new ArrayList<>();
         ArrayList<Object> AutoAsignRecordFile=new ArrayList<>();
         ArrayList<Object> MissionParams=new ArrayList<>();
+        ArrayList<Object> DefaultMissionParams=new ArrayList<>();
 
         ArrayList<Object> ScanHeightOrbit=new ArrayList<>();
         ArrayList<Object> RollBias=new ArrayList<>();
@@ -86,6 +86,7 @@ public class OrderOverall {
             RecordFileNo.add(document.get("record_file_no"));
             AutoAsignRecordFile.add(document.get("auto_asign_record_file"));
             MissionParams.add(document.get("mission_params"));
+            DefaultMissionParams.add(document.get("default_mission_params"));
 
             ScanHeightOrbit.add(document.get("scan_height_orbit"));
             RollBias.add(document.get("scan_roll_bias"));
@@ -198,6 +199,8 @@ public class OrderOverall {
                     imageModelstr="DB";
                 }else if (imageModelstr.equals("定标")) {
                     imageModelstr="DB";
+                }else if (imageModelstr.equals("黑体定标")) {
+                    imageModelstr="HTDB";
                 }
                 String mission_number = "im_" + startTimestr+"_"+imageModelstr+"_"+ Instant.now().toEpochMilli();
 
@@ -224,6 +227,7 @@ public class OrderOverall {
                 ImageMissionjson.append("record_file_no",RecordFileNo.get(i));
                 ImageMissionjson.append("auto_asign_record_file",AutoAsignRecordFile.get(i));
                 ImageMissionjson.append("mission_params",MissionParams.get(i));
+                ImageMissionjson.append("default_mission_params",DefaultMissionParams.get(i));
 
                 ImageMissionjson.append("scan_height_orbit",ScanHeightOrbit.get(i));
                 ImageMissionjson.append("scan_roll_bias",RollBias.get(i));

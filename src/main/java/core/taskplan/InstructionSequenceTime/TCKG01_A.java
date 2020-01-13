@@ -4,9 +4,10 @@ public class TCKG01_A implements SequenceTime {
     @Override
     public String ExecutionTime(TimeVariable timeVariable, String TaskName) {
         if (TaskName == "TASK01" || TaskName == "TASK02") {
-            double time1=timeVariable.T0-timeVariable.TGF;
+            double time1=timeVariable.T0-timeVariable.TGF-timeVariable.TGF2;
             double time2=timeVariable.T0-timeVariable.TDG1-timeVariable.TDG2;
-            double time=(time1<time2?time1:time2)<timeVariable.T1?(time1<time2?time1:time2):timeVariable.T1;//三个值取最小值
+            double time3=timeVariable.T1;
+            double time=(time1<time2?time1:time2)<time3?(time1<time2?time1:time2):time3;//三个值取最小值
             time=time-6-timeVariable.TSC;
             float f_time=(float) time;
             int i_time= (int) Math.ceil(f_time);

@@ -1,6 +1,5 @@
 package common.redis.subscribe;
 
-import com.cast.wss.client.*;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mongodb.MongoClient;
@@ -10,6 +9,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.UpdateOptions;
 import common.ConfigManager;
+import common.FilePathUtil;
 import common.def.TaskType;
 import common.def.TempletType;
 import common.mongo.DbDefine;
@@ -17,14 +17,15 @@ import common.mongo.MangoDBConnector;
 import common.redis.MsgType;
 import common.redis.RedisPublish;
 import common.xmlutil.XmlParser;
-import core.taskplan.FileClearInsGenInf;
-import core.taskplan.InsClearInsGenInf;
-import core.taskplan.InsGenWithoutTaskPlanInf;
-import core.taskplan.VisibilityCalculation;
+import core.taskplan.*;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import redis.clients.jedis.JedisPubSub;
 import srv.task.TaskInit;
+import xml.FileBodyType;
+import xml.FileHeaderType;
+import xml.InterFaceFileType;
+import xml.ObjectFactory;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -45,6 +46,8 @@ public class RedisTaskSubscriber extends JedisPubSub {
     private DateTimeFormatter sf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private OffsetDateTime odt = OffsetDateTime.now(ZoneId.ofOffset("UTC", ZoneOffset.UTC));
     private ZoneOffset zoneOffset = odt.getOffset();
+    private static int message_ser = 0;
+    private static final int MESSAGE_MAX = 999999;
 
     public RedisTaskSubscriber() {
     }
@@ -89,6 +92,10 @@ public class RedisTaskSubscriber extends JedisPubSub {
             } else if (asString.equals(MsgType.TRANSMISSION_EXPORT.name())) {
 
                 procTransmissionExport(json, id);
+
+            } else if (asString.equals(MsgType.BLACK_CALI.name())) {
+
+                procBlackCali(json, id);
 
             } else return;
         } catch (Exception e) {
@@ -157,6 +164,37 @@ public class RedisTaskSubscriber extends JedisPubSub {
         } catch (Exception e) {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.INS_CLEAR_FINISHED);
+        }
+    }
+
+    private void procBlackCali(JsonObject json, String id) {
+        try {
+            String order_number = json.get("image_order_num").getAsString();
+
+            Document image_order = null;
+            MongoClient mongoClient = MangoDBConnector.getClient();
+            //获取名为"temp"的数据库
+            MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+
+            FindIterable<Document> image_order1 = mongoDatabase.getCollection("image_order").find();
+
+            for (Document d : image_order1) {
+                if (d.getString("order_number").equals(order_number)) {
+                    image_order = d;
+                    break;
+                }
+
+            }
+
+            String s = CalibrateInsGenInf.CalibrateInsGenInfII(image_order, ConfigManager.getInstance().fetchInsFilePath());
+
+            mongoClient.close();
+            RedisPublish.CommonReturn(id, true, s, MsgType.BLACK_CALI_FINISHED);
+
+
+        } catch (Exception e) {
+            String message = e.getMessage();
+            RedisPublish.CommonReturn(id, false, message, MsgType.BLACK_CALI_FINISHED);
         }
     }
 
@@ -247,7 +285,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
             }
 
-            if(station_mission != null){
+            if (station_mission != null) {
                 try {
                     if (station_mission.getString("transmission_number") != null) {
                         MongoCollection<Document> transmission_mission = mongoDatabase.getCollection("transmission_mission");
@@ -290,6 +328,11 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
     private void procTransmissionExport(JsonObject json, String id) {
         try {
+            Instant createTime = Instant.now();
+            LocalDateTime localDateTime = LocalDateTime.now();
+            String dir = String.valueOf(createTime.toEpochMilli());
+            String f = ConfigManager.getInstance().fetchXmlFilePath() + dir;
+
             String ids = json.get("content").getAsString();
             String[] transmission_numbers_array = ids.split(",");
 
@@ -310,16 +353,36 @@ public class RedisTaskSubscriber extends JedisPubSub {
             //卫星资源表
             FindIterable<Document> transmission_missions = mongoDatabase.getCollection("transmission_mission").find();
 
-            ObjectFactory objectFactory = new ObjectFactory();
+//            ObjectFactory objectFactory = new ObjectFactory();
 
-            DtplanType dtplanType = objectFactory.createDtplanType();
+//            DtplanType dtplanType = objectFactory.createDtplanType();
+//
+//            HeadType headType = objectFactory.createHeadType();
+//            headType.setCreationTime(Instant.now().toString());
+//
+//            dtplanType.setHead(headType);
+//
+//            PlanType planType = objectFactory.createPlanType();
+//            for (Document transmission_mission : transmission_missions) {
+//                if (transmission_numbers.contains(transmission_mission.getString("transmission_number"))) {
+//
+//                    if (transmission_mission.containsKey("transmission_window")) {
+//                        ArrayList<Document> transmission_window = (ArrayList<Document>) transmission_mission.get("transmission_window");
+//
+//                        for (Document window : transmission_window) {
+//                            MissionType missionType = objectFactory.createMissionType();
+//                            missionType.setTplanID(transmission_mission.getString("transmission_number"));
+//                            missionType.setStationID(window.getString("station_name"));
+//                            missionType.setStartTime(Instant.ofEpochMilli(window.getDate("start_time").getTime()).toString());
+//                            missionType.setEndTime(Instant.ofEpochMilli(window.getDate("end_time").getTime()).toString());
+//                            missionType.setSatelliteID(sat_code);
+//                            planType.setMission(missionType);
+//                        }
+//                    }
+//                }
+//            }
+//            dtplanType.setPlan(planType);
 
-            HeadType headType = objectFactory.createHeadType();
-            headType.setCreationTime(Instant.now().toString());
-
-            dtplanType.setHead(headType);
-
-            PlanType planType = objectFactory.createPlanType();
             for (Document transmission_mission : transmission_missions) {
                 if (transmission_numbers.contains(transmission_mission.getString("transmission_number"))) {
 
@@ -327,26 +390,62 @@ public class RedisTaskSubscriber extends JedisPubSub {
                         ArrayList<Document> transmission_window = (ArrayList<Document>) transmission_mission.get("transmission_window");
 
                         for (Document window : transmission_window) {
-                            MissionType missionType = objectFactory.createMissionType();
-                            missionType.setTplanID(transmission_mission.getString("transmission_number"));
-                            missionType.setStationID(window.getString("station_name"));
-                            missionType.setStartTime(Instant.ofEpochMilli(window.getDate("start_time").getTime()).toString());
-                            missionType.setEndTime(Instant.ofEpochMilli(window.getDate("end_time").getTime()).toString());
-                            missionType.setSatelliteID(sat_code);
-                            planType.setMission(missionType);
+//
+                            ObjectFactory objectFactory = new ObjectFactory();
+                            InterFaceFileType interFaceFileType = objectFactory.createInterFaceFileType();
+                            FileHeaderType fileHeaderType = objectFactory.createFileHeaderType();
+                            fileHeaderType.setMessageType("TRTASK");
+                            fileHeaderType.setMessageID(String.format("%06d", message_ser));
+                            fileHeaderType.setOriginatorAddress("MPSS");
+                            fileHeaderType.setRecipientAddress("TRGS-JD-11");
+                            fileHeaderType.setCreationTime(localDateTime.toString());
+
+                            interFaceFileType.setFileHeader(fileHeaderType);
+
+                            FileBodyType fileBodyType = objectFactory.createFileBodyType();
+                            fileBodyType.setTrPlanID(String.format("%09d", message_ser));
+                            fileBodyType.setSatellite(sat_code);
+                            fileBodyType.setTmType("2");
+                            fileBodyType.setSensorType("GF/DGP");
+                            fileBodyType.setDownlinkChannel("7");
+                            fileBodyType.setReceptionType("LIVERECEPTION");
+                            fileBodyType.setOrbitID("0");
+                            fileBodyType.setIsQuickView("FALSE");
+                            fileBodyType.setIsCloud("FALSE");
+
+                            String start_time = window.getDate("start_time").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().toString();
+                            String end_time = window.getDate("end_time").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().toString();
+
+                            if (start_time.length() == 16)
+                                start_time += ":00";
+
+                            if (end_time.length() == 16)
+                                end_time += ":00";
+
+                            fileBodyType.setReceiveStartTime(start_time);
+                            fileBodyType.setSatelliteCaptureStartTime(start_time);
+                            fileBodyType.setReceiveStopTime(end_time);
+                            fileBodyType.setSatelliteCaptureStopTime(end_time);
+                            fileBodyType.setTaskCount("1");
+
+                            interFaceFileType.setFileBody(fileBodyType);
+
+                            String date = String.valueOf(localDateTime.getYear()) + String.format("%02d", localDateTime.getMonth().getValue()) + String.format("%02d", localDateTime.getDayOfMonth());
+                            String filename = "MPSS_TRGS-JD-11_" + sat_code + "_" + date + "_" + String.format("%06d", message_ser) + ".TRTASK";
+
+                            File file = new File(FilePathUtil.getRealFilePath(f + "//" + filename));
+                            Writer w = new FileWriter(file);
+                            w.write(interFaceFileType.toString());
+                            w.close();
+
+                            if (message_ser == MESSAGE_MAX)
+                                message_ser = 0;
+                            else message_ser++;
                         }
                     }
                 }
             }
-            dtplanType.setPlan(planType);
 
-            String filename = "Plan_" + Instant.now().toEpochMilli() + ".xml";
-            String f = ConfigManager.getInstance().fetchXmlFilePath() + filename;
-
-            File file = new File(f);
-            Writer w = new FileWriter(file);
-            w.write(dtplanType.toString());
-            w.close();
 
             mongoClient.close();
             RedisPublish.CommonReturn(id, true, f, MsgType.TRANSMISSION_EXPORT_FINISHED);
@@ -356,6 +455,80 @@ public class RedisTaskSubscriber extends JedisPubSub {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.ORBIT_DATA_IMPORT_FINISHED);
         }
+    }
+
+    public static void main(String[] args) throws IOException {
+        LocalDateTime localDateTime = LocalDateTime.now();
+        MongoClient mongoClient = MangoDBConnector.getClient();
+        //获取名为"temp"的数据库
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+
+        MongoCollection<Document> sate_res = mongoDatabase.getCollection("satellite_resource");
+
+        String sat_code = sate_res.find().first().getString("sat_code");
+
+
+        //卫星资源表
+        FindIterable<Document> transmission_missions = mongoDatabase.getCollection("transmission_mission").find();
+
+
+        for (Document transmission_mission : transmission_missions) {
+
+            if (transmission_mission.containsKey("transmission_window")) {
+                ArrayList<Document> transmission_window = (ArrayList<Document>) transmission_mission.get("transmission_window");
+
+                for (Document window : transmission_window) {
+//
+                    ObjectFactory objectFactory = new ObjectFactory();
+                    InterFaceFileType interFaceFileType = objectFactory.createInterFaceFileType();
+                    FileHeaderType fileHeaderType = objectFactory.createFileHeaderType();
+                    fileHeaderType.setMessageType("TRTASK");
+                    fileHeaderType.setMessageID(String.format("%06d", message_ser));
+                    fileHeaderType.setOriginatorAddress("MPSS");
+                    fileHeaderType.setRecipientAddress("TRGS-JD-11");
+                    fileHeaderType.setCreationTime(localDateTime.toString());
+
+                    interFaceFileType.setFileHeader(fileHeaderType);
+
+                    FileBodyType fileBodyType = objectFactory.createFileBodyType();
+                    fileBodyType.setTrPlanID(String.format("%09d", message_ser));
+                    fileBodyType.setSatellite(sat_code);
+                    fileBodyType.setTmType("2");
+                    fileBodyType.setSensorType("GF/DGP");
+                    fileBodyType.setDownlinkChannel("7");
+                    fileBodyType.setReceptionType("LIVERECEPTION");
+                    fileBodyType.setOrbitID("0");
+                    fileBodyType.setIsQuickView("FALSE");
+                    fileBodyType.setIsCloud("FALSE");
+
+                    String start_time = window.getDate("start_time").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().toString();
+                    String end_time = window.getDate("end_time").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().toString();
+
+                    if (start_time.length() == 16)
+                        start_time += ":00";
+
+                    if (end_time.length() == 16)
+                        end_time += ":00";
+
+                    fileBodyType.setReceiveStartTime(start_time);
+                    fileBodyType.setSatelliteCaptureStartTime(start_time);
+                    fileBodyType.setReceiveStopTime(end_time);
+                    fileBodyType.setSatelliteCaptureStopTime(end_time);
+                    fileBodyType.setTaskCount("1");
+
+                    interFaceFileType.setFileBody(fileBodyType);
+
+                    System.out.println(interFaceFileType.toString());
+
+                    if (message_ser == MESSAGE_MAX)
+                        message_ser = 0;
+                    else message_ser++;
+                }
+            }
+        }
+
+
+        mongoClient.close();
     }
 
     private void procOrbitDataImport(JsonObject json, String id) {

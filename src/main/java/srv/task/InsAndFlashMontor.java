@@ -335,16 +335,19 @@ public class InsAndFlashMontor {
                     } catch (Exception e) {
                     }
                 } else {
+
                     try {
                         ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
 
-                        Document window = image_windows.get(0);
+                        //Document window = image_windows.get(0);
 
                         if (d.getString("mode").contains("sequential")) {
-                            Date start_time = window.getDate("start_time");
-                            Date end_time = window.getDate("end_time");
+                            for (Document window : image_windows) {
+                                Date start_time = window.getDate("start_time");
+                                Date end_time = window.getDate("end_time");
 
-                            totalSize += calcPBSize(start_time, end_time);
+                                totalSize += calcPBSize(start_time, end_time);
+                            }
 
                         } else if (d.getString("mode").contains("file")) {
                             boolean needCalc = false;
@@ -360,11 +363,13 @@ public class InsAndFlashMontor {
                             fileRecordTime.put(file_no, execution_time);
                             //fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
 
-                            if (needCalc) {
-                                Date start_time = window.getDate("start_time");
-                                Date end_time = window.getDate("end_time");
 
-                                totalSize += calcPBSize(start_time, end_time);
+                            if (needCalc) {
+                                for (Document window : image_windows) {
+                                    Date start_time = window.getDate("start_time");
+                                    Date end_time = window.getDate("end_time");
+                                    totalSize += calcPBSize(start_time, end_time);
+                                }
                             }
                         } else {
                         }

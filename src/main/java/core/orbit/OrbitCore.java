@@ -77,7 +77,7 @@ public class OrbitCore {
                 }
             }
 
-            Instant end = start.plusMillis(1000 * 60 * 60 * 24 * 7L);//2 days
+            Instant end = start.plusMillis(1000 * 60 * 60 * 24 * 7L);//7 days
 
             JsonParser parse = new JsonParser();  //创建json解析器
             JsonObject json = (JsonObject) parse.parse(first.toJson());
