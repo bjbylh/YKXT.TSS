@@ -114,7 +114,7 @@ public class RedisDataEntity {
         JsonObject data = new JsonObject();
 
         data.addProperty("result", isOK.toString());
-        data.addProperty("details",details);
+        data.addProperty("details", details);
         ret.add("Head", head);
         ret.add("Data", data);
         return ret.toString();

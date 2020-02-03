@@ -3,6 +3,7 @@ package core.orbit;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mongodb.MongoClient;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
@@ -90,6 +91,17 @@ public class OrbitCore {
             orbit_attitude_sample.deleteMany(queryBson);
 
             OrbitPrediction.OrbitPredictorII(start, OrbitPrediction.dateConvertToLocalDateTime(Date.from(start)), OrbitPrediction.dateConvertToLocalDateTime(Date.from(end)), 1, orbits, json);
+
+
+            MongoCollection<Document> Data_Orbitjson = mongoDatabase.getCollection("orbit_attitude");
+
+            queryBson = Filters.and(Filters.gte("time_point", Date.from(start)), Filters.lte("time_point", Date.from(end)));
+
+            FindIterable<Document> D_orbitjson = Data_Orbitjson.find(Filters.and(queryBson));
+            long count = Data_Orbitjson.count(Filters.and(queryBson));
+
+            AvoidSunshine.AvoidSunshineII(D_orbitjson, count, start);
+
 
             MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
             Instant instant_ft = Instant.now();

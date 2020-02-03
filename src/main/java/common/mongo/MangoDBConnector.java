@@ -24,6 +24,7 @@ public class MangoDBConnector {
 //    return new MongoClient("39.98.93.230", 27017);
     private static List<ServerAddress> LookupClusterAccessPointer() {
         List<String> dbAddress = Arrays.asList(ConfigManager.getInstance().fetchMongoDBAddress().split(","));
+        int port = ConfigManager.getInstance().fetchMongoDBPort();
         if (dbAddress.isEmpty()) {
             System.exit(-2001);
         }
@@ -31,7 +32,7 @@ public class MangoDBConnector {
         List<ServerAddress> rst = Lists.newArrayList();
 
         for (String address : dbAddress) {
-            rst.add(new ServerAddress(address, 27017));
+            rst.add(new ServerAddress(address, port));
         }
 
         return rst;

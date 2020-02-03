@@ -14,6 +14,7 @@ public class HeartBeatService {
 
     private HeartBeatService() {
     }
+
     public void startup() throws InterruptedException {
         HeartBeatService.DoWork doWork = new HeartBeatService.DoWork();
         doWork.start();
@@ -32,7 +33,7 @@ public class HeartBeatService {
             }
         }
 
-        private void report(){
+        private void report() {
             RedisPublish.heartbeat();
         }
     }

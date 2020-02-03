@@ -98,7 +98,8 @@ public class ReviewReset {
                 } else if (document.getString("key").equals("average_power_standby")) {
                     PowerAverage_Standby = Double.parseDouble(document.get("value").toString());
                 } else if (document.getString("key").equals("average_power_image")) {
-                    PowerAverage_Image = Double.parseDouble(document.get("value").toString());
+                    String value = document.getString("value");
+                    PowerAverage_Image = Double.parseDouble(value);
                 } else if (document.getString("key").equals("average_power_playback")) {
                     PowerAverage_Playback = Double.parseDouble(document.get("value").toString());
                 } else if (document.getString("key").equals("record_play_power")) {
@@ -127,7 +128,7 @@ public class ReviewReset {
         Time_Point = new Date[(int) OrbitDataCount];
         Orbital_SatPositionLLA = new double[(int) OrbitDataCount][3];
         OrbitalDataNum = 0;
-        if (Orbitjson!=null) {
+        if (Orbitjson != null) {
             for (Document document : Orbitjson) {
                 try {
                     Date time_point = document.getDate("time_point");
@@ -158,7 +159,7 @@ public class ReviewReset {
 
                     OrbitalDataNum = OrbitalDataNum + 1;
 
-                    if(OrbitalDataNum >= OrbitDataCount)
+                    if (OrbitalDataNum >= OrbitDataCount)
                         break;
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -181,7 +182,7 @@ public class ReviewReset {
                     Attitude_AngVel[AttitudeDataNum][1] = Double.parseDouble(document.get("V_pitch_angle").toString());
                     Attitude_AngVel[AttitudeDataNum][2] = Double.parseDouble(document.get("V_yaw_angle").toString());
                     AttitudeDataNum = AttitudeDataNum + 1;
-                    if(AttitudeDataNum >= AttitudeDataCount)
+                    if (AttitudeDataNum >= AttitudeDataCount)
                         break;
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -197,7 +198,7 @@ public class ReviewReset {
         int MissionChark_Number = 0;
         String[] MissionName = new String[ImageMissionjson.size()];
 
-        ArrayList<ArrayList<String>> MissionForOrderNumbers=new ArrayList<>();
+        ArrayList<ArrayList<String>> MissionForOrderNumbers = new ArrayList<>();
 
         try {
             if (ImageMissionjson != null) {
@@ -246,9 +247,9 @@ public class ReviewReset {
                             FalseMission[MissionNumber] = 0;
                         }
                         MissionName[MissionNumber] = document.getString("name");
-                        ArrayList<String> MissionForOrderNumbers_i=new ArrayList<>();
-                        MissionForOrderNumbers_i= (ArrayList<String>) document.get("order_numbers");
-                        MissionForOrderNumbers.add(MissionNumber,MissionForOrderNumbers_i);
+                        ArrayList<String> MissionForOrderNumbers_i = new ArrayList<>();
+                        MissionForOrderNumbers_i = (ArrayList<String>) document.get("order_numbers");
+                        MissionForOrderNumbers.add(MissionNumber, MissionForOrderNumbers_i);
                         MissionNumber = MissionNumber + 1;
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -261,17 +262,16 @@ public class ReviewReset {
         }
 
         //传输任务读入
-        if(TransmissionMissionJson != null) {
+        if (TransmissionMissionJson != null) {
             int StationMissionNumber = 0;
             try {
                 StationMissionNumber = 0;
-                Boolean fail_reasonFlag=TransmissionMissionJson.containsKey("fail_reason");
+                Boolean fail_reasonFlag = TransmissionMissionJson.containsKey("fail_reason");
                 if (fail_reasonFlag) {
                     if (TransmissionMissionJson.get("fail_reason").equals("不可见")) {
-                        fail_reasonFlag=true;
-                    }
-                    else {
-                        fail_reasonFlag=false;
+                        fail_reasonFlag = true;
+                    } else {
+                        fail_reasonFlag = false;
                     }
                 }
                 if (fail_reasonFlag == false) {
@@ -340,9 +340,9 @@ public class ReviewReset {
             double ChargeCurrent;
             if (Eclipse_Flag == true) {
                 //处于光照区
-                double[] Attitude_EulerAngTemp=new double[]{0,0,0};
+                double[] Attitude_EulerAngTemp = new double[]{0, 0, 0};
                 if (i > Attitude_EulerAng.length) {
-                    Attitude_EulerAngTemp=new double[]{0,0,0};
+                    Attitude_EulerAngTemp = new double[]{0, 0, 0};
                 }
                 ChargeCurrent = ChargeCurrentCalculation(r_sun, Orbital_SatPosition[i], Orbital_SatVelocity[i], Attitude_EulerAngTemp, PowerEfficiency, PowerGenerationMax);
             } else {
@@ -528,24 +528,23 @@ public class ReviewReset {
                 image_mission.updateOne(new Document("_id", ImageMissionjson.get(i).getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
 
                 //回溯订单
-                ArrayList<String> MissionForOrderNumbers_i=new ArrayList<>();
-                MissionForOrderNumbers_i=MissionForOrderNumbers.get(i);
-                for (String OrderNumber:MissionForOrderNumbers_i) {
-                    MongoCollection<Document> Data_ImageOrderjson=mongoDatabase.getCollection("image_order");
-                    FindIterable<Document> D_ImageOrderjson=Data_ImageOrderjson.find();
-                    ArrayList<Document> ImageOrderjson =new ArrayList<>();
-                    for (Document document:D_ImageOrderjson) {
+                ArrayList<String> MissionForOrderNumbers_i = new ArrayList<>();
+                MissionForOrderNumbers_i = MissionForOrderNumbers.get(i);
+                for (String OrderNumber : MissionForOrderNumbers_i) {
+                    MongoCollection<Document> Data_ImageOrderjson = mongoDatabase.getCollection("image_order");
+                    FindIterable<Document> D_ImageOrderjson = Data_ImageOrderjson.find();
+                    ArrayList<Document> ImageOrderjson = new ArrayList<>();
+                    for (Document document : D_ImageOrderjson) {
                         if (document.get("order_number").equals(OrderNumber)) {
-                            document.append("order_state","被退回");
-                            if(document.containsKey("_id"))
+                            document.append("order_state", "被退回");
+                            if (document.containsKey("_id"))
                                 document.remove("_id");
-                            Document modifiers_mid=new Document();
-                            modifiers_mid.append("$set",document);
-                            Data_ImageOrderjson.updateOne(new Document("order_number",OrderNumber),modifiers_mid,new UpdateOptions().upsert(true));
+                            Document modifiers_mid = new Document();
+                            modifiers_mid.append("$set", document);
+                            Data_ImageOrderjson.updateOne(new Document("order_number", OrderNumber), modifiers_mid, new UpdateOptions().upsert(true));
                         }
                     }
                 }
-
 
 
             } else if (FalseMission[i] == 4) {
@@ -566,26 +565,24 @@ public class ReviewReset {
                 image_mission.updateOne(new Document("_id", ImageMissionjson.get(i).getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
 
 
-
                 //回溯订单
-                ArrayList<String> MissionForOrderNumbers_i=new ArrayList<>();
-                MissionForOrderNumbers_i=MissionForOrderNumbers.get(i);
-                for (String OrderNumber:MissionForOrderNumbers_i) {
-                    MongoCollection<Document> Data_ImageOrderjson=mongoDatabase.getCollection("image_order");
-                    FindIterable<Document> D_ImageOrderjson=Data_ImageOrderjson.find();
-                    ArrayList<Document> ImageOrderjson =new ArrayList<>();
-                    for (Document document:D_ImageOrderjson) {
+                ArrayList<String> MissionForOrderNumbers_i = new ArrayList<>();
+                MissionForOrderNumbers_i = MissionForOrderNumbers.get(i);
+                for (String OrderNumber : MissionForOrderNumbers_i) {
+                    MongoCollection<Document> Data_ImageOrderjson = mongoDatabase.getCollection("image_order");
+                    FindIterable<Document> D_ImageOrderjson = Data_ImageOrderjson.find();
+                    ArrayList<Document> ImageOrderjson = new ArrayList<>();
+                    for (Document document : D_ImageOrderjson) {
                         if (document.get("order_number").equals(OrderNumber)) {
-                            document.append("order_state","被退回");
-                            if(document.containsKey("_id"))
+                            document.append("order_state", "被退回");
+                            if (document.containsKey("_id"))
                                 document.remove("_id");
-                            Document modifiers_mid=new Document();
-                            modifiers_mid.append("$set",document);
-                            Data_ImageOrderjson.updateOne(new Document("order_number",OrderNumber),modifiers_mid,new UpdateOptions().upsert(true));
+                            Document modifiers_mid = new Document();
+                            modifiers_mid.append("$set", document);
+                            Data_ImageOrderjson.updateOne(new Document("order_number", OrderNumber), modifiers_mid, new UpdateOptions().upsert(true));
                         }
                     }
                 }
-
 
 
             }

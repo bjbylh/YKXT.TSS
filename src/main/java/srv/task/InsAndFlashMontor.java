@@ -106,7 +106,7 @@ public class InsAndFlashMontor {
                     if (instruction_info != null && instruction_info.size() > 0) {
                         pool_inss_image.add(document);
 
-                        if (document.getString("work_mode").contains("记录") || document.getString("work_mode").contains("擦除")) {
+                        if (document.containsKey("work_mode") && (document.getString("work_mode").contains("记录") || document.getString("work_mode").contains("擦除"))) {
                             pool_files_image.add(document);
                         }
                     }
@@ -174,6 +174,7 @@ public class InsAndFlashMontor {
 
         private void insertInsData(ArrayList<Document> pool_inss, Map<Date, Document> insPool, Date now) {
             for (Document d : pool_inss) {
+                //System.out.println(d.toJson());
                 ArrayList<Document> instruction_info = (ArrayList<Document>) d.get("instruction_info");
                 for (Document ins : instruction_info) {
 
@@ -189,7 +190,7 @@ public class InsAndFlashMontor {
                         if (!insPool.containsKey(t))
                             insPool.put(t, newIns);
                     } else {
-                        //todo 删除文件
+                        //TODO 删除文件
                         String filename = FilePathUtil.getRealFilePath(ConfigManager.getInstance().fetchInsFilePath() + d.getString("mission_number"));
                         //+ newIns.getString("sequence_code"));
 

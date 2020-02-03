@@ -1,69 +1,102 @@
 package test;
 
 
-
 /**
  * Created by lihan on 2018/11/19.
  */
 public class taskInitTest {
     public static void main(String[] args) {
-//        String fileName = "orbit_attitude";
-//        BufferedWriter writer = null;
-//        String destDirName = "C:\\jsonfiles\\";
-//        File dir = new File(destDirName);
-//        if (dir.exists()) {
-//            System.out.println("创建目录" + destDirName + "失败，目标目录已经存在");
-//        }
-//        if (!destDirName.endsWith(File.separator)) {
-//            destDirName = destDirName + File.separator;
-//        }
-//        //创建目录
-//        if (dir.mkdirs()) {
-//            System.out.println("创建目录" + destDirName + "成功！");
-//        } else {
-//            System.out.println("创建目录" + destDirName + "失败！");
-//        }
-//        File file = new File(destDirName + fileName + ".txt");
-//        System.out.println(file + "file");
-//        //如果文件不存在，则新建一个
-//        if (!file.exists()) {
-//            try {
-//                file.createNewFile();
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//            System.out.println(fileName + ".txt文件不存在");
-//        }
-//        //写入
-//        MongoClient mongoClient = MangoDBConnector.getClient();
-//        MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
-//        Document main_task = mongoDatabase.getCollection("main_task").find().first();
-//        Object tp_info = main_task.get("tp_info");
-//        String s = tp_info.getClass().toString();
-//        System.out.println(s);
 //
-//        Object name = main_task.get("name");
-//        s = name.getClass().toString();
-//        System.out.println(s);
-//        ObjectFactory objectFactory = new ObjectFactory();
-//        HeadType headType = objectFactory.createHeadType();
-//        headType.setCreationTime("2010-10-10 00:00:00.000");
+//        int a = 3934;
+//        int b = 24079;
+//        //        String s = "1C11C000000B100201210102400179A55A150179A55A15";
+////        String s2 = "0B100201210102400179A55A150179A55A15";
+//        String s = "1C11C000000B100201210102400179A55A150179A55A15A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5";
+//        String s2 = "0B100201210102400179A55A150179A55A15A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5A5";
 //
-//        DtplanType dtplanType = objectFactory.createDtplanType();
-//        dtplanType.setHead(headType);
+//        byte[] data = hexStringToBytes(s);
+//        byte[] data2 = hexStringToBytes(s2);
 //
-//        PlanType planType = objectFactory.createPlanType();
-//        MissionType missionType = objectFactory.createMissionType();
-//        missionType.setSatelliteID("XX-1");
-//        missionType.setEndTime("2010-10-10 00:00:00.000");
-//        missionType.setStartTime("2010-10-10 00:00:00.000");
-//        missionType.setStationID("1");
-//        missionType.setTplanID("111");
-//
-//        planType.setMission(missionType);
-//
-//        dtplanType.setPlan(planType);
-//
-//        System.out.println(dtplanType.toString());
+//        System.out.println(
+//                CRC16_CCITT_FALSE(data));
+//        System.out.println(
+//                CRC16_XMODEM(data));
+//        System.out.println(
+//                CRC16_X25(data));
+//        System.out.println(
+//                CRC16_CCITT_FALSE(data2));
+//        System.out.println(
+//                CRC16_XMODEM(data2));
+//        System.out.println(
+//                CRC16_X25(data2));
+
+    }
+
+    private static byte[] hexStringToBytes(String hexString) {
+        if (hexString == null || hexString.equals("")) {
+            return null;
+        }
+        hexString = hexString.toUpperCase();
+        int length = hexString.length() / 2;
+        char[] hexChars = hexString.toCharArray();
+        byte[] d = new byte[length];
+        for (int i = 0; i < length; i++) {
+            int pos = i * 2;
+            d[i] = (byte) (charToByte(hexChars[pos]) << 4 | charToByte(hexChars[pos + 1]));
+        }
+        return d;
+    }
+
+    private static byte charToByte(char c) {
+        return (byte) "0123456789ABCDEF".indexOf(c);
+    }
+
+    public static int CRC16_CCITT_FALSE(byte[] buffer) {
+        int wCRCin = 0xffff;
+        int wCPoly = 0x1021;
+        for (byte b : buffer) {
+            for (int i = 0; i < 8; i++) {
+                boolean bit = ((b >> (7 - i) & 1) == 1);
+                boolean c15 = ((wCRCin >> 15 & 1) == 1);
+                wCRCin <<= 1;
+                if (c15 ^ bit)
+                    wCRCin ^= wCPoly;
+            }
+        }
+        wCRCin &= 0xffff;
+        return wCRCin ^= 0x0000;
+    }
+
+    public static int CRC16_XMODEM(byte[] buffer) {
+        int wCRCin = 0x0000; // initial value 65535
+        int wCPoly = 0x1021; // 0001 0000 0010 0001 (0, 5, 12)
+        for (byte b : buffer) {
+            for (int i = 0; i < 8; i++) {
+                boolean bit = ((b >> (7 - i) & 1) == 1);
+                boolean c15 = ((wCRCin >> 15 & 1) == 1);
+                wCRCin <<= 1;
+                if (c15 ^ bit)
+                    wCRCin ^= wCPoly;
+            }
+        }
+        wCRCin &= 0xffff;
+        return wCRCin ^= 0x0000;
+    }
+
+    public static int CRC16_X25(byte[] buffer) {
+        int wCRCin = 0xffff;
+        int wCPoly = 0x8408;
+        for (byte b : buffer) {
+            wCRCin ^= ((int) b & 0x00ff);
+            for (int j = 0; j < 8; j++) {
+                if ((wCRCin & 0x0001) != 0) {
+                    wCRCin >>= 1;
+                    wCRCin ^= wCPoly;
+                } else {
+                    wCRCin >>= 1;
+                }
+            }
+        }
+        return wCRCin ^= 0xffff;
     }
 }

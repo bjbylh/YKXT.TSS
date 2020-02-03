@@ -1,9 +1,9 @@
 package test;
 
 import common.def.InsType;
+import common.redis.MsgType;
 import common.redis.RedisConnector;
 import common.redis.RedisDataEntity;
-import common.redis.MsgType;
 import redis.clients.jedis.Jedis;
 
 /**

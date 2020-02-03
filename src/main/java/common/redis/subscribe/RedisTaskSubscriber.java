@@ -87,6 +87,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
             } else if (asString.equals(MsgType.INS_GEN.name())) {
 
+                //procBlackCali(json, id);
                 procInsGen(json, id);
 
             } else if (asString.equals(MsgType.TRANSMISSION_EXPORT.name())) {
@@ -96,6 +97,10 @@ public class RedisTaskSubscriber extends JedisPubSub {
             } else if (asString.equals(MsgType.BLACK_CALI.name())) {
 
                 procBlackCali(json, id);
+
+            } else if (asString.equals(MsgType.MANUAL_LOOP.name())) {
+
+                proManualLoop(json, id);
 
             } else return;
         } catch (Exception e) {
@@ -167,6 +172,37 @@ public class RedisTaskSubscriber extends JedisPubSub {
         }
     }
 
+    private void proManualLoop(JsonObject json, String id) {
+        try {
+            String mission_num = json.get("content").getAsString();
+
+            Document image_mission = null;
+            MongoClient mongoClient = MangoDBConnector.getClient();
+            //获取名为"temp"的数据库
+            MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+
+            FindIterable<Document> image_mission1 = mongoDatabase.getCollection("image_mission").find();
+
+            for (Document d : image_mission1) {
+                if (d.getString("mission_number").equals(mission_num)) {
+                    image_mission = d;
+                    break;
+                }
+
+            }
+
+            String s = SingleInsGeneration.SingleInsGeneration(image_mission, ConfigManager.getInstance().fetchInsFilePath());
+
+            mongoClient.close();
+            RedisPublish.CommonReturn(id, true, s, MsgType.MANUAL_LOOP_FINISHED);
+
+
+        } catch (Exception e) {
+            String message = e.getMessage();
+            RedisPublish.CommonReturn(id, false, message, MsgType.MANUAL_LOOP_FINISHED);
+        }
+    }
+
     private void procBlackCali(JsonObject json, String id) {
         try {
             String order_number = json.get("image_order_num").getAsString();
@@ -212,7 +248,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
                 if (d.getString("mission_number").contains(mission_number)) {
 
                     String rst = FileClearInsGenInf.FileClearInsGenInfII(d, ConfigManager.getInstance().fetchInsFilePath());
-                    //todo
+                    //TODO
                     RedisPublish.CommonReturn(id, true, rst, MsgType.FILE_CLEAR_FINISHED);
 
                     break;

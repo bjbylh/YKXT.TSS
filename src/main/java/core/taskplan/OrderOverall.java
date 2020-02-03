@@ -7,7 +7,6 @@ import com.mongodb.client.model.UpdateOptions;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
-import javax.print.Doc;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -18,7 +17,7 @@ import static java.lang.Math.*;
 public class OrderOverall {
     private static double Re = 6371393;                  //地球半径，单位为：米
     private static double ViewLength = 50000;              //视场宽度
-    private static double MissionIntervalMin=100;        //任务最小间隔时间
+    private static double MissionIntervalMin = 100;        //任务最小间隔时间
 
 
     public static ArrayList<String> OrderOverallII(ArrayList<Document> ImageOrderjson) {
@@ -49,15 +48,15 @@ public class OrderOverall {
         ArrayList<Object> OrderNumber = new ArrayList<>();
         ArrayList<Object> MissioNumber = new ArrayList<>();
 
-        ArrayList<Object> Instruction=new ArrayList<>();
-        ArrayList<Object> StationNumber=new ArrayList<>();
-        ArrayList<Object> RecordFileNo=new ArrayList<>();
-        ArrayList<Object> AutoAsignRecordFile=new ArrayList<>();
-        ArrayList<Object> MissionParams=new ArrayList<>();
-        ArrayList<Object> DefaultMissionParams=new ArrayList<>();
+        ArrayList<Object> Instruction = new ArrayList<>();
+        ArrayList<Object> StationNumber = new ArrayList<>();
+        ArrayList<Object> RecordFileNo = new ArrayList<>();
+        ArrayList<Object> AutoAsignRecordFile = new ArrayList<>();
+        ArrayList<Object> MissionParams = new ArrayList<>();
+        ArrayList<Object> DefaultMissionParams = new ArrayList<>();
 
-        ArrayList<Object> ScanHeightOrbit=new ArrayList<>();
-        ArrayList<Object> RollBias=new ArrayList<>();
+        ArrayList<Object> ScanHeightOrbit = new ArrayList<>();
+        ArrayList<Object> RollBias = new ArrayList<>();
 
         int OrderMissionNum = 0;
         for (Document document : ImageOrderjsonCopy) {
@@ -148,29 +147,29 @@ public class OrderOverall {
                     //判定指令部分
                     if (CombineFlag == true) {
                         if (Instruction.get(ConventionalImagModeList.get(i)) == Instruction.get(ConventionalImagModeList.get(j)) &&
-                                StationNumber.get(ConventionalImagModeList.get(i))==StationNumber.get(ConventionalImagModeList.get(j)) &&
-                                RecordFileNo.get(ConventionalImagModeList.get(i))==RecordFileNo.get(ConventionalImagModeList.get(j)) &&
-                                AutoAsignRecordFile.get(ConventionalImagModeList.get(i))==AutoAsignRecordFile.get(ConventionalImagModeList.get(j)) &&
-                                MissionParams.get(ConventionalImagModeList.get(i))==MissionParams.get(ConventionalImagModeList.get(j))) {
-                            CombineFlag=true;
-                        }else {
-                            CombineFlag=false;
+                                StationNumber.get(ConventionalImagModeList.get(i)) == StationNumber.get(ConventionalImagModeList.get(j)) &&
+                                RecordFileNo.get(ConventionalImagModeList.get(i)) == RecordFileNo.get(ConventionalImagModeList.get(j)) &&
+                                AutoAsignRecordFile.get(ConventionalImagModeList.get(i)) == AutoAsignRecordFile.get(ConventionalImagModeList.get(j)) &&
+                                MissionParams.get(ConventionalImagModeList.get(i)) == MissionParams.get(ConventionalImagModeList.get(j))) {
+                            CombineFlag = true;
+                        } else {
+                            CombineFlag = false;
                         }
                     }
                     if (CombineFlag == true) {
-                        CombinedCollection(target_region_i,target_region_j);
+                        CombinedCollection(target_region_i, target_region_j);
                         ImageRegion.set(ConventionalImagModeList.get(i), target_region_i);
                         //
-                        int OveralNum=OverallResultList.get(ConventionalImagModeList.get(i))+1;
-                        OverallResultList.set(ConventionalImagModeList.get(i),OveralNum);
-                        OverallResultList.set(ConventionalImagModeList.get(j),0);
-                        ArrayList<Integer> arrayList=OverallMissionNumList.get(ConventionalImagModeList.get(i));
+                        int OveralNum = OverallResultList.get(ConventionalImagModeList.get(i)) + 1;
+                        OverallResultList.set(ConventionalImagModeList.get(i), OveralNum);
+                        OverallResultList.set(ConventionalImagModeList.get(j), 0);
+                        ArrayList<Integer> arrayList = OverallMissionNumList.get(ConventionalImagModeList.get(i));
                         arrayList.add(ConventionalImagModeList.get(j));
-                        OverallMissionNumList.set(ConventionalImagModeList.get(i),arrayList);
+                        OverallMissionNumList.set(ConventionalImagModeList.get(i), arrayList);
 
                         ConventionalImageNum = ConventionalImageNum - 1;
                         for (int k = j; k < ConventionalImageNum; k++) {
-                            ConventionalImagModeList.set(k,k+1);
+                            ConventionalImagModeList.set(k, k + 1);
                         }
                     }
                 }
@@ -185,24 +184,24 @@ public class OrderOverall {
         MongoCollection<Document> image_order = mongoDatabase.getCollection("image_order");
         for (int i = 0; i < OrderMissionNum; i++) {
             if (OverallResultList.get(i) != 0) {
-                SimpleDateFormat dateFormat=new SimpleDateFormat("yyyyMMddHHmmss");
-                Date startTimeDate= (Date) ExpectedStartTime.get(i);
-                String startTimestr=dateFormat.format(startTimeDate);
-                String imageModelstr=ImageMode.get(i).toString();
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+                Date startTimeDate = (Date) ExpectedStartTime.get(i);
+                String startTimestr = dateFormat.format(startTimeDate);
+                String imageModelstr = ImageMode.get(i).toString();
                 if (imageModelstr.equals("常规")) {
-                    imageModelstr="CG";
-                }else if (imageModelstr.equals("凝视")) {
-                    imageModelstr="NS";
-                }else if (imageModelstr.equals("临边观测")) {
-                    imageModelstr="LB";
-                }else if (imageModelstr.equals("恒星定标")) {
-                    imageModelstr="DB";
-                }else if (imageModelstr.equals("定标")) {
-                    imageModelstr="DB";
-                }else if (imageModelstr.equals("黑体定标")) {
-                    imageModelstr="HTDB";
+                    imageModelstr = "CG";
+                } else if (imageModelstr.equals("凝视")) {
+                    imageModelstr = "NS";
+                } else if (imageModelstr.equals("临边观测")) {
+                    imageModelstr = "LB";
+                } else if (imageModelstr.equals("恒星定标")) {
+                    imageModelstr = "DB";
+                } else if (imageModelstr.equals("定标")) {
+                    imageModelstr = "DB";
+                } else if (imageModelstr.equals("黑体定标")) {
+                    imageModelstr = "HTDB";
                 }
-                String mission_number = "im_" + startTimestr+"_"+imageModelstr+"_"+ Instant.now().toEpochMilli();
+                String mission_number = "im_" + startTimestr + "_" + imageModelstr + "_" + Instant.now().toEpochMilli();
 
                 Document ImageMissionjson = new Document();
                 ImageMissionjson.append("image_region", ImageRegion.get(i));
@@ -222,22 +221,22 @@ public class OrderOverall {
                 ImageMissionjson.append("mission_state", "待规划");
                 ImageMissionjson.append("mission_interval_min", Double.toString(MissionIntervalMin));
 
-                ImageMissionjson.append("instruction_block_params",Instruction.get(i));
-                ImageMissionjson.append("station_number",StationNumber.get(i));
-                ImageMissionjson.append("record_file_no",RecordFileNo.get(i));
-                ImageMissionjson.append("auto_asign_record_file",AutoAsignRecordFile.get(i));
-                ImageMissionjson.append("mission_params",MissionParams.get(i));
-                ImageMissionjson.append("default_mission_params",DefaultMissionParams.get(i));
+                ImageMissionjson.append("instruction_block_params", Instruction.get(i));
+                ImageMissionjson.append("station_number", StationNumber.get(i));
+                ImageMissionjson.append("record_file_no", RecordFileNo.get(i));
+                ImageMissionjson.append("auto_asign_record_file", AutoAsignRecordFile.get(i));
+                ImageMissionjson.append("mission_params", MissionParams.get(i));
+                ImageMissionjson.append("default_mission_params", DefaultMissionParams.get(i));
 
-                ImageMissionjson.append("scan_height_orbit",ScanHeightOrbit.get(i));
-                ImageMissionjson.append("scan_roll_bias",RollBias.get(i));
+                ImageMissionjson.append("scan_height_orbit", ScanHeightOrbit.get(i));
+                ImageMissionjson.append("scan_roll_bias", RollBias.get(i));
 
 
                 ArrayList<Object> OrderNumber_List = new ArrayList<>();
                 for (int j = 0; j < OverallResultList.get(i); j++) {
-                    if(ImageOrderjson.get(OverallMissionNumList.get(i).get(j)).containsKey("_id"))
+                    if (ImageOrderjson.get(OverallMissionNumList.get(i).get(j)).containsKey("_id"))
                         ImageOrderjson.get(OverallMissionNumList.get(i).get(j)).remove("_id");
-                    ArrayList<Integer> arrayList=OverallMissionNumList.get(i);
+                    ArrayList<Integer> arrayList = OverallMissionNumList.get(i);
                     OrderNumber_List.add(OrderNumber.get(arrayList.get(j)));
                     ImageOrderjson.get(arrayList.get(j)).append("mission_number", mission_number);
                     ImageOrderjson.get(arrayList.get(j)).append("order_state", "待规划");
@@ -590,30 +589,30 @@ public class OrderOverall {
                 TargetRegion_i.append("type", "GeometryCollection");
                 TargetRegion_i.append("geometries", geometries_i);
             } else if (GeometryFeature_i == true && GeometryFeature_j == true) {
-                ArrayList<Document> geometries_i= (ArrayList<Document>) TargetRegion_i.get("geometry");
-                ArrayList<Document> geometries_j= (ArrayList<Document>) TargetRegion_j.get("geometry");
+                ArrayList<Document> geometries_i = (ArrayList<Document>) TargetRegion_i.get("geometry");
+                ArrayList<Document> geometries_j = (ArrayList<Document>) TargetRegion_j.get("geometry");
                 geometries_i.addAll(geometries_j);
                 TargetRegion_i.append("type", "GeometryCollection");
                 TargetRegion_i.append("geometries", geometries_i);
             } else if (GeometryFeature_i == false && GeometryFeature_j == false) {
-                ArrayList<Document> geometries_i=new ArrayList<Document>();
-                ArrayList<Document> geometries_j=new ArrayList<Document>();
-                ArrayList<Document> features= (ArrayList<Document>) TargetRegion_i.get("features");
-                for (Document subfeatures:features) {
+                ArrayList<Document> geometries_i = new ArrayList<Document>();
+                ArrayList<Document> geometries_j = new ArrayList<Document>();
+                ArrayList<Document> features = (ArrayList<Document>) TargetRegion_i.get("features");
+                for (Document subfeatures : features) {
                     geometries_i.add((Document) subfeatures.get("geometry"));
                 }
-                features= (ArrayList<Document>) TargetRegion_j.get("features");
-                for (Document subfeatures:features) {
+                features = (ArrayList<Document>) TargetRegion_j.get("features");
+                for (Document subfeatures : features) {
                     geometries_j.add((Document) subfeatures.get("geometry"));
                 }
                 geometries_i.addAll(geometries_j);
                 TargetRegion_i.append("type", "GeometryCollection");
                 TargetRegion_i.append("geometries", geometries_i);
             } else if (GeometryFeature_i == false && GeometryFeature_j == true) {
-                ArrayList<Document> geometries_i=new ArrayList<Document>();
-                ArrayList<Document> geometries_j= (ArrayList<Document>) TargetRegion_j.get("geometry");
-                ArrayList<Document> features= (ArrayList<Document>) TargetRegion_i.get("features");
-                for (Document subfeatures:features) {
+                ArrayList<Document> geometries_i = new ArrayList<Document>();
+                ArrayList<Document> geometries_j = (ArrayList<Document>) TargetRegion_j.get("geometry");
+                ArrayList<Document> features = (ArrayList<Document>) TargetRegion_i.get("features");
+                for (Document subfeatures : features) {
                     geometries_i.add((Document) subfeatures.get("geometry"));
                 }
                 geometries_i.addAll(geometries_j);
@@ -639,7 +638,6 @@ public class OrderOverall {
                 TargetRegion_i.append("geometries", geometry_i);
             }
         }
-
 
 
     }

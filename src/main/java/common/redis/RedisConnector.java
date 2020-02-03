@@ -14,9 +14,9 @@ public class RedisConnector {
 //    private static String RSIP = "192.168.71.211";
 
     //Redis的端口
-    private final static int RSPORT = 6379;
+    //private static int RSPORT = 12718;
     //访问密码
-    private static String AUTH = "admin";
+    //private static String AUTH = "Sts3000P@ssw0rd";
     //可用连接实例的最大数目，默认值为8；
     //如果赋值为-1，则表示不限制；如果pool已经分配了maxActive个jedis实例，则此时pool的状态为exhausted(耗尽)。
     private static int MAX_ACTIVE = 1024;
@@ -39,7 +39,13 @@ public class RedisConnector {
             config.setMaxIdle(MAX_IDLE);
             //config.setMaxWait(MAX_WAIT);
             config.setTestOnBorrow(TEST_ON_BORROW);
-            jedisPool = new JedisPool(config, RSIP, RSPORT, TIMEOUT);
+            int RSPORT = ConfigManager.getInstance().fetchRedisPort();
+            String AUTH = ConfigManager.getInstance().fetchRedisAuth();
+            if(AUTH.equals(""))
+                jedisPool = new JedisPool(config, RSIP, RSPORT, TIMEOUT);
+            else
+                jedisPool = new JedisPool(config, RSIP, RSPORT, TIMEOUT, AUTH);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -75,7 +81,7 @@ public class RedisConnector {
         }
     }
 
-    public static void Close(){
+    public static void Close() {
         if (jedisPool != null) {
             jedisPool.destroy();
         }

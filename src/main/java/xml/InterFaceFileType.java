@@ -1,4 +1,3 @@
-
 package xml;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -9,9 +8,9 @@ import javax.xml.bind.annotation.XmlType;
 
 /**
  * <p>InterFaceFileType complex type�� Java �ࡣ
- * 
+ * <p>
  * <p>����ģʽƬ��ָ�������ڴ����е�Ԥ�����ݡ�
- * 
+ * <p>
  * <pre>
  * &lt;complexType name="InterFaceFileType">
  *   &lt;complexContent>
@@ -24,13 +23,11 @@ import javax.xml.bind.annotation.XmlType;
  *   &lt;/complexContent>
  * &lt;/complexType>
  * </pre>
- * 
- * 
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "InterFaceFileType", propOrder = {
-    "fileHeader",
-    "fileBody"
+        "fileHeader",
+        "fileBody"
 })
 public class InterFaceFileType {
 
@@ -41,11 +38,9 @@ public class InterFaceFileType {
 
     /**
      * ��ȡfileHeader���Ե�ֵ��
-     * 
-     * @return
-     *     possible object is
-     *     {@link FileHeaderType }
-     *     
+     *
+     * @return possible object is
+     * {@link FileHeaderType }
      */
     public FileHeaderType getFileHeader() {
         return fileHeader;
@@ -53,11 +48,9 @@ public class InterFaceFileType {
 
     /**
      * ����fileHeader���Ե�ֵ��
-     * 
-     * @param value
-     *     allowed object is
-     *     {@link FileHeaderType }
-     *     
+     *
+     * @param value allowed object is
+     *              {@link FileHeaderType }
      */
     public void setFileHeader(FileHeaderType value) {
         this.fileHeader = value;
@@ -65,11 +58,9 @@ public class InterFaceFileType {
 
     /**
      * ��ȡfileBody���Ե�ֵ��
-     * 
-     * @return
-     *     possible object is
-     *     {@link FileBodyType }
-     *     
+     *
+     * @return possible object is
+     * {@link FileBodyType }
      */
     public FileBodyType getFileBody() {
         return fileBody;
@@ -77,17 +68,15 @@ public class InterFaceFileType {
 
     /**
      * ����fileBody���Ե�ֵ��
-     * 
-     * @param value
-     *     allowed object is
-     *     {@link FileBodyType }
-     *     
+     *
+     * @param value allowed object is
+     *              {@link FileBodyType }
      */
     public void setFileBody(FileBodyType value) {
         this.fileBody = value;
     }
 
-    public String toString(){
+    public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         sb.append("<InterFaceFile>");

@@ -1,8 +1,8 @@
 package common.redis;
 
+import common.redis.subscribe.RedisTaskSubscriber;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPubSub;
-import common.redis.subscribe.RedisTaskSubscriber;
 
 /**
  * Created by lihan on 2018/11/15.
@@ -12,7 +12,7 @@ public class RedisSubscribe extends Thread {
 
     private String channel = "mychannel";
 
-    public RedisSubscribe(JedisPubSub jedisPubSub,String channel) {
+    public RedisSubscribe(JedisPubSub jedisPubSub, String channel) {
         super("SubThread");
         this.jedisPubSub = jedisPubSub;
         this.channel = channel;

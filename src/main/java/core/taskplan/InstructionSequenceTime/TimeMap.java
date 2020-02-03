@@ -101,6 +101,11 @@ public class TimeMap {
         TCDGG04 tcdgg04=new TCDGG04();
         timemap.put("TCDGG04",tcdgg04);
 
+        //lihan added start
+        TCKG01_NONE tckg01_none = new TCKG01_NONE();
+        timemap.put("TCKG01_NONE",tckg01_none);
+        //lihan added end
+
         return timemap;
     }
 }

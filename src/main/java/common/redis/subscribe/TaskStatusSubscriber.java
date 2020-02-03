@@ -28,14 +28,14 @@ public class TaskStatusSubscriber extends JedisPubSub {
 
         String asString = msg.getAsJsonObject("Head").get("type").getAsString();
 
-        if(!asString.equals(MsgType.TASK_STATUS_CHANGE.name()))
+        if (!asString.equals(MsgType.TASK_STATUS_CHANGE.name()))
             return;
 
         JsonObject json = msg.getAsJsonObject("Data");
         String taskID = json.get("taskID").getAsString();
         String status = json.get("status").getAsString();
 
-        if(status.equals("SUSPEND") || status.equals("DELETE")){
+        if (status.equals("SUSPEND") || status.equals("DELETE")) {
             MongoClient mongoClient = MangoDBConnector.getClient();
             MongoDatabase mongoDatabase = mongoClient.getDatabase("OCS");
 

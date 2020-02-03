@@ -29,9 +29,21 @@ public class ConfigManager {
         return bundle.getString("MONGODB_IP");
     }
 
+    public int fetchMongoDBPort() {
+
+        return Integer.parseInt(bundle.getString("MONGODB_PORT"));
+    }
 
     public String fetchRedisAddress() {
         return bundle.getString("REDIS_IP");
+    }
+
+    public int fetchRedisPort() {
+        return Integer.parseInt(bundle.getString("REDIS_PORT"));
+    }
+
+    public String fetchRedisAuth() {
+        return bundle.getString("REDIS_AUTH");
     }
 
     public String fetchJsonPath() {
@@ -47,7 +59,13 @@ public class ConfigManager {
     }
 
     public boolean fetchDebug() {
-        if (bundle.getString("DEBUG").toLowerCase().equals("true")) return true;
+        if (bundle.getString("INS_GEN_ENABLE").toLowerCase().equals("true")) return true;
         else return false;
+    }
+
+    public static void main(String[] args) {
+        String s = ConfigManager.getInstance().fetchRedisAuth();
+        Boolean b = s.equals("");
+        System.out.println(b);
     }
 }

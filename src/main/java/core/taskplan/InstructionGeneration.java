@@ -1,5 +1,6 @@
 package core.taskplan;
 
+
 import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -252,7 +253,9 @@ public class InstructionGeneration {
             for (int i = 0; i < MissionStarTimeArray.size(); i++) {
                 int j = i;
                 ArrayList<String> MissionTaskModelChild = new ArrayList<>();
-                MissionTaskModelChild.add("TASK01");
+                //MissionTaskModelChild.add("TASK01");
+                MissionTaskModelChild.add("TASK10");
+                MissionTaskModelChild.add("TASK09");
                 MissionTaskModel.put(j, MissionTaskModelChild);
             }
         }
@@ -897,6 +900,7 @@ public class InstructionGeneration {
                                     } else {
                                         sequencecode = document1.get("sequence_code").toString();
                                     }
+                                    System.out.println("序列：" + sequencecode);
                                     boolean MoreThanFlag = false;
                                     ArrayList<String> YouXiaoshujuList = new ArrayList<>();
                                     ArrayList<Byte> ZhiLingGeshuList = new ArrayList<>();
@@ -1069,9 +1073,65 @@ public class InstructionGeneration {
                                                     InstDelta_tLastAll = InstDelta_tLastAll + Double.parseDouble(InstDelta_t);//Integer.parseInt(InstDelta_t)*0.125;
                                                     //执行该指令
                                                     if (InstCode != "") {
+                                                        System.out.println(InstCode);
+                                                        if (InstCode.equals("TCS297")) {
+                                                            System.out.println(InstCode);
+                                                        }
                                                         for (Document document4 : MetaInstrunctionjson) {
                                                             if (document4.get("code").toString().equals(InstCode)) {
-                                                                if (document4.containsKey("hex")) {
+                                                                if (InstCode.contains("NTCY200")) {
+                                                                    String MetaHex = document4.get("hex").toString();
+                                                                    byte[] byteMetaHex = hexStringToBytes(MetaHex);
+                                                                    if (document4.containsKey("params") && document4.get("params") != null) {
+                                                                        ArrayList<Document> MetaParams = (ArrayList<Document>) document4.get("params");
+                                                                        if (MetaParams.size() != 0) {
+                                                                            for (Document MetaParamsChild : MetaParams) {
+                                                                                //任务参数读取
+                                                                                if (MetaParamsChild.containsKey("related_param_id")) {
+                                                                                    String MetaParamsId = MetaParamsChild.get("related_param_id").toString();
+                                                                                    //搜索任务中相应的id值
+                                                                                    for (Document MissionMetaParamsChildParamsChild : MissionInstructionArrayChild) {
+                                                                                        if (MissionMetaParamsChildParamsChild.containsKey("code") && MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsId)) {
+                                                                                            if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
+                                                                                                //System.out.println(MetaParamsId);
+                                                                                                float temeratureFloat = Float.parseFloat(MissionMetaParamsChildParamsChild.get("value").toString());
+                                                                                                String MetaParamsIdValue = TemperatureFlotToStr(temeratureFloat);
+                                                                                                int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                                                                int byteLength = MetaParamsChild.getInteger("byte_length");
+                                                                                                byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
+                                                                                                for (int j = byteIndex; j < byteIndex + byteLength; j++) {
+                                                                                                    if (j < byteMetaHex.length && j - byteIndex < bytevalueHex.length) {
+                                                                                                        byteMetaHex[j] = bytevalueHex[j - byteIndex];
+                                                                                                    }
+                                                                                                }
+                                                                                                break;
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                    MetaHex = bytesToHexString(byteMetaHex);
+                                                                    byte[] YouXiaoChangDuByte = new byte[]{(byte) (byteMetaHex.length)};
+                                                                    String YouXiaoChangDuString = bytesToHexString(YouXiaoChangDuByte);
+                                                                    int ZhiXingJianGeInt = (new Double(Double.parseDouble(InstDelta_t) / 0.125)).intValue();
+                                                                    byte[] ZhiXingJianGeByte = new byte[]{(byte) ((ZhiXingJianGeInt >> 8) & 0xFF), (byte) ((ZhiXingJianGeInt) & 0xFF)};
+                                                                    String ZhiXingJianGeString = bytesToHexString(ZhiXingJianGeByte);
+                                                                    //String APIDString = "FFFF";//????????????
+                                                                    String APIDString = "0" + document4.get("apid").toString();
+                                                                    if ((YouXiaoData + APIDString + YouXiaoChangDuString + MetaHex + ZhiXingJianGeString).length() > 1000) {
+                                                                        String youxiaoDataTemp = YouXiaoData;
+                                                                        YouXiaoshujuList.add(youxiaoDataTemp);
+                                                                        Byte ZhilingNumTemp = ZhilingNum;
+                                                                        ZhiLingGeshuList.add(ZhilingNumTemp);
+                                                                        MoreThanFlag = true;
+                                                                        YouXiaoData = "";
+                                                                        ZhilingNum = 0;
+                                                                    }
+                                                                    YouXiaoData = YouXiaoData + APIDString + YouXiaoChangDuString + MetaHex + ZhiXingJianGeString;
+                                                                    ZhilingNum = (byte) (ZhilingNum + 1);
+                                                                } else if (document4.containsKey("hex")) {
                                                                     String MetaHex = document4.get("hex").toString();
                                                                     byte[] byteMetaHex = hexStringToBytes(MetaHex);
                                                                     if (document4.containsKey("params") && document4.get("params") != null) {
@@ -1368,12 +1428,16 @@ public class InstructionGeneration {
                                                                     } else if (InstCode.equals("K4425")) {
                                                                         MetaHex = "100280210118";
                                                                         MetaHex = MetaHex + "A81C";
-                                                                    } else if (InstCode.equals("NTCY200")) {
-                                                                        MetaHex = "10FFFF210114";
+                                                                    }
+                                                                    /*
+                                                                    else if (InstCode.equals("NTCY200")) {
+                                                                        MetaHex="10FFFF210114";
                                                                         for (int j = 13; j <= 258; j++) {
-                                                                            MetaHex = MetaHex + "00";
+                                                                            MetaHex=MetaHex+"00";
                                                                         }
-                                                                    } else {
+                                                                    }
+                                                                     */
+                                                                    else {
                                                                         break;
                                                                     }
                                                                     byte[] byteMetaHex = hexStringToBytes(MetaHex);
@@ -1512,12 +1576,24 @@ public class InstructionGeneration {
                 //更新执行时间
                 for (int j = 0; j < MissionInstructionHexChild.size(); j++) {
                     String KaiShiShiJian = timeHashMap.get(MissionInstructionCodeChild.get(j)).ExecutionTime(timeVariable, MissionInstructionWorkCode.get(j)).toUpperCase();
+//                    System.out.println(KaiShiShiJian);
+                    //lihan added start
+                    if (KaiShiShiJian.length() < 8) {
+                        for (int i_id = KaiShiShiJian.length(); i_id < 8; i_id++) {
+                            KaiShiShiJian="0"+KaiShiShiJian;
+                        }
+                    }else if (KaiShiShiJian.length() > 8) {
+                        KaiShiShiJian=KaiShiShiJian.substring(KaiShiShiJian.length()-8);
+                    }
+                    //lihan added end
                     String YingYongShuJuTemp = MissionInstructionHexChild.get(j);
                     MissionInstructionHexChild.set(j, KaiShiShiJian + YingYongShuJuTemp);
                     Instant time_ZhiXing = zerostart;
                     time_ZhiXing = time_ZhiXing.plusSeconds((long) (Integer.parseInt(KaiShiShiJian, 16)));
                     Date time_ZhixingDate = Date.from(time_ZhiXing);
                     MissionInstructionTimeChild.set(j, time_ZhixingDate);
+                    System.out.println("序列号：" + MissionInstructionCodeChild.get(j));
+                    System.out.println("执行时间：" + Integer.parseInt(KaiShiShiJian, 16));
                 }
             }
 
@@ -1643,6 +1719,7 @@ public class InstructionGeneration {
             MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
             image_mission.updateOne(new Document("mission_number", ImageMissionjson.get(i).get("mission_number").toString()), modifiers, new UpdateOptions().upsert(true));
         }
+        mongoClient.close();
     }
 
     private static Boolean InstructionStationMission(Document TransmissionMissionJson, ArrayList<Document> StationMissionjson, String FilePath) {
@@ -2028,6 +2105,7 @@ public class InstructionGeneration {
                                                 InstDelta_tLastAll = InstDelta_tLastAll + Double.parseDouble(InstDelta_t);//Integer.parseInt(InstDelta_t)*0.125;
                                                 //执行该指令
                                                 if (InstCode != "") {
+                                                    System.out.println(InstCode);
                                                     for (Document document4 : MetaInstrunctionjson) {
                                                         if (document4.get("code").toString().equals(InstCode)) {
                                                             if (document4.containsKey("hex")) {
@@ -2340,6 +2418,15 @@ public class InstructionGeneration {
             //更新执行时间
             for (int j = 0; j < MissionInstructionHexChild.size(); j++) {
                 String KaiShiShiJian = timeHashMap.get(MissionInstructionCodeChild.get(j)).ExecutionTime(timeVariable, workcode).toUpperCase();
+                //lihan added start
+                if (KaiShiShiJian.length() < 8) {
+                    for (int i_id = KaiShiShiJian.length(); i_id < 8; i_id++) {
+                        KaiShiShiJian="0"+KaiShiShiJian;
+                    }
+                }else if (KaiShiShiJian.length() > 8) {
+                    KaiShiShiJian=KaiShiShiJian.substring(KaiShiShiJian.length()-8);
+                }
+                //lihan added end
                 String YingYongShuJuTemp = MissionInstructionHexChild.get(j);
                 MissionInstructionHexChild.set(j, KaiShiShiJian + YingYongShuJuTemp);
                 Instant time_ZhiXing = zerostart;
@@ -2662,7 +2749,7 @@ public class InstructionGeneration {
     }
 
     //CRC校验
-    private static int getCRC_0xFFFF(byte[] data, int len)        //CRC校验
+    private static int getCRC_0xFFFFold(byte[] data, int len)        //CRC校验
     {
         byte hbit = 0;
         int crc = 0xffff;
@@ -2673,6 +2760,24 @@ public class InstructionGeneration {
             crc ^= crc0xFFFF_table_[index_i];
         }
         return crc;
+    }
+
+    private static int getCRC_0xFFFF(byte[] buffer, int len)        //CRC校验
+    {
+        int wCRCin = 0xffff;
+        int wCPoly = 0x8408;
+        for (byte b : buffer) {
+            wCRCin ^= ((int) b & 0x00ff);
+            for (int j = 0; j < 8; j++) {
+                if ((wCRCin & 0x0001) != 0) {
+                    wCRCin >>= 1;
+                    wCRCin ^= wCPoly;
+                } else {
+                    wCRCin >>= 1;
+                }
+            }
+        }
+        return wCRCin ^= 0xffff;
     }
 
     //byte数据转化为Int型整型
@@ -2861,6 +2966,20 @@ public class InstructionGeneration {
 
         return Time;
     }
+
+    //控温阈值计算公式
+    private static String TemperatureFlotToStr(float tem) {
+        String temstr = Integer.toHexString(Float.floatToIntBits(tem));
+        if (temstr.length() < 4) {
+            for (int j = temstr.length() + 1; j <= 4; j++) {
+                temstr = "0" + temstr;
+            }
+        } else if (temstr.length() > 4) {
+            temstr = temstr.substring(temstr.length() - 4);
+        }
+        return temstr;
+    }
+
     //private static double TCKG01(){
     //return 10;
     //}

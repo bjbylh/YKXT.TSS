@@ -35,7 +35,7 @@ public class CommUtils {
         return MainTaskStatus.valueOf(status);
     }
 
-    public static  String[] getSubList(String id) {
+    public static String[] getSubList(String id) {
         MongoClient mongoClient = MangoDBConnector.getClient();
         MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
@@ -58,7 +58,7 @@ public class CommUtils {
         return ret;
     }
 
-    public static  void updateSubStatus(String id, SubTaskStatus subTaskStatus) {
+    public static void updateSubStatus(String id, SubTaskStatus subTaskStatus) {
         MongoClient mongoClient = MangoDBConnector.getClient();
         MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 

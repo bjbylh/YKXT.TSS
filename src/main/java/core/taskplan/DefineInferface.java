@@ -40,7 +40,7 @@ public interface DefineInferface {
      * @param insno
      * @param FilePath
      * @param isTimeSpan 0:id,1:时间段,3:表示全部删除
-     * @param exetime 指令执行时间
+     * @param exetime    指令执行时间
      * @return
      */
     String InsClearInsGenInf(int isTimeSpan, int type, Instant exetime, Instant start, Instant end, HashSet<Integer> insno, String FilePath);
