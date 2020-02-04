@@ -606,16 +606,18 @@ public class RedisTaskSubscriber extends JedisPubSub {
                         d.append("value", parser.get("O"));
                     } else if (d.getString("key").equals("perigee_angle")) {
                         d.append("value", parser.get("W"));
-                    } else if (d.getString("key").equals("mean_anomaly")) {
+                    } else if (d.getString("key").equals("true_anomaly")) {//todo
                         d.append("value", parser.get("M"));
                     } else continue;
                 }
             }
-            //Data_Satllitejson.updateOne(Filters.eq("_id", Satllitejson.getObjectId("_id")), new Document("$set", newSateInfo));
+            Data_Satllitejson.updateOne(Filters.eq("_id", Satllitejson.getObjectId("_id")), new Document("$set", newSateInfo));
 
             mongoClient.close();
 
             RedisPublish.CommonReturn(id, true, "", MsgType.ORBIT_DATA_IMPORT_FINISHED);
+
+            TaskInit.initRTTaskForOrbitForecast("新建任务调度任务指令");
 
 
         } catch (Exception e) {

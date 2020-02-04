@@ -1,5 +1,6 @@
 package core.taskplan;
 
+
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -22,7 +23,7 @@ import java.util.*;
 public class FileClearInsGenInf {
 
     private static double[] ZeroTime = {2018, 1, 1, 0, 0, 0};//参考时间
-    private static Instant ZeroTimeIns = Instant.parse("2018-01-01T00:00:00.00Z");
+    private static Instant ZeroTimeIns=Instant.parse("2018-01-01T00:00:00.00Z");
 
     public static String FileClearInsGenInfII(Document Mission, String FilePath) {
         //连接数据库
@@ -31,225 +32,258 @@ public class FileClearInsGenInf {
         MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
         //读入基准时间
         //获取名为“satellite_resource”的表
-        MongoCollection<Document> sate_res = mongoDatabase.getCollection("satellite_resource");
+        MongoCollection<Document> sate_res=mongoDatabase.getCollection("satellite_resource");
         //获取的表存在Document中
-        Document first = sate_res.find().first();
+        Document first=sate_res.find().first();
         //将表中properties内容存入properties列表中
-        ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
-        Instant zerostart = ZeroTimeIns;
+        ArrayList<Document> properties=(ArrayList<Document>) first.get("properties");
+        Instant zerostart=ZeroTimeIns;
 
-        for (Document document : properties) {
-            if (document.get("key").toString().equals("t0")) {
-                zerostart = document.getDate("value").toInstant();
-                LocalDateTime zerostart0 = LocalDateTime.ofInstant(zerostart, ZoneOffset.UTC);
-                ZeroTime[0] = zerostart0.getYear();
-                ZeroTime[1] = zerostart0.getMonthValue();
-                ZeroTime[2] = zerostart0.getDayOfMonth();
-                ZeroTime[3] = zerostart0.getHour();
-                ZeroTime[4] = zerostart0.getMinute();
-                ZeroTime[5] = zerostart0.getSecond();
+        for (Document document:properties){
+            if (document.get("key").toString().equals("t0")){
+                zerostart=document.getDate("value").toInstant();
+                LocalDateTime zerostart0=LocalDateTime.ofInstant(zerostart, ZoneOffset.UTC);
+                ZeroTime[0]=zerostart0.getYear();
+                ZeroTime[1]=zerostart0.getMonthValue();
+                ZeroTime[2]=zerostart0.getDayOfMonth();
+                ZeroTime[3]=zerostart0.getHour();
+                ZeroTime[4]=zerostart0.getMinute();
+                ZeroTime[5]=zerostart0.getSecond();
                 break;
             }
         }
-        HashMap<String, String> FileClear = new HashMap<>();
-        HashMap<String, Integer> FileSequenID = new HashMap<>();
-        HashMap<String, Date> MissionInstructionTime = new HashMap<>();
-        String FileFolder = "";
+        HashMap<String,String> FileClear=new HashMap<>();
+        HashMap<String,Integer> FileSequenID=new HashMap<>();
+        HashMap<String,Date> MissionInstructionTime=new HashMap<>();
+        ArrayList<String> HashMapKey_File=new ArrayList<>();
+        String FileFolder="";
         if (Mission != null) {
-            Instant exetime = ZeroTimeIns;
-            String MissionNumber = "";
+            Instant exetime=ZeroTimeIns;
+            String MissionNumber="";
             try {
-                exetime = Mission.getDate("expected_start_time").toInstant();
-                MissionNumber = Mission.get("mission_number").toString();
+                exetime=Mission.getDate("expected_start_time").toInstant();
+                MissionNumber=Mission.get("mission_number").toString();
             } catch (Exception e) {
                 e.printStackTrace();
             }
             //
-            String TCS207 = "100E8121D0";
-            String LengtTCS207 = "05";
-            String APIDTCS207 = "0412";
+            String TCS207="100E8121D0";
+            String LengtTCS207="05";
+            String APIDTCS207="0412";
             //序列
             int ZhiLingIDNum = SequenceID.SequenceId;
-            SequenceID.SequenceId = SequenceID.SequenceId + 1;
+            SequenceID.SequenceId=SequenceID.SequenceId+1;
             if (SequenceID.SequenceId > 255) {
-                SequenceID.SequenceId = 0;
+                SequenceID.SequenceId=0;
             }
-            String ZhiLingXuLieIDString = String.format("%02X", ZhiLingIDNum);
+            String ZhiLingXuLieIDString = String.format("%02X",ZhiLingIDNum);
             String ZhiLingGeShuString = "01";
-            int exetimeint = (int) (exetime.getEpochSecond() - zerostart.getEpochSecond());
-            String KaiShiShiJian = String.format("%08X", exetimeint);
-            String str = KaiShiShiJian + ZhiLingXuLieIDString + ZhiLingGeShuString + APIDTCS207 + LengtTCS207 + TCS207;
-            FileClear.put("TCS207", str);
-            int ZhiLingIDNumTCS207 = ZhiLingIDNum;
-            FileSequenID.put("TCS207", ZhiLingIDNumTCS207);
-            Date TCS207Time = Date.from(exetime);
-            MissionInstructionTime.put("TCS207", TCS207Time);
+            int exetimeint= (int) (exetime.getEpochSecond()-zerostart.getEpochSecond())-30;
+            String KaiShiShiJian=String.format("%08X",exetimeint);
+            if (KaiShiShiJian.length() < 8) {
+                for (int i_id = KaiShiShiJian.length(); i_id < 8; i_id++) {
+                    KaiShiShiJian="0"+KaiShiShiJian;
+                }
+            }else if (KaiShiShiJian.length() > 8) {
+                KaiShiShiJian=KaiShiShiJian.substring(KaiShiShiJian.length()-8);
+            }
+            String str = KaiShiShiJian + ZhiLingXuLieIDString + ZhiLingGeShuString + APIDTCS207+LengtTCS207+TCS207;
+            FileClear.put("TCS207",str);
+            int ZhiLingIDNumTCS207=ZhiLingIDNum;
+            FileSequenID.put("TCS207",ZhiLingIDNumTCS207);
+            Date TCS207Time= Date.from(exetime.plusSeconds(-30));
+            MissionInstructionTime.put("TCS207",TCS207Time);
+            HashMapKey_File.add("TCS207");
 
             //
-            String TCAG06 = "";
-            String TCA01 = "100201210111400131A5";//100201210111400131A5
-            String APIDTCA01 = "0411";
-            String LengTCA01 = "0A";
-            String dert_tTCA01 = "0030";
-            TCAG06 = TCAG06 + APIDTCA01 + LengTCA01 + TCA01 + dert_tTCA01;
+            String TCAG06="";
+            String TCA01="100201210111400131A5";
+            String APIDTCA01="0411";
+            String LengTCA01="0A";
+            String dert_tTCA01="0030";
+            TCAG06=TCAG06+APIDTCA01+LengTCA01+TCA01+dert_tTCA01;
             //
-            String TCA11 = "10028021010F3700";
-            String APIDTCA11 = "01E3";
-            String LengTCA11 = "08";
-            TCAG06 = TCAG06 + APIDTCA11 + LengTCA11 + TCA11;
+            String TCA11="10028021010F3700";
+            String APIDTCA11="01E3";
+            String LengTCA11="08";
+            TCAG06=TCAG06+APIDTCA11+LengTCA11+TCA11;
             //序列
             ZhiLingIDNum = SequenceID.SequenceId;
-            SequenceID.SequenceId = SequenceID.SequenceId + 1;
+            SequenceID.SequenceId=SequenceID.SequenceId+1;
             if (SequenceID.SequenceId > 255) {
-                SequenceID.SequenceId = 0;
+                SequenceID.SequenceId=0;
             }
-            ZhiLingXuLieIDString = String.format("%02X", ZhiLingIDNum);
+            ZhiLingXuLieIDString = String.format("%02X",ZhiLingIDNum);
             ZhiLingGeShuString = "02";
-            exetimeint = (int) (exetime.getEpochSecond() - zerostart.getEpochSecond());
-            KaiShiShiJian = String.format("%08X", exetimeint);
+            exetimeint= (int) (exetime.getEpochSecond()-zerostart.getEpochSecond())-30;
+            KaiShiShiJian=String.format("%08X",exetimeint);
+            if (KaiShiShiJian.length() < 8) {
+                for (int i_id = KaiShiShiJian.length(); i_id < 8; i_id++) {
+                    KaiShiShiJian="0"+KaiShiShiJian;
+                }
+            }else if (KaiShiShiJian.length() > 8) {
+                KaiShiShiJian=KaiShiShiJian.substring(KaiShiShiJian.length()-8);
+            }
             TCAG06 = KaiShiShiJian + ZhiLingXuLieIDString + ZhiLingGeShuString + TCAG06;
-            FileClear.put("TCAG06", TCAG06);
-            int ZhiLingIDNumTCAG06 = ZhiLingIDNum;
-            FileSequenID.put("TCAG06", ZhiLingIDNumTCAG06);
-            Date TCAG06Time = Date.from(exetime);
-            MissionInstructionTime.put("TCAG06", TCAG06Time);
+            FileClear.put("TCAG06",TCAG06);
+            int ZhiLingIDNumTCAG06=ZhiLingIDNum;
+            FileSequenID.put("TCAG06",ZhiLingIDNumTCAG06);
+            Date TCAG06Time= Date.from(exetime.plusSeconds(-30));
+            MissionInstructionTime.put("TCAG06",TCAG06Time);
+            HashMapKey_File.add("TCAG06");
 
             //
-            String TCA303 = "";
-            String APIDTCA303 = "0411";
+            String TCA303="";
+            String APIDTCA303="0411";
             try {
                 if (Mission.get("clear_all").toString().equals("true")) {
-                    TCA303 = "10028021010F3E0A00010000000000000000";
-                } else {
-                    TCA303 = "10028021010F3E0A0002";
-                    ArrayList<String> filenos = (ArrayList<String>) Mission.get("clear_filenos");
-                    String TCA303Child = "";
-                    for (String string : filenos) {
+                    TCA303="10028021010F3E0A00010000000000000000";
+                }else {
+                    TCA303="10028021010F3E0A0002";
+                    ArrayList<String> filenos= (ArrayList<String>) Mission.get("clear_filenos");
+                    String TCA303Child="";
+                    for (String string:filenos) {
                         if (!string.equals("")) {
-                            int fileId = Integer.parseInt(string);
-                            TCA303Child = TCA303Child + String.format("%02X", fileId);
+                            int fileId=Integer.parseInt(string);
+                            TCA303Child=TCA303Child+String.format("%02X",fileId);
                         }
                     }
-                    TCA303 = TCA303 + TCA303Child;
+                    TCA303=TCA303+TCA303Child;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
                 return FilePath;
             }
-            String LengTCA303 = String.format("%02X", (int) TCA303.length() / 2);
-            TCA303 = APIDTCA303 + LengTCA303 + TCA303;
+            String LengTCA303=String.format("%02X",(int)TCA303.length()/2);
+            TCA303=APIDTCA303+LengTCA303+TCA303;
             //序列
             ZhiLingIDNum = SequenceID.SequenceId;
-            SequenceID.SequenceId = SequenceID.SequenceId + 1;
+            SequenceID.SequenceId=SequenceID.SequenceId+1;
             if (SequenceID.SequenceId > 255) {
-                SequenceID.SequenceId = 0;
+                SequenceID.SequenceId=0;
             }
-            ZhiLingXuLieIDString = String.format("%02X", ZhiLingIDNum);
+            ZhiLingXuLieIDString = String.format("%02X",ZhiLingIDNum);
             ZhiLingGeShuString = "01";
-            exetimeint = (int) (exetime.getEpochSecond() - zerostart.getEpochSecond());
-            KaiShiShiJian = String.format("%08X", exetimeint);
+            exetimeint= (int) (exetime.getEpochSecond()-zerostart.getEpochSecond());
+            KaiShiShiJian=String.format("%08X",exetimeint);
+            if (KaiShiShiJian.length() < 8) {
+                for (int i_id = KaiShiShiJian.length(); i_id < 8; i_id++) {
+                    KaiShiShiJian="0"+KaiShiShiJian;
+                }
+            }else if (KaiShiShiJian.length() > 8) {
+                KaiShiShiJian=KaiShiShiJian.substring(KaiShiShiJian.length()-8);
+            }
             TCA303 = KaiShiShiJian + ZhiLingXuLieIDString + ZhiLingGeShuString + TCA303;
-            FileClear.put("TCA303", TCA303);
-            int ZhiLingIDNumTCA303 = ZhiLingIDNum;
-            FileSequenID.put("TCA303", ZhiLingIDNumTCA303);
-            Date TCA303Time = Date.from(exetime);
-            MissionInstructionTime.put("TCA303", TCA303Time);
+            FileClear.put("TCA303",TCA303);
+            int ZhiLingIDNumTCA303=ZhiLingIDNum;
+            FileSequenID.put("TCA303",ZhiLingIDNumTCA303);
+            Date TCA303Time= Date.from(exetime);
+            MissionInstructionTime.put("TCA303",TCA303Time);
+            HashMapKey_File.add("TCA303");
 
             //
-            String TCS297 = "1002802105";
-            String LengtTCS297 = "05";
-            String APIDTCS297 = "0411";
-            String strTCS297 = APIDTCS297 + LengtTCS297 + TCS297;
+            String TCS297="1002802105";
+            String LengtTCS297="05";
+            String APIDTCS297="0411";
+            String strTCS297=APIDTCS297+LengtTCS297+TCS297;
 
-            String TCS205 = "100E812196";
-            String LengtTCS205 = "05";
-            String APIDTCS205 = "0412";
-            String strTCS205 = APIDTCS205 + LengtTCS205 + TCS205;
+            String TCS205="100E812196";
+            String LengtTCS205="05";
+            String APIDTCS205="0412";
+            String strTCS205=APIDTCS205+LengtTCS205+TCS205;
             //序列
             ZhiLingIDNum = SequenceID.SequenceId;
-            SequenceID.SequenceId = SequenceID.SequenceId + 1;
+            SequenceID.SequenceId=SequenceID.SequenceId+1;
             if (SequenceID.SequenceId > 255) {
-                SequenceID.SequenceId = 0;
+                SequenceID.SequenceId=0;
             }
-            ZhiLingXuLieIDString = String.format("%02X", ZhiLingIDNum);
-            ZhiLingXuLieIDString = "00" + ZhiLingXuLieIDString;
-            exetimeint = (int) (exetime.getEpochSecond() - zerostart.getEpochSecond());
-            KaiShiShiJian = String.format("%08X", exetimeint);
+            ZhiLingXuLieIDString = String.format("%02X",ZhiLingIDNum);
+            ZhiLingXuLieIDString="00"+ZhiLingXuLieIDString;
+            exetimeint= (int) (exetime.getEpochSecond()-zerostart.getEpochSecond())+60;
+            KaiShiShiJian=String.format("%08X",exetimeint);
+            if (KaiShiShiJian.length() < 8) {
+                for (int i_id = KaiShiShiJian.length(); i_id < 8; i_id++) {
+                    KaiShiShiJian="0"+KaiShiShiJian;
+                }
+            }else if (KaiShiShiJian.length() > 8) {
+                KaiShiShiJian=KaiShiShiJian.substring(KaiShiShiJian.length()-8);
+            }
             String TCKG02;
-            if (Mission.containsKey("transmission_power_off") && Mission.get("transmission_power_off") != null && Mission.get("transmission_power_off").equals("0")) {
+            if (Mission.containsKey("transmission_power_off") && Mission.get("transmission_power_off")!=null && Mission.get("transmission_power_off").equals("0")) {
                 ZhiLingGeShuString = "01";
                 TCKG02 = KaiShiShiJian + ZhiLingXuLieIDString + ZhiLingGeShuString + strTCS205;
-            } else {
+            }else {
                 ZhiLingGeShuString = "02";
-                TCKG02 = KaiShiShiJian + ZhiLingXuLieIDString + ZhiLingGeShuString + strTCS297 + strTCS205;
+                TCKG02 = KaiShiShiJian + ZhiLingXuLieIDString + ZhiLingGeShuString + strTCS297+strTCS205;
             }
-            FileClear.put("TCKG02", TCKG02);
-            int ZhiLingIDNumTCS205 = ZhiLingIDNum;
-            FileSequenID.put("TCKG02", ZhiLingIDNumTCS205);
-            Date TCS205Time = Date.from(exetime);
-            MissionInstructionTime.put("TCKG02", TCS205Time);
+            FileClear.put("TCKG02",TCKG02);
+            int ZhiLingIDNumTCS205=ZhiLingIDNum;
+            FileSequenID.put("TCKG02",ZhiLingIDNumTCS205);
+            Date TCS205Time= Date.from(exetime.plusSeconds(60));
+            MissionInstructionTime.put("TCKG02",TCS205Time);
+            HashMapKey_File.add("TCKG02");
 
-            HashMap<String, byte[]> InstructionArrayChild = new HashMap<>();
-            for (Map.Entry<String, String> entry : FileClear.entrySet()) {
+            HashMap<String,byte[]> InstructionArrayChild=new HashMap<>();
+            for (Map.Entry<String,String> entry:FileClear.entrySet()) {
                 String ShuJuQuTou = "100B8021";
-                int BaoChang = (ShuJuQuTou + entry.getValue()).length() / 2 + 2 - 1;
-                String BaoChangstr = String.format("%04X", BaoChang);
+                int BaoChang = (ShuJuQuTou + entry.getValue()).length() / 2 + 2-1;
+                String BaoChangstr = String.format("%04X",BaoChang);
                 int BaoXuLieIDNum = SequenceID.PackageId;
-                SequenceID.PackageId = SequenceID.PackageId + 1;
+                SequenceID.PackageId=SequenceID.PackageId+1;
                 if (SequenceID.PackageId > 16383) {
-                    SequenceID.PackageId = 0;
+                    SequenceID.PackageId=0;
                 }
-                String BaoXuLieIDStr = Integer.toBinaryString(BaoXuLieIDNum);
+                String BaoXuLieIDStr=Integer.toBinaryString(BaoXuLieIDNum);
                 if (BaoXuLieIDStr.length() < 14) {
                     for (int i_id = BaoXuLieIDStr.length(); i_id < 14; i_id++) {
-                        BaoXuLieIDStr = "0" + BaoXuLieIDStr;
+                        BaoXuLieIDStr="0"+BaoXuLieIDStr;
                     }
-                } else {
-                    BaoXuLieIDStr = BaoXuLieIDStr.substring(BaoXuLieIDStr.length() - 14);
+                }else {
+                    BaoXuLieIDStr=BaoXuLieIDStr.substring(BaoXuLieIDStr.length()-14);
                 }
-                BaoXuLieIDStr = "11" + BaoXuLieIDStr;
-                BaoXuLieIDStr = Integer.toHexString(Integer.parseInt(BaoXuLieIDStr, 2)).toUpperCase();
-                String BaoZhuDaoTou = "1C11" + BaoXuLieIDStr + BaoChangstr;
+                BaoXuLieIDStr="11"+BaoXuLieIDStr;
+                BaoXuLieIDStr=Integer.toHexString(Integer.parseInt(BaoXuLieIDStr,2)).toUpperCase();
+                String BaoZhuDaoTou = "1C11" +BaoXuLieIDStr+ BaoChangstr;
                 String total = BaoZhuDaoTou + ShuJuQuTou + entry.getValue() + ISO(BaoZhuDaoTou + ShuJuQuTou + entry.getValue());
 
                 //添加填充域
-                if (total.length() <= 62 * 2) {
-                    for (int j = total.length() / 2; j < 62; j++) {
-                        total = total + "A5";
+                if (total.length()<=62*2) {
+                    for (int j = total.length()/2; j < 62; j++) {
+                        total=total+"A5";
                     }
-                } else if (total.length() > 62 * 2 && total.length() <= 126 * 2) {
-                    for (int j = total.length() / 2; j < 126; j++) {
-                        total = total + "A5";
+                }else if (total.length()>62*2 && total.length()<=126*2) {
+                    for (int j = total.length()/2; j < 126; j++) {
+                        total=total+"A5";
                     }
-                } else if (total.length() > 126 * 2 && total.length() <= 254 * 2) {
-                    for (int j = total.length() / 2; j < 254; j++) {
-                        total = total + "A5";
+                }else if (total.length()>126*2 && total.length()<=254*2){
+                    for (int j = total.length()/2; j < 254; j++) {
+                        total=total+"A5";
                     }
-                } else if (total.length() > 254 * 2 && total.length() <= 510 * 2) {
-                    for (int j = total.length() / 2; j < 510; j++) {
-                        total = total + "A5";
+                }else if (total.length()>254*2 && total.length()<=510*2){
+                    for (int j = total.length()/2; j < 510; j++) {
+                        total=total+"A5";
                     }
-                } else {
+                }else{
                     //分两包
                 }
 
                 byte[] MainBuff = hexStringToBytes(total);
                 int a = getCRC_0xFFFF(MainBuff, MainBuff.length);
-                String CRCCode = String.format("%04X", a).toUpperCase();
+                String CRCCode = String.format("%04X",a).toUpperCase();
                 if (CRCCode.length() > 4) {
-                    CRCCode = CRCCode.substring(CRCCode.length() - 4);
-                } else if (CRCCode.length() < 4) {
+                    CRCCode=CRCCode.substring(CRCCode.length()-4);
+                }else if (CRCCode.length() < 4) {
                     for (int j = CRCCode.length(); j < 4; j++) {
                         CRCCode = "0" + CRCCode;
                     }
                 }
                 total = "EB90762569" + total + CRCCode;
                 byte[] bytes = hexStringToBytes(total);
-                InstructionArrayChild.put(entry.getKey(), bytes);
+                InstructionArrayChild.put(entry.getKey(),bytes);
             }
 
             //指令输出
-            FileFolder = FilePathUtil.getRealFilePath(FilePath + "\\" + MissionNumber);
+            FileFolder = FilePathUtil.getRealFilePath(FilePath + "\\"+ MissionNumber);
             File file = new File(FileFolder);
             if (!file.exists()) {
                 //如果文件夹不存在，新建
@@ -263,35 +297,35 @@ public class FileClearInsGenInf {
                     }
                 }
             }
-            for (Map.Entry<String, byte[]> Instruction : InstructionArrayChild.entrySet()) {
+            for (Map.Entry<String,byte[]> Instruction:InstructionArrayChild.entrySet()) {
                 //指令文件命名
                 Date cal = new Date();
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 String StringTime = sdf.format(cal.getTime());
 
                 String DateString = StringTime.substring(0, 4) + StringTime.substring(5, 7) + StringTime.substring(8, 10) + StringTime.substring(11, 13) + StringTime.substring(14, 16);
-                String FileName = FileSequenID.get(Instruction.getKey()) + "-" + Instruction.getKey() + "-" + DateString + "-" + MissionNumber;
-                String realPath = FilePathUtil.getRealFilePath(FileFolder + "\\" + FileName);
+                String FileName = FileSequenID.get(Instruction.getKey())+"-"+Instruction.getKey()+"-"+DateString + "-"+MissionNumber;
+                String realPath = FilePathUtil.getRealFilePath(FileFolder+"\\" + FileName);
                 bytesTotxt(Instruction.getValue(), realPath);
             }
 
             //数据库传出
             ArrayList<Document> InstructionInfojsonArry = new ArrayList<>();
             if (!InstructionArrayChild.isEmpty()) {
-                for (Map.Entry<String, byte[]> Instruction : InstructionArrayChild.entrySet()) {
+                for (int i = 0; i < HashMapKey_File.size(); i++) {
                     Document InstructionInfojsonObject = new Document();
-                    InstructionInfojsonObject.append("sequence_code", Instruction.getKey());
-                    InstructionInfojsonObject.append("sequence_id", FileSequenID.get(Instruction.getKey()));
-                    InstructionInfojsonObject.append("execution_time", MissionInstructionTime.get(Instruction.getKey()));
-                    InstructionInfojsonObject.append("valid", true);
+                    InstructionInfojsonObject.append("sequence_code",HashMapKey_File.get(i));
+                    InstructionInfojsonObject.append("sequence_id", FileSequenID.get(HashMapKey_File.get(i)));
+                    InstructionInfojsonObject.append("execution_time", MissionInstructionTime.get(HashMapKey_File.get(i)));
+                    InstructionInfojsonObject.append("valid",true);
                     InstructionInfojsonArry.add(InstructionInfojsonObject);
                 }
-            } else {
+            }else {
                 Document InstructionInfojsonObject = new Document();
-                InstructionInfojsonObject.append("sequence_code", "");
+                InstructionInfojsonObject.append("sequence_code","");
                 InstructionInfojsonObject.append("sequence_id", "");
-                InstructionInfojsonObject.append("execution_time", "");
-                InstructionInfojsonObject.append("valid", "");
+                InstructionInfojsonObject.append("execution_time","");
+                InstructionInfojsonObject.append("valid","");
                 InstructionInfojsonArry.add(InstructionInfojsonObject);
             }
             Mission.append("instruction_info", InstructionInfojsonArry);
@@ -397,7 +431,7 @@ public class FileClearInsGenInf {
     }
 
     //时间转化为开始时间字符串
-    private static String time2String(Date time_point) {
+    private static String time2String(Date time_point){
         //时间转换为doubule型
         String StringTime;
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -419,7 +453,7 @@ public class FileClearInsGenInf {
     }
 
     //计算当前时间和基准时间的时间间隔的秒数
-    private static double time2Second(Date time_point) {
+    private static double time2Second(Date time_point){
         //时间转换为doubule型
         String StringTime;
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -445,18 +479,18 @@ public class FileClearInsGenInf {
         int C1 = 0;
         for (int i = 0; i < Frame.length(); i = i + 2) {
             int B = Integer.parseInt(Frame.substring(i, i + 2), 16);
-            C0 = (C0 + B) % 255;
-            C1 = (C1 + C0) % 255;
+            C0 = (C0 + B)%255;
+            C1 = (C1 + C0)%255;
         }
-        int CK1 = (-(C0 + C1)) % 255;
+        int CK1 = (-(C0 + C1))%255;
         if (CK1 < 0) {
-            CK1 = CK1 + 255;
+            CK1=CK1+255;
         }
         int CK2 = C1;
-        String CK1tot = String.format("%02X", CK1).toUpperCase();
-        String CK2tot = String.format("%02X", CK2).toUpperCase();
-        String CK1str = CK1tot;
-        String CK2str = CK2tot;
+        String CK1tot = String.format("%02X",CK1).toUpperCase();
+        String CK2tot = String.format("%02X",CK2).toUpperCase();
+        String CK1str=CK1tot;
+        String CK2str=CK2tot;
         if (CK1tot.length() > 2) {
             CK1str = CK1tot.substring(CK1tot.length() - 2);
         }

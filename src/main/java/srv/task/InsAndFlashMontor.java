@@ -187,8 +187,16 @@ public class InsAndFlashMontor {
                         if (t.before(now))
                             continue;
 
-                        if (!insPool.containsKey(t))
-                            insPool.put(t, newIns);
+//                        if (!insPool.containsKey(t))
+//                            insPool.put(t, newIns);
+
+                        int i = 1;
+                        while(insPool.containsKey(t)){
+                            t.setTime(t.getTime() + i);
+                            i++;
+                        }
+                        insPool.put(t, newIns);
+
                     } else {
                         //TODO 删除文件
                         String filename = FilePathUtil.getRealFilePath(ConfigManager.getInstance().fetchInsFilePath() + d.getString("mission_number"));
@@ -255,7 +263,7 @@ public class InsAndFlashMontor {
 
                 int i = 1;
                 while (all_pool.containsKey(execution_time)) {
-                    execution_time = Date.from(execution_time.toInstant().plusSeconds(i));
+                    execution_time = Date.from(execution_time.toInstant().plusMillis(i));
                     i++;
                 }
 

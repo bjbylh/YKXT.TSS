@@ -1003,7 +1003,7 @@ public class InstructionGeneration {
                                                         Boolean RelatedIdFindFlag = true;
                                                         for (Document SequenceParams : MissionInstructionArrayChild) {
                                                             if (SequenceParams.containsKey("code") && SequenceParams.get("code").toString().equals(MetaRelated_id)) {
-                                                                if (SequenceParams.containsKey("value") && !SequenceParams.get("value").equals("")) {
+                                                                if (SequenceParams.containsKey("value") && SequenceParams.get("value") != null && !SequenceParams.get("value").equals("")) {
                                                                     SequenceParamsValue = SequenceParams.get("value").toString();
                                                                     RelatedIdFindFlag = false;
                                                                 }
@@ -1580,10 +1580,10 @@ public class InstructionGeneration {
                     //lihan added start
                     if (KaiShiShiJian.length() < 8) {
                         for (int i_id = KaiShiShiJian.length(); i_id < 8; i_id++) {
-                            KaiShiShiJian="0"+KaiShiShiJian;
+                            KaiShiShiJian = "0" + KaiShiShiJian;
                         }
-                    }else if (KaiShiShiJian.length() > 8) {
-                        KaiShiShiJian=KaiShiShiJian.substring(KaiShiShiJian.length()-8);
+                    } else if (KaiShiShiJian.length() > 8) {
+                        KaiShiShiJian = KaiShiShiJian.substring(KaiShiShiJian.length() - 8);
                     }
                     //lihan added end
                     String YingYongShuJuTemp = MissionInstructionHexChild.get(j);
@@ -2421,10 +2421,10 @@ public class InstructionGeneration {
                 //lihan added start
                 if (KaiShiShiJian.length() < 8) {
                     for (int i_id = KaiShiShiJian.length(); i_id < 8; i_id++) {
-                        KaiShiShiJian="0"+KaiShiShiJian;
+                        KaiShiShiJian = "0" + KaiShiShiJian;
                     }
-                }else if (KaiShiShiJian.length() > 8) {
-                    KaiShiShiJian=KaiShiShiJian.substring(KaiShiShiJian.length()-8);
+                } else if (KaiShiShiJian.length() > 8) {
+                    KaiShiShiJian = KaiShiShiJian.substring(KaiShiShiJian.length() - 8);
                 }
                 //lihan added end
                 String YingYongShuJuTemp = MissionInstructionHexChild.get(j);

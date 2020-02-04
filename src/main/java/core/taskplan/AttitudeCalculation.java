@@ -1,5 +1,6 @@
 package core.taskplan;
 
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mongodb.MongoClient;
@@ -16,6 +17,9 @@ import java.util.Calendar;
 import java.util.Date;
 
 import static java.lang.Math.*;
+
+//import common.mongo.DbDefine;
+//import common.mongo.MangoDBConnector;
 
 //import common.mongo.DbDefine;
 //import common.mongo.MangoDBConnector;
@@ -1352,12 +1356,14 @@ public class AttitudeCalculation {
             SToO[2][i] = z_sensor[i];
         }
 
+        /*
         //安装倾角x轴旋转
         //安装倾角x轴旋转
         if (ViewInstall[1] > PI / 2)
             BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), -sin(ViewInstall[2])}, {0, sin(ViewInstall[2]), cos(ViewInstall[2])}};
         else
             BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), sin(ViewInstall[2])}, {0, -sin(ViewInstall[2]), cos(ViewInstall[2])}};
+         */
 
         /*
         //安装倾角y轴旋转
@@ -1368,6 +1374,23 @@ public class AttitudeCalculation {
          */
         //不考虑安装矩阵
         //BToS=new double[][]{{1,0,0},{0,1,0},{0,0,1}};
+
+        //通用化
+        double[] z_SatSensor = new double[3];
+        double[] cross_SatSxyz = new double[3];
+        double[] x_SatSensor;
+        double[] y_SatSensor;
+        for (int i = 0; i < 3; i++) {
+            z_SatSensor[i] =cos(ViewInstall[i]);
+        }
+        cross_SatSxyz[0] = 1;
+        cross_SatSxyz[1] = 0;
+        cross_SatSxyz[2] = 0;
+        y_SatSensor = VectorCross(z_SatSensor, cross_SatSxyz);//y_sensor=Result
+        x_SatSensor = VectorCross(y_SatSensor, z_SatSensor);//x_sensor=Result
+        BToS = new double[][]{{x_SatSensor[0], x_SatSensor[1], x_SatSensor[2]},
+                {y_SatSensor[0], y_SatSensor[1], y_SatSensor[2]},
+                {z_SatSensor[0], z_SatSensor[1], z_SatSensor[2]}};
 
         BToO = MatrixMultiplication(SToO, BToS);//BToO=Result
         BToO = MatrixInverse(BToO);
@@ -1400,6 +1423,11 @@ public class AttitudeCalculation {
 
         Attitude[0] = x;
         Attitude[1] = y;
+        if (abs(z) > PI/2) {
+            Attitude[2] = PI;
+        }else {
+            Attitude[2] = 0;
+        }
         Attitude[2] = z;
 
         /*
@@ -1471,13 +1499,13 @@ public class AttitudeCalculation {
             SToO[2][i] = z_sensor[i];
         }
 
-
+/*
         //安装倾角x轴旋转
         if (ViewInstall[1] > PI / 2)
             BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), -sin(ViewInstall[2])}, {0, sin(ViewInstall[2]), cos(ViewInstall[2])}};
         else
             BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), sin(ViewInstall[2])}, {0, -sin(ViewInstall[2]), cos(ViewInstall[2])}};
-
+*/
 
 
 /*
@@ -1486,9 +1514,27 @@ public class AttitudeCalculation {
             BToS = new double[][]{{cos(ViewInstall[2]), 0, -sin(ViewInstall[2])}, {0, 1, 0}, {sin(ViewInstall[2]), 0, cos(ViewInstall[2])}};
         else
             BToS = new double[][]{{cos(ViewInstall[2]), 0, sin(ViewInstall[2])}, {0, 1, 0}, {-sin(ViewInstall[2]), 0, cos(ViewInstall[2])}};
- */
+*/
+
         //不考虑安装矩阵
         //BToS=new double[][]{{1,0,0},{0,1,0},{0,0,1}};
+
+        //通用化
+        double[] z_SatSensor = new double[3];
+        double[] cross_SatSxyz = new double[3];
+        double[] x_SatSensor;
+        double[] y_SatSensor;
+        for (int i = 0; i < 3; i++) {
+            z_SatSensor[i] =cos(ViewInstall[i]);
+        }
+        cross_SatSxyz[0] = 1;
+        cross_SatSxyz[1] = 0;
+        cross_SatSxyz[2] = 0;
+        y_SatSensor = VectorCross(z_SatSensor, cross_SatSxyz);//y_sensor=Result
+        x_SatSensor = VectorCross(y_SatSensor, z_SatSensor);//x_sensor=Result
+        BToS = new double[][]{{x_SatSensor[0], x_SatSensor[1], x_SatSensor[2]},
+                                {y_SatSensor[0], y_SatSensor[1], y_SatSensor[2]},
+                                {z_SatSensor[0], z_SatSensor[1], z_SatSensor[2]}};
 
         BToO = MatrixMultiplication(SToO, BToS);//BToO=Result
         BToO = MatrixInverse(BToO);
@@ -1515,7 +1561,11 @@ public class AttitudeCalculation {
 
         Attitude[0] = x;
         Attitude[1] = y;
-        Attitude[2] = z;
+        if (abs(z) > PI/2) {
+            Attitude[2] = PI;
+        }else {
+            Attitude[2] = 0;
+        }
     }
 
     //姿态角计算，东南地3-2-1
@@ -1562,13 +1612,14 @@ public class AttitudeCalculation {
             SToO[2][i] = z_sensor[i];
         }
 
+        /*
         //安装倾角x轴旋转
         //安装倾角x轴旋转
         if (ViewInstall[1] > PI / 2)
             BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), -sin(ViewInstall[2])}, {0, sin(ViewInstall[2]), cos(ViewInstall[2])}};
         else
             BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), sin(ViewInstall[2])}, {0, -sin(ViewInstall[2]), cos(ViewInstall[2])}};
-
+         */
 
         //安装倾角y轴旋转
         /*
@@ -1579,6 +1630,23 @@ public class AttitudeCalculation {
          */
         //不考虑安装矩阵
         //BToS=new double[][]{{1,0,0},{0,1,0},{0,0,1}};
+
+        //通用化
+        double[] z_SatSensor = new double[3];
+        double[] cross_SatSxyz = new double[3];
+        double[] x_SatSensor;
+        double[] y_SatSensor;
+        for (int i = 0; i < 3; i++) {
+            z_SatSensor[i] =cos(ViewInstall[i]);
+        }
+        cross_SatSxyz[0] = 1;
+        cross_SatSxyz[1] = 0;
+        cross_SatSxyz[2] = 0;
+        y_SatSensor = VectorCross(z_SatSensor, cross_SatSxyz);//y_sensor=Result
+        x_SatSensor = VectorCross(y_SatSensor, z_SatSensor);//x_sensor=Result
+        BToS = new double[][]{{x_SatSensor[0], x_SatSensor[1], x_SatSensor[2]},
+                {y_SatSensor[0], y_SatSensor[1], y_SatSensor[2]},
+                {z_SatSensor[0], z_SatSensor[1], z_SatSensor[2]}};
 
         BToO = MatrixMultiplication(SToO, BToS);//BToO=Result
         BToO = MatrixInverse(BToO);
@@ -1608,7 +1676,11 @@ public class AttitudeCalculation {
 
         Attitude[0] = x;
         Attitude[1] = y;
-        Attitude[2] = z;
+        if (abs(z) > PI/2) {
+            Attitude[2] = PI;
+        }else {
+            Attitude[2] = 0;
+        }
     }
 
     //姿态角计算，轨道坐标系3-1-2
@@ -1665,13 +1737,14 @@ public class AttitudeCalculation {
             SToO[2][i] = z_sensor[i];
         }
 
-
+        /*
         //安装倾角x轴旋转
         //安装倾角x轴旋转
         if (ViewInstall[1] > PI / 2)
             BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), -sin(ViewInstall[2])}, {0, sin(ViewInstall[2]), cos(ViewInstall[2])}};
         else
             BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), sin(ViewInstall[2])}, {0, -sin(ViewInstall[2]), cos(ViewInstall[2])}};
+         */
 
         /*
         //安装倾角y轴旋转
@@ -1683,6 +1756,23 @@ public class AttitudeCalculation {
 
         //不考虑安装矩阵
         //BToS=new double[][]{{1,0,0},{0,1,0},{0,0,1}};
+
+        //通用化
+        double[] z_SatSensor = new double[3];
+        double[] cross_SatSxyz = new double[3];
+        double[] x_SatSensor;
+        double[] y_SatSensor;
+        for (int i = 0; i < 3; i++) {
+            z_SatSensor[i] =cos(ViewInstall[i]);
+        }
+        cross_SatSxyz[0] = 1;
+        cross_SatSxyz[1] = 0;
+        cross_SatSxyz[2] = 0;
+        y_SatSensor = VectorCross(z_SatSensor, cross_SatSxyz);//y_sensor=Result
+        x_SatSensor = VectorCross(y_SatSensor, z_SatSensor);//x_sensor=Result
+        BToS = new double[][]{{x_SatSensor[0], x_SatSensor[1], x_SatSensor[2]},
+                {y_SatSensor[0], y_SatSensor[1], y_SatSensor[2]},
+                {z_SatSensor[0], z_SatSensor[1], z_SatSensor[2]}};
 
         BToO = MatrixMultiplication(SToO, BToS);//BToO=Result
         BToO = MatrixInverse(BToO);
@@ -1706,7 +1796,11 @@ public class AttitudeCalculation {
 
         Attitude[0] = x;
         Attitude[1] = y;
-        Attitude[2] = z;
+        if (abs(z) > PI/2) {
+            Attitude[2] = PI;
+        }else {
+            Attitude[2] = 0;
+        }
     }
 
     ////轨道系下姿态，转为东南系姿态3-2-1
