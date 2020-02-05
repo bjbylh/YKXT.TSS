@@ -130,6 +130,7 @@ public class SingleInsGeneration {
             //??????文件夹以任务编号，文件夹内文件：指令序列编号-时间-任务编号-序列ID
             //指令输出
             String FileFolder = FilePath + "\\" + Mission.get("mission_number").toString();
+            FileFolder = FilePathUtil.getRealFilePath(FileFolder);
             File file = new File(FileFolder);
             if (!file.exists()) {
                 //如果文件夹不存在，新建

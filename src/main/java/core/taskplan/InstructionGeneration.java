@@ -1668,6 +1668,8 @@ public class InstructionGeneration {
         for (int i = 0; i < MissionNum; i++) {
             //指令输出
             String FileFolder = FilePath + "\\" + MissionNumberArray.get(i);
+            FileFolder = FilePathUtil.getRealFilePath(FileFolder);
+
             File file = new File(FileFolder);
             if (!file.exists()) {
                 //如果文件夹不存在，新建

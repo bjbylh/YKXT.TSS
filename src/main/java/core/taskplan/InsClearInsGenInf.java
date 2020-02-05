@@ -172,6 +172,8 @@ public class InsClearInsGenInf {
         byte[] bytes = hexStringToBytes(total);
 
         String FileFolder = FilePathUtil.getRealFilePath(FilePath + "\\" + "InsClear");
+        FileFolder = FilePathUtil.getRealFilePath(FileFolder);
+
         File file = new File(FileFolder);
         if (!file.exists()) {
             //如果文件夹不存在，新建

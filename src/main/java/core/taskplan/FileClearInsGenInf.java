@@ -284,6 +284,8 @@ public class FileClearInsGenInf {
 
             //指令输出
             FileFolder = FilePathUtil.getRealFilePath(FilePath + "\\"+ MissionNumber);
+            FileFolder = FilePathUtil.getRealFilePath(FileFolder);
+
             File file = new File(FileFolder);
             if (!file.exists()) {
                 //如果文件夹不存在，新建

@@ -1,6 +1,5 @@
 package core.taskplan;
 
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mongodb.MongoClient;
@@ -1391,6 +1390,9 @@ public class AttitudeCalculation {
         BToS = new double[][]{{x_SatSensor[0], x_SatSensor[1], x_SatSensor[2]},
                 {y_SatSensor[0], y_SatSensor[1], y_SatSensor[2]},
                 {z_SatSensor[0], z_SatSensor[1], z_SatSensor[2]}};
+        if (FlyOrientationFlag) {
+            BToS=MatrixInverse(BToS);
+        }
 
         BToO = MatrixMultiplication(SToO, BToS);//BToO=Result
         BToO = MatrixInverse(BToO);
@@ -1535,6 +1537,9 @@ public class AttitudeCalculation {
         BToS = new double[][]{{x_SatSensor[0], x_SatSensor[1], x_SatSensor[2]},
                                 {y_SatSensor[0], y_SatSensor[1], y_SatSensor[2]},
                                 {z_SatSensor[0], z_SatSensor[1], z_SatSensor[2]}};
+        if (FlyOrientationFlag) {
+            BToS=MatrixInverse(BToS);
+        }
 
         BToO = MatrixMultiplication(SToO, BToS);//BToO=Result
         BToO = MatrixInverse(BToO);
@@ -1644,9 +1649,14 @@ public class AttitudeCalculation {
         cross_SatSxyz[2] = 0;
         y_SatSensor = VectorCross(z_SatSensor, cross_SatSxyz);//y_sensor=Result
         x_SatSensor = VectorCross(y_SatSensor, z_SatSensor);//x_sensor=Result
+
         BToS = new double[][]{{x_SatSensor[0], x_SatSensor[1], x_SatSensor[2]},
                 {y_SatSensor[0], y_SatSensor[1], y_SatSensor[2]},
                 {z_SatSensor[0], z_SatSensor[1], z_SatSensor[2]}};
+        if (FlyOrientationFlag) {
+            BToS=MatrixInverse(BToS);
+        }
+
 
         BToO = MatrixMultiplication(SToO, BToS);//BToO=Result
         BToO = MatrixInverse(BToO);
@@ -1681,6 +1691,7 @@ public class AttitudeCalculation {
         }else {
             Attitude[2] = 0;
         }
+        //Attitude[2]=0;
     }
 
     //姿态角计算，轨道坐标系3-1-2
@@ -1773,6 +1784,9 @@ public class AttitudeCalculation {
         BToS = new double[][]{{x_SatSensor[0], x_SatSensor[1], x_SatSensor[2]},
                 {y_SatSensor[0], y_SatSensor[1], y_SatSensor[2]},
                 {z_SatSensor[0], z_SatSensor[1], z_SatSensor[2]}};
+        if (FlyOrientationFlag) {
+            BToS=MatrixInverse(BToS);
+        }
 
         BToO = MatrixMultiplication(SToO, BToS);//BToO=Result
         BToO = MatrixInverse(BToO);

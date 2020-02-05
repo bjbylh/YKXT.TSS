@@ -1511,6 +1511,9 @@ public class InsGenWithoutTaskPlanInf {
         for (int i = 0; i < MissionNumberArray.size(); i++) {
             //指令输出
             String FileFolder = FilePath + "\\" + MissionNumberArray.get(i);
+            //added by lihan
+            FileFolder = FilePathUtil.getRealFilePath(FileFolder);
+            //added end
             File file = new File(FileFolder);
             if (!file.exists()) {
                 //如果文件夹不存在，新建
