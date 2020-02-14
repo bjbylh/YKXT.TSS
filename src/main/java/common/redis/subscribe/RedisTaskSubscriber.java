@@ -369,6 +369,13 @@ public class RedisTaskSubscriber extends JedisPubSub {
             String dir = String.valueOf(createTime.toEpochMilli());
             String f = ConfigManager.getInstance().fetchXmlFilePath() + dir;
 
+            File mulu = new File(f);
+
+            if (mulu.exists())
+                mulu.delete();
+
+            mulu.mkdir();
+
             String ids = json.get("content").getAsString();
             String[] transmission_numbers_array = ids.split(",");
 
@@ -470,6 +477,11 @@ public class RedisTaskSubscriber extends JedisPubSub {
                             String filename = "MPSS_TRGS-JD-11_" + sat_code + "_" + date + "_" + String.format("%06d", message_ser) + ".TRTASK";
 
                             File file = new File(FilePathUtil.getRealFilePath(f + "//" + filename));
+
+                            if (file.exists())
+                                file.delete();
+
+                            file.createNewFile();
                             Writer w = new FileWriter(file);
                             w.write(interFaceFileType.toString());
                             w.close();

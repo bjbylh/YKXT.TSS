@@ -40,12 +40,12 @@ public class RedisDataEntity {
         JsonObject ret = new JsonObject();
         JsonObject head = GenHead(MsgType.NEW_TASK, "MAG", "TSS", "");
         JsonObject data = new JsonObject();
-        data.addProperty("name", "ORBIT_FORECAST");
-        data.addProperty("tasktype", TaskType.REALTIME.name());
-        data.addProperty("templet", TempletType.ORBIT_FORECAST.name());
-//        data.addProperty("firsttime", Instant.now().toString());
-//        data.addProperty("cycle", "60000");
-//        data.addProperty("count", "0");
+        data.addProperty("name", "定时处理任务");
+        data.addProperty("tasktype", TaskType.CRONTAB.name());
+        data.addProperty("templet", TempletType.TASK_PLAN.name());
+        data.addProperty("firsttime", Instant.now().toString());
+        data.addProperty("cycle", "3600*24");
+        data.addProperty("count", "0");
         //data.addProperty("content","XXXXX");
 //        String imageorder = "20190903095709744,20190903095709745,20190903095709746,20190903095709747,20190903095709748";
 //        String stationmission = "11";

@@ -36,6 +36,12 @@ public class OrbitCore {
     public void startup() {
         Thread t = new Thread(new OrbitCore.proc(taskId));
         t.start();
+//        try {
+//            Thread.sleep(1000 * 3600 * 12);// 运行一断时间后中断线程
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+//        t.interrupt();
     }
 
     private class proc implements Runnable {

@@ -1,6 +1,5 @@
 package core.taskplan;
 
-
 import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -21,10 +20,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
-
-//import common.FilePathUtil;
-//import common.mongo.DbDefine;
-//import common.mongo.MangoDBConnector;
 
 public class InstructionGeneration {
 
@@ -1073,10 +1068,11 @@ public class InstructionGeneration {
                                                     InstDelta_tLastAll = InstDelta_tLastAll + Double.parseDouble(InstDelta_t);//Integer.parseInt(InstDelta_t)*0.125;
                                                     //执行该指令
                                                     if (InstCode != "") {
-                                                        System.out.println(InstCode);
-                                                        if (InstCode.equals("TCS297")) {
-                                                            System.out.println(InstCode);
-                                                        }
+//                                                        if (InstCode.equals("TCS205"))
+//                                                            System.out.println(InstCode);
+//                                                        if (InstCode.equals("TCS297")) {
+//                                                            System.out.println(InstCode);
+//                                                        }
                                                         for (Document document4 : MetaInstrunctionjson) {
                                                             if (document4.get("code").toString().equals(InstCode)) {
                                                                 if (InstCode.contains("NTCY200")) {
@@ -1576,8 +1572,6 @@ public class InstructionGeneration {
                 //更新执行时间
                 for (int j = 0; j < MissionInstructionHexChild.size(); j++) {
                     String KaiShiShiJian = timeHashMap.get(MissionInstructionCodeChild.get(j)).ExecutionTime(timeVariable, MissionInstructionWorkCode.get(j)).toUpperCase();
-//                    System.out.println(KaiShiShiJian);
-                    //lihan added start
                     if (KaiShiShiJian.length() < 8) {
                         for (int i_id = KaiShiShiJian.length(); i_id < 8; i_id++) {
                             KaiShiShiJian = "0" + KaiShiShiJian;
@@ -1585,7 +1579,6 @@ public class InstructionGeneration {
                     } else if (KaiShiShiJian.length() > 8) {
                         KaiShiShiJian = KaiShiShiJian.substring(KaiShiShiJian.length() - 8);
                     }
-                    //lihan added end
                     String YingYongShuJuTemp = MissionInstructionHexChild.get(j);
                     MissionInstructionHexChild.set(j, KaiShiShiJian + YingYongShuJuTemp);
                     Instant time_ZhiXing = zerostart;
@@ -1621,23 +1614,28 @@ public class InstructionGeneration {
                 String BaoZhuDaoTou = "1C11" + BaoXuLieIDStr + BaoChangstr;
                 String total = BaoZhuDaoTou + ShuJuQuTou + ZhilingKuai_02 + ISO(BaoZhuDaoTou + ShuJuQuTou + ZhilingKuai_02);
 
+                int fangshizi = -1;
                 //添加填充域
                 if (total.length() <= 62 * 2) {
                     for (int j = total.length() / 2; j < 62; j++) {
                         total = total + "A5";
                     }
+                    fangshizi = 0;
                 } else if (total.length() > 62 * 2 && total.length() <= 126 * 2) {
                     for (int j = total.length() / 2; j < 126; j++) {
                         total = total + "A5";
                     }
+                    fangshizi = 1;
                 } else if (total.length() > 126 * 2 && total.length() <= 254 * 2) {
                     for (int j = total.length() / 2; j < 254; j++) {
                         total = total + "A5";
                     }
+                    fangshizi = 2;
                 } else if (total.length() > 254 * 2 && total.length() <= 510 * 2) {
                     for (int j = total.length() / 2; j < 510; j++) {
                         total = total + "A5";
                     }
+                    fangshizi = 3;
                 } else {
                     //分两包
                 }
@@ -1652,7 +1650,17 @@ public class InstructionGeneration {
                         CRCCode = "0" + CRCCode;
                     }
                 }
-                total = "EB90762569" + total + CRCCode;
+
+                if (fangshizi == -1 || fangshizi == 0)
+                    total = "EB90762599" + total + CRCCode;
+                else if (fangshizi == 1)
+                    total = "EB90762569" + total + CRCCode;
+                else if (fangshizi == 2)
+                    total = "EB907625A5" + total + CRCCode;
+                else
+                    total = "EB907625C3" + total + CRCCode;
+
+
                 byte[] bytes = hexStringToBytes(total);
                 InstructionArrayChild.add(bytes);
             }
@@ -1669,7 +1677,6 @@ public class InstructionGeneration {
             //指令输出
             String FileFolder = FilePath + "\\" + MissionNumberArray.get(i);
             FileFolder = FilePathUtil.getRealFilePath(FileFolder);
-
             File file = new File(FileFolder);
             if (!file.exists()) {
                 //如果文件夹不存在，新建
@@ -2107,7 +2114,8 @@ public class InstructionGeneration {
                                                 InstDelta_tLastAll = InstDelta_tLastAll + Double.parseDouble(InstDelta_t);//Integer.parseInt(InstDelta_t)*0.125;
                                                 //执行该指令
                                                 if (InstCode != "") {
-                                                    System.out.println(InstCode);
+//                                                    if (InstCode.equals("TCS205"))
+//                                                        System.out.println(InstCode);
                                                     for (Document document4 : MetaInstrunctionjson) {
                                                         if (document4.get("code").toString().equals(InstCode)) {
                                                             if (document4.containsKey("hex")) {
@@ -2420,15 +2428,13 @@ public class InstructionGeneration {
             //更新执行时间
             for (int j = 0; j < MissionInstructionHexChild.size(); j++) {
                 String KaiShiShiJian = timeHashMap.get(MissionInstructionCodeChild.get(j)).ExecutionTime(timeVariable, workcode).toUpperCase();
-                //lihan added start
                 if (KaiShiShiJian.length() < 8) {
-                    for (int i_id = KaiShiShiJian.length(); i_id < 8; i_id++) {
+                    for (int k = KaiShiShiJian.length(); k < 8; k++) {
                         KaiShiShiJian = "0" + KaiShiShiJian;
                     }
                 } else if (KaiShiShiJian.length() > 8) {
                     KaiShiShiJian = KaiShiShiJian.substring(KaiShiShiJian.length() - 8);
                 }
-                //lihan added end
                 String YingYongShuJuTemp = MissionInstructionHexChild.get(j);
                 MissionInstructionHexChild.set(j, KaiShiShiJian + YingYongShuJuTemp);
                 Instant time_ZhiXing = zerostart;
@@ -2461,23 +2467,28 @@ public class InstructionGeneration {
                 String BaoZhuDaoTou = "1C11" + BaoXuLieIDStr + BaoChangstr;
                 String total = BaoZhuDaoTou + ShuJuQuTou + ZhilingKuai_02 + ISO(BaoZhuDaoTou + ShuJuQuTou + ZhilingKuai_02);
 
+                int fangshizi = -1;
                 //添加填充域
                 if (total.length() <= 62 * 2) {
                     for (int j = total.length() / 2; j < 62; j++) {
                         total = total + "A5";
                     }
+                    fangshizi = 0;
                 } else if (total.length() > 62 * 2 && total.length() <= 126 * 2) {
                     for (int j = total.length() / 2; j < 126; j++) {
                         total = total + "A5";
                     }
+                    fangshizi = 1;
                 } else if (total.length() > 126 * 2 && total.length() <= 254 * 2) {
                     for (int j = total.length() / 2; j < 254; j++) {
                         total = total + "A5";
                     }
+                    fangshizi = 2;
                 } else if (total.length() > 254 * 2 && total.length() <= 510 * 2) {
                     for (int j = total.length() / 2; j < 510; j++) {
                         total = total + "A5";
                     }
+                    fangshizi = 3;
                 } else {
                     //分两包
                 }
@@ -2492,7 +2503,15 @@ public class InstructionGeneration {
                         CRCCode = "0" + CRCCode;
                     }
                 }
-                total = "EB90762569" + total + CRCCode;
+
+                if (fangshizi == -1 || fangshizi == 0)
+                    total = "EB90762599" + total + CRCCode;
+                else if (fangshizi == 1)
+                    total = "EB90762569" + total + CRCCode;
+                else if (fangshizi == 2)
+                    total = "EB907625A5" + total + CRCCode;
+                else
+                    total = "EB907625C3" + total + CRCCode;
                 byte[] bytes = hexStringToBytes(total);
                 InstructionArrayChild.add(bytes);
             }
@@ -2510,6 +2529,7 @@ public class InstructionGeneration {
         for (int i = 0; i < MissionInstructionCode.size(); i++) {
             //指令输出
             String FileFolder = FilePath + "\\" + TransMissionNumbers.get(0);
+            FileFolder = FilePathUtil.getRealFilePath(FileFolder);
             File file = new File(FileFolder);
             if (i == 0) {
                 if (!file.exists()) {

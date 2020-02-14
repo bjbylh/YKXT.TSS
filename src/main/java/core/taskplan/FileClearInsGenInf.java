@@ -1,6 +1,5 @@
 package core.taskplan;
 
-
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -247,23 +246,29 @@ public class FileClearInsGenInf {
                 String total = BaoZhuDaoTou + ShuJuQuTou + entry.getValue() + ISO(BaoZhuDaoTou + ShuJuQuTou + entry.getValue());
 
                 //添加填充域
-                if (total.length()<=62*2) {
-                    for (int j = total.length()/2; j < 62; j++) {
-                        total=total+"A5";
+                int fangshizi = -1;
+                //添加填充域
+                if (total.length() <= 62 * 2) {
+                    for (int j = total.length() / 2; j < 62; j++) {
+                        total = total + "A5";
                     }
-                }else if (total.length()>62*2 && total.length()<=126*2) {
-                    for (int j = total.length()/2; j < 126; j++) {
-                        total=total+"A5";
+                    fangshizi = 0;
+                } else if (total.length() > 62 * 2 && total.length() <= 126 * 2) {
+                    for (int j = total.length() / 2; j < 126; j++) {
+                        total = total + "A5";
                     }
-                }else if (total.length()>126*2 && total.length()<=254*2){
-                    for (int j = total.length()/2; j < 254; j++) {
-                        total=total+"A5";
+                    fangshizi = 1;
+                } else if (total.length() > 126 * 2 && total.length() <= 254 * 2) {
+                    for (int j = total.length() / 2; j < 254; j++) {
+                        total = total + "A5";
                     }
-                }else if (total.length()>254*2 && total.length()<=510*2){
-                    for (int j = total.length()/2; j < 510; j++) {
-                        total=total+"A5";
+                    fangshizi = 2;
+                } else if (total.length() > 254 * 2 && total.length() <= 510 * 2) {
+                    for (int j = total.length() / 2; j < 510; j++) {
+                        total = total + "A5";
                     }
-                }else{
+                    fangshizi = 3;
+                } else {
                     //分两包
                 }
 
@@ -277,15 +282,20 @@ public class FileClearInsGenInf {
                         CRCCode = "0" + CRCCode;
                     }
                 }
-                total = "EB90762569" + total + CRCCode;
+                if (fangshizi == -1 || fangshizi == 0)
+                    total = "EB90762599" + total + CRCCode;
+                else if (fangshizi == 1)
+                    total = "EB90762569" + total + CRCCode;
+                else if (fangshizi == 2)
+                    total = "EB907625A5" + total + CRCCode;
+                else
+                    total = "EB907625C3" + total + CRCCode;
                 byte[] bytes = hexStringToBytes(total);
                 InstructionArrayChild.put(entry.getKey(),bytes);
             }
 
             //指令输出
             FileFolder = FilePathUtil.getRealFilePath(FilePath + "\\"+ MissionNumber);
-            FileFolder = FilePathUtil.getRealFilePath(FileFolder);
-
             File file = new File(FileFolder);
             if (!file.exists()) {
                 //如果文件夹不存在，新建

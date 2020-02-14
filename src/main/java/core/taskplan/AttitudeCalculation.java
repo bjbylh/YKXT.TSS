@@ -1,5 +1,6 @@
 package core.taskplan;
 
+//import com.company.MangoDBConnector;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mongodb.MongoClient;
@@ -18,7 +19,6 @@ import java.util.Date;
 import static java.lang.Math.*;
 
 //import common.mongo.DbDefine;
-//import common.mongo.MangoDBConnector;
 
 //import common.mongo.DbDefine;
 //import common.mongo.MangoDBConnector;
@@ -185,14 +185,17 @@ public class AttitudeCalculation {
         //恒星定标、临边观测
         ArrayList<Document> MissionStarDocument = new ArrayList<>();
         ArrayList<Document> MissionLimbDocument = new ArrayList<>();
+        ArrayList<Document> MissionCalibrateDocument=new ArrayList<>();
         ArrayList<Document> ImageMissionTemp = new ArrayList<>();
         for (Document document : ImageMissionjson) {
-            //将恒星定标和临边单独提出
+            //将恒星定标、定标和临边单独提出
             if (document.get("image_mode").toString().equals("恒星定标")) {
                 MissionStarDocument.add(document);
             } else if (document.get("image_mode").toString().equals("临边观测")) {
                 MissionLimbDocument.add(document);
-            } else {
+            } else if (document.get("image_mode").toString().equals("定标")) {
+                MissionCalibrateDocument.add(document);
+            }else {
                 ImageMissionTemp.add(document);
             }
         }
@@ -303,6 +306,10 @@ public class AttitudeCalculation {
         double[][] SatAttitud_ORF_ESD321 = new double[(int) OrbitDataCount][3];
         double[][] SatAttitudVel_ORF_ESD321 = new double[(int) OrbitDataCount][3];
 
+        //姿态计算，更改后欧拉角3-2-1转序，东南下
+        double[][] SatAttitude_ESD321_Euler=new double[(int) OrbitDataCount][3];
+        double[][] SatAttitudeVel_ESD321_Euler=new double[(int) OrbitDataCount][3];
+
         MongoClient mongoClient = MangoDBConnector.getClient();
         //获取名为"temp"的数据库
         //MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
@@ -377,6 +384,8 @@ public class AttitudeCalculation {
                 AttitudeCalculationORF312(SatPosition_GEI[i], SatVelocity_GEI[i], Target_LLA, Time[i], LoadInstall[LoadNum - 1], SatAttitud_ORF312[i], FlyOrientationFlag);
                 //轨道系下姿态，转为东南系姿态3-2-1
                 AttitudeCalculationORF312ToESD(SatPosition_GEI[i], SatVelocity_GEI[i], SatPosition_LLA[i], Time[i], SatAttitud_ORF312[i], SatAttitud_ORF_ESD321[i]);
+                //更改后欧拉角东南下321
+                AttitudeCalculationEulerESD321(SatPosition_LLA[i], Target_LLA, LoadInstall[LoadNum - 1], SatAttitude_ESD321_Euler[i], FlyOrientationFlag);
 
                 MissionFlag = true;
             } else {
@@ -400,6 +409,10 @@ public class AttitudeCalculation {
                 SatAttitud_ORF_ESD321[i][1] = 0;
                 SatAttitud_ORF_ESD321[i][2] = 0;
                 //AttitudeCalculationORF312ToESD(SatPosition_GEI[i], SatVelocity_GEI[i],SatPosition_LLA[i],Time[i],SatAttitud_ORF312[i],SatAttitud_ORF_ESD321[i]);
+                //更改后欧拉角东南下321
+                SatAttitude_ESD321_Euler[i][0]=0;
+                SatAttitude_ESD321_Euler[i][1]=0;
+                SatAttitude_ESD321_Euler[i][2]=0;
             }
 
             //只存成像任务过程中的姿态
@@ -427,6 +440,10 @@ public class AttitudeCalculation {
                 SatAttitudVel_ORF_ESD321[i][0] = 0;
                 SatAttitudVel_ORF_ESD321[i][1] = 0;
                 SatAttitudVel_ORF_ESD321[i][2] = 0;
+                //更改后欧拉角东南下321
+                SatAttitudeVel_ESD321_Euler[i][0]=0;
+                SatAttitudeVel_ESD321_Euler[i][1]=0;
+                SatAttitudeVel_ESD321_Euler[i][2]=0;
             } else {
                 double[][] AngRaid = {{(SatAttitud[i][0] - SatAttitud[i - 1][0]) / Step},
                         {(SatAttitud[i][1] - SatAttitud[i - 1][1]) / Step},
@@ -497,6 +514,20 @@ public class AttitudeCalculation {
                 SatAttitudVel_ORF_ESD321[i][0] = Vel_ORF_ESD321[0][0];
                 SatAttitudVel_ORF_ESD321[i][1] = Vel_ORF_ESD321[1][0];
                 SatAttitudVel_ORF_ESD321[i][2] = Vel_ORF_ESD321[2][0];
+                //更改后欧拉角东南下3-2-1
+                double[][] AngRaid_ESD321_Euler = {{(SatAttitude_ESD321_Euler[i][0] - SatAttitude_ESD321_Euler[i - 1][0]) / Step},
+                        {(SatAttitude_ESD321_Euler[i][1] - SatAttitude_ESD321_Euler[i - 1][1]) / Step},
+                        {(SatAttitude_ESD321_Euler[i][2] - SatAttitude_ESD321_Euler[i - 1][2]) / Step}};
+                double theta1_ESD321_Euler = SatAttitude_ESD321_Euler[i][0];
+                double theta2_ESD321_Euler = SatAttitude_ESD321_Euler[i][1];
+                double theta3_ESD321_Euler = SatAttitude_ESD321_Euler[i][2];
+                double[][] Tran_ESD321_Euler = {{1, 0, -sin(theta2_ESD321_Euler)},
+                        {0, cos(theta1_ESD321_Euler), sin(theta1_ESD321_Euler) * cos(theta2_ESD321_Euler)},
+                        {0, -sin(theta1_ESD321_Euler), cos(theta1_ESD321_Euler) * cos(theta2_ESD321_Euler)}};
+                double[][] Vel_ESD321_Euler = MatrixMultiplication(Tran_ESD321_Euler, AngRaid_ESD321_Euler);
+                SatAttitudeVel_ESD321_Euler[i][0] = Vel_ESD321_Euler[0][0];
+                SatAttitudeVel_ESD321_Euler[i][1] = Vel_ESD321_Euler[1][0];
+                SatAttitudeVel_ESD321_Euler[i][2] = Vel_ESD321_Euler[2][0];
             }
 
             //计算当前姿态下卫星视场四个顶点的经纬度
@@ -553,6 +584,16 @@ public class AttitudeCalculation {
             jsonObject_ESD_ORF312.addProperty("V_roll_angle", SatAttitud_ORF_ESD321[i][0]);
             jsonObject_ESD_ORF312.addProperty("V_pitch_angle", SatAttitud_ORF_ESD321[i][1]);
             jsonObject.add("Attitude_OrbitReferenceToEastSouthDown_321", jsonObject_ESD_ORF312);
+
+            //更改后欧拉角东南系321转序
+            JsonObject jsonObject_ESD312_Euler = new JsonObject();
+            jsonObject_ESD312_Euler.addProperty("yaw_angle", SatAttitude_ESD321_Euler[i][2]);
+            jsonObject_ESD312_Euler.addProperty("roll_angle", SatAttitude_ESD321_Euler[i][0]);
+            jsonObject_ESD312_Euler.addProperty("pitch_angle", SatAttitude_ESD321_Euler[i][1]);
+            jsonObject_ESD312_Euler.addProperty("V_yaw_angle", SatAttitudeVel_ESD321_Euler[i][2]);
+            jsonObject_ESD312_Euler.addProperty("V_roll_angle", SatAttitudeVel_ESD321_Euler[i][0]);
+            jsonObject_ESD312_Euler.addProperty("V_pitch_angle", SatAttitudeVel_ESD321_Euler[i][1]);
+            jsonObject.add("Attitude_EulerAngle_EastSouthDown_321", jsonObject_ESD312_Euler);
 
             //视场顶点，左上、右下
             JsonArray jsonObject_ViewArea = new JsonArray();
@@ -616,8 +657,8 @@ public class AttitudeCalculation {
 
         mongoClient.close();
 
-        if (MissionStarDocument.size() > 0 || MissionLimbDocument.size() > 0) {
-            StarLimbAttitudeCalculation(MissionStarDocument, MissionLimbDocument, Time, SatPosition_GEI, SatVelocity_GEI, SatPosition_LLA, Time_Point);
+        if (MissionStarDocument.size() > 0 || MissionLimbDocument.size() > 0 || MissionCalibrateDocument.size()>0) {
+            StarLimbAttitudeCalculation(MissionStarDocument, MissionLimbDocument,MissionCalibrateDocument, Time, SatPosition_GEI, SatVelocity_GEI, SatPosition_LLA, Time_Point);
         }
     }
 
@@ -699,7 +740,7 @@ public class AttitudeCalculation {
     }
 
     //临边观测、恒星定标模式姿态角计算
-    private static void StarLimbAttitudeCalculation(ArrayList<Document> MissionStarDocument, ArrayList<Document> MissionLimbDocument, double[][] Time, double[][] SatPosition_GEI, double[][] SatVelocity_GEI, double[][] SatPosition_LLA, Date[] Time_Point) {
+    private static void StarLimbAttitudeCalculation(ArrayList<Document> MissionStarDocument, ArrayList<Document> MissionLimbDocument,ArrayList<Document> MissionCalibrateDocument, double[][] Time, double[][] SatPosition_GEI, double[][] SatVelocity_GEI, double[][] SatPosition_LLA, Date[] Time_Point) {
         MongoClient mongoClient = MangoDBConnector.getClient();
         //获取名为"temp"的数据库
         //MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
@@ -744,6 +785,10 @@ public class AttitudeCalculation {
                             double[][] SatAttitud_ORF_ESD321 = new double[OrbitNum][3];
                             double[][] SatAttitudVel_ORF_ESD321 = new double[OrbitNum][3];
 
+                            //姿态计算，更改后欧拉角3-2-1z转序，东南下
+                            double[][] SatAttitud_ESD321_Euler=new double[OrbitNum][3];
+                            double[][] SatAttitudVel_ESD321_Euler=new double[OrbitNum][3];
+
                             for (int i = MissionWindow_int[0]; i <= MissionWindow_int[1]; i++) {
                                 double NowTime_JD = JD(Time[i]);
                                 //太阳矢量
@@ -785,6 +830,10 @@ public class AttitudeCalculation {
                                     SatAttitud_ORF312[i - MissionWindow_int[0]][2] = 0;
                                     //轨道系下姿态，转为东南系姿态3-2-1
                                     AttitudeCalculationORF312ToESD(SatPosition_GEI[i], SatVelocity_GEI[i], SatPosition_LLA[i], Time[i], SatAttitud_ORF312[i - MissionWindow_int[0]], SatAttitud_ORF_ESD321[i - MissionWindow_int[0]]);
+                                    //更改后欧拉角东南下3-2-1
+                                    SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][0] = MissionAng;
+                                    SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][2] = 0;
                                 } else {
                                     //北东地1-2-3
                                     SatAttitud[i - MissionWindow_int[0]][0] = -MissionAng;
@@ -804,6 +853,10 @@ public class AttitudeCalculation {
                                     SatAttitud_ORF312[i - MissionWindow_int[0]][2] = PI;
                                     //轨道系下姿态，转为东南系姿态3-2-1
                                     AttitudeCalculationORF312ToESD(SatPosition_GEI[i], SatVelocity_GEI[i], SatPosition_LLA[i], Time[i], SatAttitud_ORF312[i - MissionWindow_int[0]], SatAttitud_ORF_ESD321[i - MissionWindow_int[0]]);
+                                    //更改后欧拉角，东南下3-2-1
+                                    SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][0] = -MissionAng;
+                                    SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][2] = PI;
                                 }
                                 if (i == MissionWindow_int[0]) {
                                     SatAttitudVel[i - MissionWindow_int[0]][0] = 0;
@@ -825,6 +878,10 @@ public class AttitudeCalculation {
                                     SatAttitudVel_ORF_ESD321[i - MissionWindow_int[0]][0] = 0;
                                     SatAttitudVel_ORF_ESD321[i - MissionWindow_int[0]][1] = 0;
                                     SatAttitudVel_ORF_ESD321[i - MissionWindow_int[0]][2] = 0;
+                                    //更改后欧拉角，东南下3-2-1
+                                    SatAttitudVel_ESD321_Euler[i - MissionWindow_int[0]][0] = 0;
+                                    SatAttitudVel_ESD321_Euler[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitudVel_ESD321_Euler[i - MissionWindow_int[0]][2] = 0;
                                 } else {
                                     double[][] AngRaid = {{(SatAttitud[i - MissionWindow_int[0]][0] - SatAttitud[i - MissionWindow_int[0] - 1][0]) / Step},
                                             {(SatAttitud[i - MissionWindow_int[0]][1] - SatAttitud[i - MissionWindow_int[0] - 1][1]) / Step},
@@ -895,6 +952,20 @@ public class AttitudeCalculation {
                                     SatAttitudVel_ORF_ESD321[i - MissionWindow_int[0]][0] = Vel_ORF_ESD321[0][0];
                                     SatAttitudVel_ORF_ESD321[i - MissionWindow_int[0]][1] = Vel_ORF_ESD321[1][0];
                                     SatAttitudVel_ORF_ESD321[i - MissionWindow_int[0]][2] = Vel_ORF_ESD321[2][0];
+                                    //更改后欧拉角，东南下3-2-1
+                                    double[][] AngRaid_ESD321_Euler = {{(SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][0] - SatAttitud_ESD321_Euler[i - MissionWindow_int[0] - 1][0]) / Step},
+                                            {(SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][1] - SatAttitud_ESD321_Euler[i - MissionWindow_int[0] - 1][1]) / Step},
+                                            {(SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][2] - SatAttitud_ESD321_Euler[i - MissionWindow_int[0] - 1][2]) / Step}};
+                                    double theta1_ESD321_Euler = SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][0];
+                                    double theta2_ESD321_Euler = SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][1];
+                                    double theta3_ESD321_Euler = SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][2];
+                                    double[][] Tran_ESD321_Euler = {{1, 0, -sin(theta2_ESD321_Euler)},
+                                            {0, cos(theta1_ESD321_Euler), sin(theta1_ESD321_Euler) * cos(theta2_ESD321_Euler)},
+                                            {0, -sin(theta1_ESD321_Euler), cos(theta1_ESD321_Euler) * cos(theta2_ESD321_Euler)}};
+                                    double[][] Vel_ESD321_Euler = MatrixMultiplication(Tran_ESD321_Euler, AngRaid_ESD321_Euler);
+                                    SatAttitudVel_ESD321_Euler[i - MissionWindow_int[0]][0] = Vel_ESD321[0][0];
+                                    SatAttitudVel_ESD321_Euler[i - MissionWindow_int[0]][1] = Vel_ESD321[1][0];
+                                    SatAttitudVel_ESD321_Euler[i - MissionWindow_int[0]][2] = Vel_ESD321[2][0];
                                 }
 
                                 //计算当前姿态下卫星视场四个顶点的经纬度
@@ -950,6 +1021,16 @@ public class AttitudeCalculation {
                                 jsonObject_ESD_ORF312.addProperty("V_roll_angle", SatAttitud_ORF_ESD321[i - MissionWindow_int[0]][0]);
                                 jsonObject_ESD_ORF312.addProperty("V_pitch_angle", SatAttitud_ORF_ESD321[i - MissionWindow_int[0]][1]);
                                 jsonObject.add("Attitude_OrbitReferenceToEastSouthDown_321", jsonObject_ESD_ORF312);
+
+                                //更改后欧拉角东南系321转序
+                                JsonObject jsonObject_ESD312_Euler = new JsonObject();
+                                jsonObject_ESD312_Euler.addProperty("yaw_angle", SatAttitud_ESD321_Euler[i][2]);
+                                jsonObject_ESD312_Euler.addProperty("roll_angle", SatAttitud_ESD321_Euler[i][0]);
+                                jsonObject_ESD312_Euler.addProperty("pitch_angle", SatAttitud_ESD321_Euler[i][1]);
+                                jsonObject_ESD312_Euler.addProperty("V_yaw_angle", SatAttitudVel_ESD321_Euler[i][2]);
+                                jsonObject_ESD312_Euler.addProperty("V_roll_angle", SatAttitudVel_ESD321_Euler[i][0]);
+                                jsonObject_ESD312_Euler.addProperty("V_pitch_angle", SatAttitudVel_ESD321_Euler[i][1]);
+                                jsonObject.add("Attitude_EulerAngle_EastSouthDown_321", jsonObject_ESD312_Euler);
 
                                 //视场顶点，左上、右下
                                 JsonArray jsonObject_ViewArea = new JsonArray();
@@ -1052,6 +1133,10 @@ public class AttitudeCalculation {
                             double[][] SatAttitud_ORF_ESD321 = new double[OrbitNum][3];
                             double[][] SatAttitudVel_ORF_ESD321 = new double[OrbitNum][3];
 
+                            //姿态计算，更改后欧拉角3-2-1z转序，东南下
+                            double[][] SatAttitud_ESD321_Euler=new double[OrbitNum][3];
+                            double[][] SatAttitudVel_ESD321_Euler=new double[OrbitNum][3];
+
                             for (int i = MissionWindow_int[0]; i <= MissionWindow_int[1]; i++) {
                                 if (i == MissionWindow_int[0]) {
                                     MissionAng = LimbAngCalculation(SatPosition_GEI[i]);
@@ -1075,6 +1160,10 @@ public class AttitudeCalculation {
                                 SatAttitud_ORF312[i - MissionWindow_int[0]][2] = 0;
                                 //轨道系下姿态，转为东南系姿态3-2-1
                                 AttitudeCalculationORF312ToESD(SatPosition_GEI[i], SatVelocity_GEI[i], SatPosition_LLA[i], Time[i], SatAttitud_ORF312[i - MissionWindow_int[0]], SatAttitud_ORF_ESD321[i - MissionWindow_int[0]]);
+                                //更改后欧拉角，东南下3-2-1
+                                SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][0] = 0;
+                                SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][1] = -MissionAng;
+                                SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][2] = 0;
 
                                 if (i == MissionWindow_int[0]) {
                                     SatAttitudVel[i - MissionWindow_int[0]][0] = 0;
@@ -1096,6 +1185,10 @@ public class AttitudeCalculation {
                                     SatAttitudVel_ORF_ESD321[i - MissionWindow_int[0]][0] = 0;
                                     SatAttitudVel_ORF_ESD321[i - MissionWindow_int[0]][1] = 0;
                                     SatAttitudVel_ORF_ESD321[i - MissionWindow_int[0]][2] = 0;
+                                    //更改后欧拉角，东南下3-2-1
+                                    SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][0] = 0;
+                                    SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][2] = 0;
                                 } else {
                                     double[][] AngRaid = {{(SatAttitud[i - MissionWindow_int[0]][0] - SatAttitud[i - MissionWindow_int[0] - 1][0]) / Step},
                                             {(SatAttitud[i - MissionWindow_int[0]][1] - SatAttitud[i - MissionWindow_int[0] - 1][1]) / Step},
@@ -1166,6 +1259,20 @@ public class AttitudeCalculation {
                                     SatAttitudVel_ORF_ESD321[i - MissionWindow_int[0]][0] = Vel_ORF_ESD321[0][0];
                                     SatAttitudVel_ORF_ESD321[i - MissionWindow_int[0]][1] = Vel_ORF_ESD321[1][0];
                                     SatAttitudVel_ORF_ESD321[i - MissionWindow_int[0]][2] = Vel_ORF_ESD321[2][0];
+                                    //更改后欧拉角，东南下3-2-1
+                                    double[][] AngRaid_ESD321_Euler = {{(SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][0] - SatAttitud_ESD321_Euler[i - MissionWindow_int[0] - 1][0]) / Step},
+                                            {(SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][1] - SatAttitud_ESD321_Euler[i - MissionWindow_int[0] - 1][1]) / Step},
+                                            {(SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][2] - SatAttitud_ESD321_Euler[i - MissionWindow_int[0] - 1][2]) / Step}};
+                                    double theta1_ESD321_Euler = SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][0];
+                                    double theta2_ESD321_Euler = SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][1];
+                                    double theta3_ESD321_Euler = SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][2];
+                                    double[][] Tran_ESD321_Euler = {{1, 0, -sin(theta2_ESD321_Euler)},
+                                            {0, cos(theta1_ESD321_Euler), sin(theta1_ESD321_Euler) * cos(theta2_ESD321_Euler)},
+                                            {0, -sin(theta1_ESD321_Euler), cos(theta1_ESD321_Euler) * cos(theta2_ESD321_Euler)}};
+                                    double[][] Vel_ESD321_Euler = MatrixMultiplication(Tran_ESD321_Euler, AngRaid_ESD321_Euler);
+                                    SatAttitudVel_ESD321_Euler[i - MissionWindow_int[0]][0] = Vel_ESD321[0][0];
+                                    SatAttitudVel_ESD321_Euler[i - MissionWindow_int[0]][1] = Vel_ESD321[1][0];
+                                    SatAttitudVel_ESD321_Euler[i - MissionWindow_int[0]][2] = Vel_ESD321[2][0];
                                 }
 
                                 //计算当前姿态下卫星视场四个顶点的经纬度
@@ -1221,6 +1328,16 @@ public class AttitudeCalculation {
                                 jsonObject_ESD_ORF312.addProperty("V_roll_angle", SatAttitud_ORF_ESD321[i - MissionWindow_int[0]][0]);
                                 jsonObject_ESD_ORF312.addProperty("V_pitch_angle", SatAttitud_ORF_ESD321[i - MissionWindow_int[0]][1]);
                                 jsonObject.add("Attitude_OrbitReferenceToEastSouthDown_321", jsonObject_ESD_ORF312);
+
+                                //更改后欧拉角东南系321转序
+                                JsonObject jsonObject_ESD312_Euler = new JsonObject();
+                                jsonObject_ESD312_Euler.addProperty("yaw_angle", SatAttitud_ESD321_Euler[i][2]);
+                                jsonObject_ESD312_Euler.addProperty("roll_angle", SatAttitud_ESD321_Euler[i][0]);
+                                jsonObject_ESD312_Euler.addProperty("pitch_angle", SatAttitud_ESD321_Euler[i][1]);
+                                jsonObject_ESD312_Euler.addProperty("V_yaw_angle", SatAttitudVel_ESD321_Euler[i][2]);
+                                jsonObject_ESD312_Euler.addProperty("V_roll_angle", SatAttitudVel_ESD321_Euler[i][0]);
+                                jsonObject_ESD312_Euler.addProperty("V_pitch_angle", SatAttitudVel_ESD321_Euler[i][1]);
+                                jsonObject.add("Attitude_EulerAngle_EastSouthDown_321", jsonObject_ESD312_Euler);
 
                                 //视场顶点，左上、右下
                                 JsonArray jsonObject_ViewArea = new JsonArray();
@@ -1278,6 +1395,354 @@ public class AttitudeCalculation {
                         }
                     }
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
+                continue;
+            }
+        }
+
+        for (Document document : MissionCalibrateDocument) {
+            try {
+                if (document.containsKey("image_window")) {
+                    ArrayList<Document> MissionwWindow = (ArrayList<Document>) document.get("image_window");
+                    double MissionAng = 0;
+                    if (MissionwWindow.size() > 0) {
+                        for (Document document1 : MissionwWindow) {
+                            //读取任务时间
+                            Date window_start_time = document1.getDate("start_time");
+                            double[] MissionStarTime_iList = DateToDouble(window_start_time);
+                            Date window_stop_time = document1.getDate("end_time");
+                            double[] MissionStopTime_iList = DateToDouble(window_stop_time);
+                            int[] MissionWindow_int = new int[2];
+                            MissionWindow_int[0] = (int) ((JD(MissionStarTime_iList) - JD(Time[0])) * (24 * 60 * 60));
+                            MissionWindow_int[1] = (int) ((JD(MissionStopTime_iList) - JD(Time[0])) * (24 * 60 * 60));
+                            int OrbitNum = MissionWindow_int[1] - MissionWindow_int[0] + 1;
+
+                            //姿态计算，欧拉角1-2-3转序
+                            double[][] SatAttitud = new double[OrbitNum][3];
+                            double[][] SatAttitudVel = new double[OrbitNum][3];
+
+                            //姿态计算，欧拉角3-1-2转序，东南下
+                            double[][] SatAttitud_ESD = new double[OrbitNum][3];
+                            double[][] SatAttitudVel_ESD = new double[OrbitNum][3];
+
+                            //姿态计算，欧拉角3-2-1转序，东南下
+                            double[][] SatAttitud_ESD321 = new double[OrbitNum][3];
+                            double[][] SatAttitudVel_ESD321 = new double[OrbitNum][3];
+
+                            //姿态计算，欧拉角3-1-2转序，椭圆轨道坐标系
+                            double[][] SatAttitud_ORF312 = new double[OrbitNum][3];
+                            double[][] SatAttitudVel_ORF312 = new double[OrbitNum][3];
+
+                            //姿态计算，欧拉角3-2-1转序，椭圆轨道坐标系下转到东南系
+                            double[][] SatAttitud_ORF_ESD321 = new double[OrbitNum][3];
+                            double[][] SatAttitudVel_ORF_ESD321 = new double[OrbitNum][3];
+
+                            //姿态计算，更改后欧拉角3-2-1z转序，东南下
+                            double[][] SatAttitud_ESD321_Euler=new double[OrbitNum][3];
+                            double[][] SatAttitudVel_ESD321_Euler=new double[OrbitNum][3];
+
+                            for (int i = MissionWindow_int[0]; i <= MissionWindow_int[1]; i++) {
+                                double NowTime_JD = JD(Time[i]);
+                                //太阳矢量
+                                double[] r_sun = new double[3];//惯性系下太阳矢量
+                                double[] su = new double[2];
+                                double rd_sun = Sun(NowTime_JD, r_sun, su);
+                                //卫星飞行方向与本体x轴是否一致，true表示一致，false表示相反
+                                boolean FlyOrientationFlag = true;
+                                double[] r_sun_n = new double[]{r_sun[0] / sqrt(r_sun[0] * r_sun[0] + r_sun[1] * r_sun[1] + r_sun[2] * r_sun[2]),
+                                        r_sun[1] / sqrt(r_sun[0] * r_sun[0] + r_sun[1] * r_sun[1] + r_sun[2] * r_sun[2]),
+                                        r_sun[2] / sqrt(r_sun[0] * r_sun[0] + r_sun[1] * r_sun[1] + r_sun[2] * r_sun[2])};
+                                double[] v_sat_n = new double[]{SatVelocity_GEI[i][0] / sqrt(SatVelocity_GEI[i][0] * SatVelocity_GEI[i][0] + SatVelocity_GEI[i][1] * SatVelocity_GEI[i][1] + SatVelocity_GEI[i][2] * SatVelocity_GEI[i][2]),
+                                        SatVelocity_GEI[i][1] / sqrt(SatVelocity_GEI[i][0] * SatVelocity_GEI[i][0] + SatVelocity_GEI[i][1] * SatVelocity_GEI[i][1] + SatVelocity_GEI[i][2] * SatVelocity_GEI[i][2]),
+                                        SatVelocity_GEI[i][2] / sqrt(SatVelocity_GEI[i][0] * SatVelocity_GEI[i][0] + SatVelocity_GEI[i][1] * SatVelocity_GEI[i][1] + SatVelocity_GEI[i][2] * SatVelocity_GEI[i][2])};
+                                double CosTheta_SunVel = (r_sun_n[0] * v_sat_n[0] + r_sun_n[1] * v_sat_n[1] + r_sun_n[2] * v_sat_n[2]) /
+                                        (sqrt(r_sun_n[0] * r_sun_n[0] + r_sun_n[1] * r_sun_n[1] + r_sun_n[2] * r_sun_n[2]) * sqrt(v_sat_n[0] * v_sat_n[0] + v_sat_n[1] * v_sat_n[1] + v_sat_n[2] * v_sat_n[2]));
+                                if (CosTheta_SunVel > 0) {
+                                    FlyOrientationFlag = false;
+                                } else {
+                                    FlyOrientationFlag = true;
+                                }
+
+                                if (FlyOrientationFlag) {
+                                    //北东地1-2-3
+                                    SatAttitud[i - MissionWindow_int[0]][0] = MissionAng;
+                                    SatAttitud[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitud[i - MissionWindow_int[0]][2] = 0;
+                                    //东南下3-1-2
+                                    SatAttitud_ESD[i - MissionWindow_int[0]][0] = MissionAng;
+                                    SatAttitud_ESD[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitud_ESD[i - MissionWindow_int[0]][2] = 0;
+                                    //东南下3-2-1
+                                    SatAttitud_ESD321[i - MissionWindow_int[0]][0] = MissionAng;
+                                    SatAttitud_ESD321[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitud_ESD321[i - MissionWindow_int[0]][2] = 0;
+                                    //椭圆轨道坐标系3-1-2
+                                    SatAttitud_ORF312[i - MissionWindow_int[0]][0] = MissionAng;
+                                    SatAttitud_ORF312[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitud_ORF312[i - MissionWindow_int[0]][2] = 0;
+                                    //轨道系下姿态，转为东南系姿态3-2-1
+                                    AttitudeCalculationORF312ToESD(SatPosition_GEI[i], SatVelocity_GEI[i], SatPosition_LLA[i], Time[i], SatAttitud_ORF312[i - MissionWindow_int[0]], SatAttitud_ORF_ESD321[i - MissionWindow_int[0]]);
+                                    //更改后欧拉角东南下3-2-1
+                                    SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][0] = MissionAng;
+                                    SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][2] = 0;
+                                } else {
+                                    //北东地1-2-3
+                                    SatAttitud[i - MissionWindow_int[0]][0] = -MissionAng;
+                                    SatAttitud[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitud[i - MissionWindow_int[0]][2] = PI;
+                                    //东南下3-1-2
+                                    SatAttitud_ESD[i - MissionWindow_int[0]][0] = -MissionAng;
+                                    SatAttitud_ESD[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitud_ESD[i - MissionWindow_int[0]][2] = PI;
+                                    //东南下3-2-1
+                                    SatAttitud_ESD321[i - MissionWindow_int[0]][0] = -MissionAng;
+                                    SatAttitud_ESD321[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitud_ESD321[i - MissionWindow_int[0]][2] = PI;
+                                    //椭圆轨道坐标系3-1-2
+                                    SatAttitud_ORF312[i - MissionWindow_int[0]][0] = -MissionAng;
+                                    SatAttitud_ORF312[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitud_ORF312[i - MissionWindow_int[0]][2] = PI;
+                                    //轨道系下姿态，转为东南系姿态3-2-1
+                                    AttitudeCalculationORF312ToESD(SatPosition_GEI[i], SatVelocity_GEI[i], SatPosition_LLA[i], Time[i], SatAttitud_ORF312[i - MissionWindow_int[0]], SatAttitud_ORF_ESD321[i - MissionWindow_int[0]]);
+                                    //更改后欧拉角，东南下3-2-1
+                                    SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][0] = -MissionAng;
+                                    SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][2] = PI;
+                                }
+                                if (i == MissionWindow_int[0]) {
+                                    SatAttitudVel[i - MissionWindow_int[0]][0] = 0;
+                                    SatAttitudVel[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitudVel[i - MissionWindow_int[0]][2] = 0;
+                                    //东南下3-1-2
+                                    SatAttitudVel_ESD[i - MissionWindow_int[0]][0] = 0;
+                                    SatAttitudVel_ESD[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitudVel_ESD[i - MissionWindow_int[0]][2] = 0;
+                                    //东南下3-2-1
+                                    SatAttitudVel_ESD321[i - MissionWindow_int[0]][0] = 0;
+                                    SatAttitudVel_ESD321[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitudVel_ESD321[i - MissionWindow_int[0]][2] = 0;
+                                    //椭圆轨道坐标系3-1-2
+                                    SatAttitudVel_ORF312[i - MissionWindow_int[0]][0] = 0;
+                                    SatAttitudVel_ORF312[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitudVel_ORF312[i - MissionWindow_int[0]][2] = 0;
+                                    //轨道系下姿态，转为东南系姿态3-2-1
+                                    SatAttitudVel_ORF_ESD321[i - MissionWindow_int[0]][0] = 0;
+                                    SatAttitudVel_ORF_ESD321[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitudVel_ORF_ESD321[i - MissionWindow_int[0]][2] = 0;
+                                    //更改后欧拉角，东南下3-2-1
+                                    SatAttitudVel_ESD321_Euler[i - MissionWindow_int[0]][0] = 0;
+                                    SatAttitudVel_ESD321_Euler[i - MissionWindow_int[0]][1] = 0;
+                                    SatAttitudVel_ESD321_Euler[i - MissionWindow_int[0]][2] = 0;
+                                } else {
+                                    double[][] AngRaid = {{(SatAttitud[i - MissionWindow_int[0]][0] - SatAttitud[i - MissionWindow_int[0] - 1][0]) / Step},
+                                            {(SatAttitud[i - MissionWindow_int[0]][1] - SatAttitud[i - MissionWindow_int[0] - 1][1]) / Step},
+                                            {(SatAttitud[i - MissionWindow_int[0]][2] - SatAttitud[i - MissionWindow_int[0] - 1][2]) / Step}};
+                                    double theta1 = SatAttitud[i - MissionWindow_int[0]][0];
+                                    double theta2 = SatAttitud[i - MissionWindow_int[0]][1];
+                                    double theta3 = SatAttitud[i - MissionWindow_int[0]][2];
+                                    double[][] Tran = {{1, 0, -sin(theta2)},
+                                            {0, cos(theta1), sin(theta1) * cos(theta2)},
+                                            {0, -sin(theta1), cos(theta1) * cos(theta2)}};
+                                    double[][] Vel = MatrixMultiplication(Tran, AngRaid);
+                                    SatAttitudVel[i - MissionWindow_int[0]][0] = Vel[0][0];
+                                    SatAttitudVel[i - MissionWindow_int[0]][1] = Vel[1][0];
+                                    SatAttitudVel[i - MissionWindow_int[0]][2] = Vel[2][0];
+                                    //东南下3-1-2
+                                    double[][] AngRaid_ESD = {{(SatAttitud_ESD[i - MissionWindow_int[0]][0] - SatAttitud_ESD[i - MissionWindow_int[0] - 1][0]) / Step},
+                                            {(SatAttitud_ESD[i - MissionWindow_int[0]][1] - SatAttitud_ESD[i - MissionWindow_int[0] - 1][1]) / Step},
+                                            {(SatAttitud_ESD[i - MissionWindow_int[0]][2] - SatAttitud_ESD[i - MissionWindow_int[0] - 1][2]) / Step}};
+                                    double theta1_ESD = SatAttitud_ESD[i - MissionWindow_int[0]][0];
+                                    double theta2_ESD = SatAttitud_ESD[i - MissionWindow_int[0]][1];
+                                    double theta3_ESD = SatAttitud_ESD[i - MissionWindow_int[0]][2];
+                                    double[][] Tran_ESD = {{1, 0, -sin(theta2_ESD)},
+                                            {0, cos(theta1_ESD), sin(theta1_ESD) * cos(theta2_ESD)},
+                                            {0, -sin(theta1_ESD), cos(theta1_ESD) * cos(theta2_ESD)}};
+                                    double[][] Vel_ESD = MatrixMultiplication(Tran_ESD, AngRaid_ESD);
+                                    SatAttitudVel_ESD[i - MissionWindow_int[0]][0] = Vel_ESD[0][0];
+                                    SatAttitudVel_ESD[i - MissionWindow_int[0]][1] = Vel_ESD[1][0];
+                                    SatAttitudVel_ESD[i - MissionWindow_int[0]][2] = Vel_ESD[2][0];
+                                    //东南下3-2-1
+                                    double[][] AngRaid_ESD321 = {{(SatAttitud_ESD321[i - MissionWindow_int[0]][0] - SatAttitud_ESD321[i - MissionWindow_int[0] - 1][0]) / Step},
+                                            {(SatAttitud_ESD321[i - MissionWindow_int[0]][1] - SatAttitud_ESD321[i - MissionWindow_int[0] - 1][1]) / Step},
+                                            {(SatAttitud_ESD321[i - MissionWindow_int[0]][2] - SatAttitud_ESD321[i - MissionWindow_int[0] - 1][2]) / Step}};
+                                    double theta1_ESD321 = SatAttitud_ESD321[i - MissionWindow_int[0]][0];
+                                    double theta2_ESD321 = SatAttitud_ESD321[i - MissionWindow_int[0]][1];
+                                    double theta3_ESD321 = SatAttitud_ESD321[i - MissionWindow_int[0]][2];
+                                    double[][] Tran_ESD321 = {{1, 0, -sin(theta2_ESD321)},
+                                            {0, cos(theta1_ESD321), sin(theta1_ESD321) * cos(theta2_ESD321)},
+                                            {0, -sin(theta1_ESD321), cos(theta1_ESD321) * cos(theta2_ESD321)}};
+                                    double[][] Vel_ESD321 = MatrixMultiplication(Tran_ESD321, AngRaid_ESD321);
+                                    SatAttitudVel_ESD321[i - MissionWindow_int[0]][0] = Vel_ESD321[0][0];
+                                    SatAttitudVel_ESD321[i - MissionWindow_int[0]][1] = Vel_ESD321[1][0];
+                                    SatAttitudVel_ESD321[i - MissionWindow_int[0]][2] = Vel_ESD321[2][0];
+                                    //轨道坐标系3-1-2
+                                    double[][] AngRaid_ORF312 = {{(SatAttitud_ORF312[i - MissionWindow_int[0]][0] - SatAttitud_ORF312[i - MissionWindow_int[0] - 1][0]) / Step},
+                                            {(SatAttitud_ORF312[i - MissionWindow_int[0]][1] - SatAttitud_ORF312[i - MissionWindow_int[0] - 1][1]) / Step},
+                                            {(SatAttitud_ORF312[i - MissionWindow_int[0]][2] - SatAttitud_ORF312[i - MissionWindow_int[0] - 1][2]) / Step}};
+                                    double theta1_ORF312 = SatAttitud_ORF312[i - MissionWindow_int[0]][0];
+                                    double theta2_ORF312 = SatAttitud_ORF312[i - MissionWindow_int[0]][1];
+                                    double theta3_ORF312 = SatAttitud_ORF312[i - MissionWindow_int[0]][2];
+                                    double[][] Tran_ORF312 = {{1, 0, -sin(theta2_ORF312)},
+                                            {0, cos(theta1_ORF312), sin(theta1_ORF312) * cos(theta2_ORF312)},
+                                            {0, -sin(theta1_ORF312), cos(theta1_ORF312) * cos(theta2_ORF312)}};
+                                    double[][] Vel_ORF312 = MatrixMultiplication(Tran_ORF312, AngRaid_ORF312);
+                                    SatAttitudVel_ORF312[i - MissionWindow_int[0]][0] = Vel_ORF312[0][0];
+                                    SatAttitudVel_ORF312[i - MissionWindow_int[0]][1] = Vel_ORF312[1][0];
+                                    SatAttitudVel_ORF312[i - MissionWindow_int[0]][2] = Vel_ORF312[2][0];
+                                    //轨道系下姿态，转为东南系姿态3-2-1
+                                    double[][] AngRaid_ORF_ESD321 = {{(SatAttitud_ORF_ESD321[i - MissionWindow_int[0]][0] - SatAttitud_ORF_ESD321[i - MissionWindow_int[0] - 1][0]) / Step},
+                                            {(SatAttitud_ORF_ESD321[i - MissionWindow_int[0]][1] - SatAttitud_ORF_ESD321[i - MissionWindow_int[0] - 1][1]) / Step},
+                                            {(SatAttitud_ORF_ESD321[i - MissionWindow_int[0]][2] - SatAttitud_ORF_ESD321[i - MissionWindow_int[0] - 1][2]) / Step}};
+                                    double theta1_ORF_ESD321 = SatAttitud_ORF_ESD321[i - MissionWindow_int[0]][0];
+                                    double theta2_ORF_ESD321 = SatAttitud_ORF_ESD321[i - MissionWindow_int[0]][1];
+                                    double theta3_ORF_ESD321 = SatAttitud_ORF_ESD321[i - MissionWindow_int[0]][2];
+                                    double[][] Tran_ORF_ESD321 = {{1, 0, -sin(theta2_ORF_ESD321)},
+                                            {0, cos(theta1_ORF_ESD321), sin(theta1_ORF_ESD321) * cos(theta2_ORF_ESD321)},
+                                            {0, -sin(theta1_ORF_ESD321), cos(theta1_ORF_ESD321) * cos(theta2_ORF_ESD321)}};
+                                    double[][] Vel_ORF_ESD321 = MatrixMultiplication(Tran_ORF_ESD321, AngRaid_ORF_ESD321);
+                                    SatAttitudVel_ORF_ESD321[i - MissionWindow_int[0]][0] = Vel_ORF_ESD321[0][0];
+                                    SatAttitudVel_ORF_ESD321[i - MissionWindow_int[0]][1] = Vel_ORF_ESD321[1][0];
+                                    SatAttitudVel_ORF_ESD321[i - MissionWindow_int[0]][2] = Vel_ORF_ESD321[2][0];
+                                    //更改后欧拉角，东南下3-2-1
+                                    double[][] AngRaid_ESD321_Euler = {{(SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][0] - SatAttitud_ESD321_Euler[i - MissionWindow_int[0] - 1][0]) / Step},
+                                            {(SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][1] - SatAttitud_ESD321_Euler[i - MissionWindow_int[0] - 1][1]) / Step},
+                                            {(SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][2] - SatAttitud_ESD321_Euler[i - MissionWindow_int[0] - 1][2]) / Step}};
+                                    double theta1_ESD321_Euler = SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][0];
+                                    double theta2_ESD321_Euler = SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][1];
+                                    double theta3_ESD321_Euler = SatAttitud_ESD321_Euler[i - MissionWindow_int[0]][2];
+                                    double[][] Tran_ESD321_Euler = {{1, 0, -sin(theta2_ESD321_Euler)},
+                                            {0, cos(theta1_ESD321_Euler), sin(theta1_ESD321_Euler) * cos(theta2_ESD321_Euler)},
+                                            {0, -sin(theta1_ESD321_Euler), cos(theta1_ESD321_Euler) * cos(theta2_ESD321_Euler)}};
+                                    double[][] Vel_ESD321_Euler = MatrixMultiplication(Tran_ESD321_Euler, AngRaid_ESD321_Euler);
+                                    SatAttitudVel_ESD321_Euler[i - MissionWindow_int[0]][0] = Vel_ESD321[0][0];
+                                    SatAttitudVel_ESD321_Euler[i - MissionWindow_int[0]][1] = Vel_ESD321[1][0];
+                                    SatAttitudVel_ESD321_Euler[i - MissionWindow_int[0]][2] = Vel_ESD321[2][0];
+                                }
+
+                                //计算当前姿态下卫星视场四个顶点的经纬度
+                                double Time_UTC = 0;
+                                double ViewAreaPoint[][] = new double[LoadNumber][8];
+                                AttitudeViewCalculation(SatPosition_GEI[i], SatVelocity_GEI[i], SatPosition_LLA[i], SatAttitud_ESD[i - MissionWindow_int[0]], LoadInstall, LoadViewAng, LoadNumber, Time[i], Time_UTC, ViewAreaPoint);
+
+                                //数据输出，计算一步传出一组姿态数据
+                                JsonObject jsonObject = new JsonObject();
+                                //北东地1-2-3
+                                //Document jsonObject_NED=new Document();
+                                jsonObject.addProperty("yaw_angle", SatAttitud[i - MissionWindow_int[0]][2]);
+                                jsonObject.addProperty("roll_angle", SatAttitud[i - MissionWindow_int[0]][0]);
+                                jsonObject.addProperty("pitch_angle", SatAttitud[i - MissionWindow_int[0]][1]);
+                                jsonObject.addProperty("V_yaw_angle", SatAttitudVel[i - MissionWindow_int[0]][2]);
+                                jsonObject.addProperty("V_roll_angle", SatAttitudVel[i - MissionWindow_int[0]][0]);
+                                jsonObject.addProperty("V_pitch_angle", SatAttitudVel[i - MissionWindow_int[0]][1]);
+                                //jsonObject.append("Attitude_NorthEastDown_123", jsonObject_NED);
+                                //东南下3-1-2
+                                JsonObject jsonObject_ESD = new JsonObject();
+                                jsonObject_ESD.addProperty("yaw_angle", SatAttitud_ESD[i - MissionWindow_int[0]][2]);
+                                jsonObject_ESD.addProperty("roll_angle", SatAttitud_ESD[i - MissionWindow_int[0]][0]);
+                                jsonObject_ESD.addProperty("pitch_angle", SatAttitud_ESD[i - MissionWindow_int[0]][1]);
+                                jsonObject_ESD.addProperty("V_yaw_angle", SatAttitudVel_ESD[i - MissionWindow_int[0]][2]);
+                                jsonObject_ESD.addProperty("V_roll_angle", SatAttitudVel_ESD[i - MissionWindow_int[0]][0]);
+                                jsonObject_ESD.addProperty("V_pitch_angle", SatAttitudVel_ESD[i - MissionWindow_int[0]][1]);
+                                jsonObject.add("Attitude_EastSouthDown_312", jsonObject_ESD);
+                                //东南下3-2-1
+                                JsonObject jsonObject_ESD321 = new JsonObject();
+                                jsonObject_ESD321.addProperty("yaw_angle", SatAttitud_ESD321[i - MissionWindow_int[0]][2]);
+                                jsonObject_ESD321.addProperty("roll_angle", SatAttitud_ESD321[i - MissionWindow_int[0]][0]);
+                                jsonObject_ESD321.addProperty("pitch_angle", SatAttitud_ESD321[i - MissionWindow_int[0]][1]);
+                                jsonObject_ESD321.addProperty("V_yaw_angle", SatAttitudVel_ESD321[i - MissionWindow_int[0]][2]);
+                                jsonObject_ESD321.addProperty("V_roll_angle", SatAttitudVel_ESD321[i - MissionWindow_int[0]][0]);
+                                jsonObject_ESD321.addProperty("V_pitch_angle", SatAttitudVel_ESD321[i - MissionWindow_int[0]][1]);
+                                jsonObject.add("Attitude_EastSouthDown_321", jsonObject_ESD321);
+                                //轨道坐标系3-1-2
+                                JsonObject jsonObject_ORF312 = new JsonObject();
+                                jsonObject_ORF312.addProperty("yaw_angle", SatAttitud_ORF312[i - MissionWindow_int[0]][2]);
+                                jsonObject_ORF312.addProperty("roll_angle", SatAttitud_ORF312[i - MissionWindow_int[0]][0]);
+                                jsonObject_ORF312.addProperty("pitch_angle", SatAttitud_ORF312[i - MissionWindow_int[0]][1]);
+                                jsonObject_ORF312.addProperty("V_yaw_angle", SatAttitudVel_ORF312[i - MissionWindow_int[0]][2]);
+                                jsonObject_ORF312.addProperty("V_roll_angle", SatAttitudVel_ORF312[i - MissionWindow_int[0]][0]);
+                                jsonObject_ORF312.addProperty("V_pitch_angle", SatAttitudVel_ORF312[i - MissionWindow_int[0]][1]);
+                                jsonObject.add("Attitude_OrbitReference_312", jsonObject_ORF312);
+
+                                //东南系计算的姿态计算为轨道系
+                                JsonObject jsonObject_ESD_ORF312 = new JsonObject();
+                                jsonObject_ESD_ORF312.addProperty("yaw_angle", SatAttitud_ORF_ESD321[i - MissionWindow_int[0]][2]);
+                                jsonObject_ESD_ORF312.addProperty("roll_angle", SatAttitud_ORF_ESD321[i - MissionWindow_int[0]][0]);
+                                jsonObject_ESD_ORF312.addProperty("pitch_angle", SatAttitud_ORF_ESD321[i - MissionWindow_int[0]][1]);
+                                jsonObject_ESD_ORF312.addProperty("V_yaw_angle", SatAttitud_ORF_ESD321[i - MissionWindow_int[0]][2]);
+                                jsonObject_ESD_ORF312.addProperty("V_roll_angle", SatAttitud_ORF_ESD321[i - MissionWindow_int[0]][0]);
+                                jsonObject_ESD_ORF312.addProperty("V_pitch_angle", SatAttitud_ORF_ESD321[i - MissionWindow_int[0]][1]);
+                                jsonObject.add("Attitude_OrbitReferenceToEastSouthDown_321", jsonObject_ESD_ORF312);
+
+                                //更改后欧拉角东南系321转序
+                                JsonObject jsonObject_ESD312_Euler = new JsonObject();
+                                jsonObject_ESD312_Euler.addProperty("yaw_angle", SatAttitud_ESD321_Euler[i][2]);
+                                jsonObject_ESD312_Euler.addProperty("roll_angle", SatAttitud_ESD321_Euler[i][0]);
+                                jsonObject_ESD312_Euler.addProperty("pitch_angle", SatAttitud_ESD321_Euler[i][1]);
+                                jsonObject_ESD312_Euler.addProperty("V_yaw_angle", SatAttitudVel_ESD321_Euler[i][2]);
+                                jsonObject_ESD312_Euler.addProperty("V_roll_angle", SatAttitudVel_ESD321_Euler[i][0]);
+                                jsonObject_ESD312_Euler.addProperty("V_pitch_angle", SatAttitudVel_ESD321_Euler[i][1]);
+                                jsonObject.add("Attitude_EulerAngle_EastSouthDown_321", jsonObject_ESD312_Euler);
+
+                                //视场顶点，左上、右下
+                                JsonArray jsonObject_ViewArea = new JsonArray();
+                                JsonObject jsonObject_ViewArea_Load1 = new JsonObject();
+                                jsonObject_ViewArea_Load1.addProperty("load_amount", 4);
+                                jsonObject_ViewArea_Load1.addProperty("load_number", 1);
+                                jsonObject_ViewArea_Load1.addProperty("ViewArea_left_lon", ViewAreaPoint[0][0]);
+                                jsonObject_ViewArea_Load1.addProperty("ViewArea_left_lat", ViewAreaPoint[0][1]);
+                                jsonObject_ViewArea_Load1.addProperty("ViewArea_right_lon", ViewAreaPoint[0][4]);
+                                jsonObject_ViewArea_Load1.addProperty("ViewArea_right_lat", ViewAreaPoint[0][5]);
+                                jsonObject_ViewArea.add(jsonObject_ViewArea_Load1);
+                                JsonObject jsonObject_ViewArea_Load2 = new JsonObject();
+                                jsonObject_ViewArea_Load2.addProperty("load_amount", 4);
+                                jsonObject_ViewArea_Load2.addProperty("load_number", 2);
+                                jsonObject_ViewArea_Load2.addProperty("ViewArea_left_lon", ViewAreaPoint[1][0]);
+                                jsonObject_ViewArea_Load2.addProperty("ViewArea_left_lat", ViewAreaPoint[1][1]);
+                                jsonObject_ViewArea_Load2.addProperty("ViewArea_right_lon", ViewAreaPoint[1][4]);
+                                jsonObject_ViewArea_Load2.addProperty("ViewArea_right_lat", ViewAreaPoint[1][5]);
+                                jsonObject_ViewArea.add(jsonObject_ViewArea_Load2);
+                                JsonObject jsonObject_ViewArea_Load3 = new JsonObject();
+                                jsonObject_ViewArea_Load3.addProperty("load_amount", 4);
+                                jsonObject_ViewArea_Load3.addProperty("load_number", 3);
+                                jsonObject_ViewArea_Load3.addProperty("ViewArea_left_lon", ViewAreaPoint[2][0]);
+                                jsonObject_ViewArea_Load3.addProperty("ViewArea_left_lat", ViewAreaPoint[2][1]);
+                                jsonObject_ViewArea_Load3.addProperty("ViewArea_right_lon", ViewAreaPoint[2][4]);
+                                jsonObject_ViewArea_Load3.addProperty("ViewArea_right_lat", ViewAreaPoint[2][5]);
+                                jsonObject_ViewArea.add(jsonObject_ViewArea_Load3);
+                                JsonObject jsonObject_ViewArea_Load4 = new JsonObject();
+                                jsonObject_ViewArea_Load4.addProperty("load_amount", 4);
+                                jsonObject_ViewArea_Load4.addProperty("load_number", 3);
+                                jsonObject_ViewArea_Load4.addProperty("ViewArea_left_lon", ViewAreaPoint[3][0]);
+                                jsonObject_ViewArea_Load4.addProperty("ViewArea_left_lat", ViewAreaPoint[3][1]);
+                                jsonObject_ViewArea_Load4.addProperty("ViewArea_right_lon", ViewAreaPoint[3][4]);
+                                jsonObject_ViewArea_Load4.addProperty("ViewArea_right_lat", ViewAreaPoint[3][5]);
+                                jsonObject_ViewArea.add(jsonObject_ViewArea_Load4);
+
+                                jsonObject.add("payload_view_area", jsonObject_ViewArea);
+
+                                jsonObject.addProperty("tag", "1");
+
+                                Document doc = Document.parse(jsonObject.toString());
+                                doc.append("time_point", Time_Point[i]);
+                                os.add(doc);
+
+                                if (os.size() > 10000) {
+                                    normal_attitude.insertMany(os);
+                                    os.clear();
+                                }
+                            }
+
+                            if (os.size() > 0) {
+                                normal_attitude.insertMany(os);
+                                os.clear();
+                            }
+                        }
+
+                    }
+                }
+
             } catch (Exception e) {
                 e.printStackTrace();
                 continue;
@@ -1664,6 +2129,7 @@ public class AttitudeCalculation {
         double flag;
         double sy;
         double x, y, z;
+
         //欧拉角转序为3-2-1
         sy = sqrt(BToO[0][0] * BToO[0][0] + BToO[0][1] * BToO[0][1]);
         if (sy < pow(10, -6)) {
@@ -1684,6 +2150,25 @@ public class AttitudeCalculation {
             z = abs(z);
         }
 
+        /*
+        //欧拉角转序为3-2-1
+        sy = sqrt(BToO[0][0] * BToO[0][0] + BToO[1][0] * BToO[1][0]);
+        if (sy < pow(10, -6)) {
+            flag = 1;
+        } else {
+            flag = 0;
+        }
+        if (flag == 0) {
+            x = atan2(BToO[2][1], BToO[2][2]);
+            y = atan2(-BToO[0][2], sy);
+            z = atan2(BToO[1][0], BToO[0][0]);
+        } else {
+            x = atan2(-BToO[1][2], BToO[1][1]);
+            y = atan2(-BToO[2][0], sy);
+            z = 0;
+        }
+        */
+
         Attitude[0] = x;
         Attitude[1] = y;
         if (abs(z) > PI/2) {
@@ -1691,7 +2176,147 @@ public class AttitudeCalculation {
         }else {
             Attitude[2] = 0;
         }
-        //Attitude[2]=0;
+        //Attitude[2]=z;
+    }
+
+    //更改后欧拉角姿态角计算，东南地3-2-1
+    private static void AttitudeCalculationEulerESD321(double[] Satellite_LLA, double[] Target_LLA, double[] ViewInstall, double[] Attitude, boolean FlyOrientationFlag) {
+        //计算本体系相对于东南地坐标系的姿态
+        double[] Target_ESD = new double[3];
+        double[] z_sensor = new double[3];
+        double[] cross_xyz = new double[3];
+        double[] x_sensor;
+        double[] y_sensor;
+        double[][] SToO = new double[3][3];
+        double[][] BToS;
+        double[][] BToO = new double[3][3];
+
+        Target_LLA[2] = Target_LLA[2];
+        double[] Target_NED = new double[3];
+        ECEFToNED(Satellite_LLA, Target_LLA, Target_NED);
+        ECEFToESD(Satellite_LLA, Target_LLA, Target_ESD);
+        /*
+        Target_NED[0]=-3375480.440;
+        Target_NED[1]=-2576716.849;
+        Target_NED[2]=14149996.760;
+         */
+        for (int i = 0; i < 3; i++) {
+            z_sensor[i] = Target_ESD[i] / sqrt(Target_ESD[0] * Target_ESD[0] + Target_ESD[1] * Target_ESD[1] + Target_ESD[2] * Target_ESD[2]);
+        }
+
+        //加入卫星正飞/倒飞考虑
+        if (FlyOrientationFlag) {
+            cross_xyz[0] = 1;
+            cross_xyz[1] = 0;
+            cross_xyz[2] = 0;
+        } else {
+            cross_xyz[0] = -1;
+            cross_xyz[1] = 0;
+            cross_xyz[2] = 0;
+        }
+
+        y_sensor = VectorCross(z_sensor, cross_xyz);//y_sensor=Result
+        x_sensor = VectorCross(y_sensor, z_sensor);//x_sensor=Result
+        for (int i = 0; i < 3; i++) {
+            SToO[0][i] = x_sensor[i];
+            SToO[1][i] = y_sensor[i];
+            SToO[2][i] = z_sensor[i];
+        }
+
+        /*
+        //安装倾角x轴旋转
+        //安装倾角x轴旋转
+        if (ViewInstall[1] > PI / 2)
+            BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), -sin(ViewInstall[2])}, {0, sin(ViewInstall[2]), cos(ViewInstall[2])}};
+        else
+            BToS = new double[][]{{1, 0, 0}, {0, cos(ViewInstall[2]), sin(ViewInstall[2])}, {0, -sin(ViewInstall[2]), cos(ViewInstall[2])}};
+         */
+
+        //安装倾角y轴旋转
+        /*
+        if (ViewInstall[1] > PI / 2)
+            BToS = new double[][]{{cos(ViewInstall[2]), 0, -sin(ViewInstall[2])}, {0, 1, 0}, {sin(ViewInstall[2]), 0, cos(ViewInstall[2])}};
+        else
+            BToS = new double[][]{{cos(ViewInstall[2]), 0, sin(ViewInstall[2])}, {0, 1, 0}, {-sin(ViewInstall[2]), 0, cos(ViewInstall[2])}};
+         */
+        //不考虑安装矩阵
+        //BToS=new double[][]{{1,0,0},{0,1,0},{0,0,1}};
+
+        //通用化
+        double[] z_SatSensor = new double[3];
+        double[] cross_SatSxyz = new double[3];
+        double[] x_SatSensor;
+        double[] y_SatSensor;
+        for (int i = 0; i < 3; i++) {
+            z_SatSensor[i] =cos(ViewInstall[i]);
+        }
+        cross_SatSxyz[0] = 1;
+        cross_SatSxyz[1] = 0;
+        cross_SatSxyz[2] = 0;
+        y_SatSensor = VectorCross(z_SatSensor, cross_SatSxyz);//y_sensor=Result
+        x_SatSensor = VectorCross(y_SatSensor, z_SatSensor);//x_sensor=Result
+
+        BToS = new double[][]{{x_SatSensor[0], x_SatSensor[1], x_SatSensor[2]},
+                {y_SatSensor[0], y_SatSensor[1], y_SatSensor[2]},
+                {z_SatSensor[0], z_SatSensor[1], z_SatSensor[2]}};
+        if (FlyOrientationFlag) {
+            BToS=MatrixInverse(BToS);
+        }
+
+
+        BToO = MatrixMultiplication(SToO, BToS);//BToO=Result
+        BToO = MatrixInverse(BToO);
+
+        double flag;
+        double sy;
+        double x, y, z;
+        /*
+        //欧拉角转序为3-2-1
+        sy = sqrt(BToO[0][0] * BToO[0][0] + BToO[0][1] * BToO[0][1]);
+        if (sy < pow(10, -6)) {
+            flag = 1;
+        } else {
+            flag = 0;
+        }
+        if (flag == 0) {
+            x = atan2(-BToO[1][2], BToO[2][2]);
+            y = atan2(BToO[0][2], sy);
+            z = atan2(-BToO[0][1], BToO[0][0]);
+        } else {
+            x = atan2(BToO[2][1], BToO[1][1]);
+            y = atan2(BToO[1][2], sy);
+            z = 0;
+        }
+        if (abs(z) > 3 * PI / 4) {
+            z = abs(z);
+        }
+        */
+
+        //欧拉角转序为3-2-1
+        sy = sqrt(BToO[0][0] * BToO[0][0] + BToO[1][0] * BToO[1][0]);
+        if (sy < pow(10, -6)) {
+            flag = 1;
+        } else {
+            flag = 0;
+        }
+        if (flag == 0) {
+            x = atan2(BToO[2][1], BToO[2][2]);
+            y = atan2(-BToO[2][0], sy);
+            z = atan2(BToO[1][0], BToO[0][0]);
+        } else {
+            x = atan2(-BToO[1][2], BToO[1][1]);
+            y = atan2(-BToO[2][0], sy);
+            z = 0;
+        }
+
+        Attitude[0] = x;
+        Attitude[1] = y;
+        if (abs(z) > PI/2) {
+            Attitude[2] = PI;
+        }else {
+            Attitude[2] = 0;
+        }
+        //Attitude[2]=z;
     }
 
     //姿态角计算，轨道坐标系3-1-2
@@ -3083,55 +3708,103 @@ public class AttitudeCalculation {
     private static ArrayList<double[]> GetGeometryPoint(Document geometry) {
         ArrayList<double[]> CoordinatesList = new ArrayList<double[]>();
         if (geometry.get("type").equals("Point")) {
-            ArrayList<Double> coordinates = (ArrayList<Double>) geometry.get("coordinates");
+            ArrayList<Object> coordinates = (ArrayList<Object>) geometry.get("coordinates");
             double[] Target = new double[2];
-            Target[0] = coordinates.get(0);
-            Target[1] = coordinates.get(1);
+            if (coordinates.get(0).getClass().getName().equals("java.lang.Double")) {
+                Target[0] = (Double) coordinates.get(0);
+            }else {
+                Target[0] = (double) (Integer)coordinates.get(0);
+            }
+            if (coordinates.get(1).getClass().getName().equals("java.lang.Double")) {
+                Target[1] = (Double) coordinates.get(1);
+            }else {
+                Target[1] = (double)(Integer) coordinates.get(1);
+            }
             CoordinatesList.add(Target);
         } else if (geometry.get("type").equals("LineString")) {
-            ArrayList<ArrayList<Double>> coordinates = (ArrayList<ArrayList<Double>>) geometry.get("coordinates");
-            for (ArrayList<Double> document : coordinates) {
+            ArrayList<ArrayList<Object>> coordinates = (ArrayList<ArrayList<Object>>) geometry.get("coordinates");
+            for (ArrayList<Object> document : coordinates) {
                 double[] Target = new double[2];
-                Target[0] = document.get(0);
-                Target[1] = document.get(1);
+                if (document.get(0).getClass().getName().equals("java.lang.Double")) {
+                    Target[0] = (Double) document.get(0);
+                }else {
+                    Target[0] = (double) (Integer)document.get(0);
+                }
+                if (document.get(1).getClass().getName().equals("java.lang.Double")) {
+                    Target[1] = (Double) document.get(1);
+                }else {
+                    Target[1] = (double)(Integer) document.get(1);
+                }
                 CoordinatesList.add(Target);
             }
         } else if (geometry.get("type").equals("Polygon")) {
-            ArrayList<ArrayList<ArrayList<Double>>> coordinates = (ArrayList<ArrayList<ArrayList<Double>>>) geometry.get("coordinates");
-            for (ArrayList<ArrayList<Double>> subcoordinates : coordinates) {
-                for (ArrayList<Double> subsubcoordinates : subcoordinates) {
+            ArrayList<ArrayList<ArrayList<Object>>> coordinates = (ArrayList<ArrayList<ArrayList<Object>>>) geometry.get("coordinates");
+            for (ArrayList<ArrayList<Object>> subcoordinates : coordinates) {
+                for (ArrayList<Object> subsubcoordinates : subcoordinates) {
                     double[] Target = new double[2];
-                    Target[0] = subsubcoordinates.get(0);
-                    Target[1] = subsubcoordinates.get(1);
+                    if (subsubcoordinates.get(0).getClass().getName().equals("java.lang.Double")) {
+                        Target[0] = (Double) subsubcoordinates.get(0);
+                    }else {
+                        Target[0] = (double) (Integer)subsubcoordinates.get(0);
+                    }
+                    if (subsubcoordinates.get(1).getClass().getName().equals("java.lang.Double")) {
+                        Target[1] = (Double) subsubcoordinates.get(1);
+                    }else {
+                        Target[1] = (double)(Integer) subsubcoordinates.get(1);
+                    }
                     CoordinatesList.add(Target);
                 }
             }
         } else if (geometry.get("type").equals("MultiPoint")) {
-            ArrayList<ArrayList<Double>> coordinates = (ArrayList<ArrayList<Double>>) geometry.get("coordinates");
-            for (ArrayList<Double> document : coordinates) {
+            ArrayList<ArrayList<Object>> coordinates = (ArrayList<ArrayList<Object>>) geometry.get("coordinates");
+            for (ArrayList<Object> document : coordinates) {
                 double[] Target = new double[2];
-                Target[0] = document.get(0);
-                Target[1] = document.get(1);
+                if (document.get(0).getClass().getName().equals("java.lang.Double")) {
+                    Target[0] = (Double) document.get(0);
+                }else {
+                    Target[0] = (double) (Integer)document.get(0);
+                }
+                if (document.get(1).getClass().getName().equals("java.lang.Double")) {
+                    Target[1] = (Double) document.get(1);
+                }else {
+                    Target[1] = (double)(Integer) document.get(1);
+                }
                 CoordinatesList.add(Target);
             }
         } else if (geometry.get("type").equals("MultiLineString")) {
-            ArrayList<ArrayList<ArrayList<Double>>> coordinates = (ArrayList<ArrayList<ArrayList<Double>>>) geometry.get("coordinates");
-            for (ArrayList<ArrayList<Double>> subcoordinates : coordinates) {
-                for (ArrayList<Double> subsubcoordinates : subcoordinates) {
+            ArrayList<ArrayList<ArrayList<Object>>> coordinates = (ArrayList<ArrayList<ArrayList<Object>>>) geometry.get("coordinates");
+            for (ArrayList<ArrayList<Object>> subcoordinates : coordinates) {
+                for (ArrayList<Object> subsubcoordinates : subcoordinates) {
                     double[] Target = new double[2];
-                    Target[0] = subsubcoordinates.get(0);
-                    Target[1] = subsubcoordinates.get(1);
+                    if (subsubcoordinates.get(0).getClass().getName().equals("java.lang.Double")) {
+                        Target[0] = (Double) subsubcoordinates.get(0);
+                    }else {
+                        Target[0] = (double) (Integer)subsubcoordinates.get(0);
+                    }
+                    if (subsubcoordinates.get(1).getClass().getName().equals("java.lang.Double")) {
+                        Target[1] = (Double) subsubcoordinates.get(1);
+                    }else {
+                        Target[1] = (double)(Integer) subsubcoordinates.get(1);
+                    }
                     CoordinatesList.add(Target);
                 }
             }
         } else if (geometry.get("type").equals("MultiPolygon")) {
-            ArrayList<ArrayList<ArrayList<ArrayList<Double>>>> coordinates = (ArrayList<ArrayList<ArrayList<ArrayList<Double>>>>) geometry.get("coordinates");
-            for (ArrayList<ArrayList<ArrayList<Double>>> subcoordinates : coordinates) {
-                for (ArrayList<ArrayList<Double>> subsubcoordinates : subcoordinates) {
-                    for (ArrayList<Double> subsubsubcoordinates : subsubcoordinates) {
+            ArrayList<ArrayList<ArrayList<ArrayList<Object>>>> coordinates = (ArrayList<ArrayList<ArrayList<ArrayList<Object>>>>) geometry.get("coordinates");
+            for (ArrayList<ArrayList<ArrayList<Object>>> subcoordinates : coordinates) {
+                for (ArrayList<ArrayList<Object>> subsubcoordinates : subcoordinates) {
+                    for (ArrayList<Object> subsubsubcoordinates : subsubcoordinates) {
                         double[] Target = new double[2];
-                        Target[0] = subsubsubcoordinates.get(0);
-                        Target[1] = subsubsubcoordinates.get(1);
+                        if (subsubsubcoordinates.get(0).getClass().getName().equals("java.lang.Double")) {
+                            Target[0] = (Double) subsubsubcoordinates.get(0);
+                        }else {
+                            Target[0] = (double) (Integer)subsubsubcoordinates.get(0);
+                        }
+                        if (subsubsubcoordinates.get(1).getClass().getName().equals("java.lang.Double")) {
+                            Target[1] = (Double) subsubsubcoordinates.get(1);
+                        }else {
+                            Target[1] = (double)(Integer) subsubsubcoordinates.get(1);
+                        }
                         CoordinatesList.add(Target);
                     }
                 }

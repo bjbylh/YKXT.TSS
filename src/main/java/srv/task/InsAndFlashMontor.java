@@ -18,10 +18,7 @@ import org.bson.conversions.Bson;
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Created by lihan on 2019/11/12.
@@ -29,11 +26,13 @@ import java.util.TreeMap;
 public class InsAndFlashMontor {
     private static InsAndFlashMontor ourInstance = new InsAndFlashMontor();
 
-    public long storage_capacity = 0L;
+    public double storage_capacity = 0.0;
 
-    public long v_record = 0L;
+    public Long[] v_records = new Long[4];
 
     public long v_playback = 0L;
+
+    private String[] sensorCodes = new String[4];
 
     private MongoClient mongoClient = null;
 
@@ -55,15 +54,41 @@ public class InsAndFlashMontor {
         for (Document document : properties) {
 
             if (document.getString("key").equals("storage_capacity")) {
-                storage_capacity = Long.parseLong(document.getString("value")) * 1024 * 1024L;
-            } else if (document.getString("key").equals("v_record")) {
-                v_record = Long.parseLong(document.getString("value"));
+                storage_capacity = Double.parseDouble(document.getString("value")) * 1024 * 1024L;
             } else if (document.getString("key").equals("v_playback")) {
                 v_playback = Long.parseLong(document.getString("value"));
             } else {
             }
         }
-//        mongoClient.close();
+
+        for (Document document : properties) {
+
+            if (document.getString("key").equals("v_record_1") && document.getString("group").equals("payload1")) {
+                v_records[0] = Long.parseLong(document.getString("value"));
+            } else if (document.getString("key").equals("v_record_2") && document.getString("group").equals("payload2")) {
+                v_records[1] = Long.parseLong(document.getString("value"));
+            } else if (document.getString("key").equals("v_record_3") && document.getString("group").equals("payload3")) {
+                v_records[2] = Long.parseLong(document.getString("value"));
+            } else if (document.getString("key").equals("v_record_4") && document.getString("group").equals("payload4")) {
+                v_records[3] = Long.parseLong(document.getString("value"));
+            } else {
+            }
+        }
+
+        for (Document document : properties) {
+
+            if (document.getString("key").equals("code") && document.getString("group").equals("payload1")) {
+                sensorCodes[0] = document.getString("value");
+            } else if (document.getString("key").equals("code") && document.getString("group").equals("payload2")) {
+                sensorCodes[1] = document.getString("value");
+            } else if (document.getString("key").equals("code") && document.getString("group").equals("payload3")) {
+                sensorCodes[2] = document.getString("value");
+            } else if (document.getString("key").equals("code") && document.getString("group").equals("payload4")) {
+                sensorCodes[3] = document.getString("value");
+            } else {
+            }
+        }
+
     }
 
     public void startup() throws IOException, InterruptedException {
@@ -100,9 +125,45 @@ public class InsAndFlashMontor {
 
             for (Document document : image_missions) {
                 if (document.getString("mission_state").equals("待执行") || document.getString("mission_state").equals("已执行")) {
+                    if (document.getString("mission_state").equals("待执行")) {
+                        if (document.containsKey("image_window")) {
+                            ArrayList<Document> image_windows = (ArrayList<Document>) document.get("image_window");
+
+                            if (image_windows.size() > 0) {
+                                Document window = image_windows.get(0);
+                                Date end_time = window.getDate("end_time");
+                                Date now = Date.from(Instant.now());
+
+                                if (end_time.before(now)) {
+                                    document.append("mission_state", "已执行");
+                                    Document modifiers = new Document();
+                                    modifiers.append("$set", document);
+                                    image_mission.updateOne(new Document("mission_number", document.getString("mission_number")), modifiers, new UpdateOptions().upsert(true));
+                                }
+                            }
+                        } else {
+
+                            if (document.containsKey("expected_start_time") && document.getDate("expected_start_time") != null) {
+                                Date end_time = document.getDate("expected_start_time");
+                                Date now = Date.from(Instant.ofEpochMilli(Instant.now().toEpochMilli() + 2000L));
+
+                                if (end_time.before(now)) {
+                                    document.append("mission_state", "已执行");
+                                    Document modifiers = new Document();
+                                    modifiers.append("$set", document);
+                                    image_mission.updateOne(new Document("mission_number", document.getString("mission_number")), modifiers, new UpdateOptions().upsert(true));
+                                }
+                            }
+                        }
+                    }
+
                     if (!document.containsKey("instruction_info"))
                         continue;
                     ArrayList<Document> instruction_info = (ArrayList<Document>) document.get("instruction_info");
+
+                    if (!checkInstructionInfo(instruction_info))
+                        continue;
+
                     if (instruction_info != null && instruction_info.size() > 0) {
                         pool_inss_image.add(document);
 
@@ -120,7 +181,12 @@ public class InsAndFlashMontor {
                 if (!document.containsKey("fail_reason") || document.getString("fail_reason").equals("")) {
                     if (!document.containsKey("instruction_info") || !document.getString("fail_reason").equals(""))
                         continue;
+
                     ArrayList<Document> instruction_info = (ArrayList<Document>) document.get("instruction_info");
+
+                    if (!checkInstructionInfo(instruction_info))
+                        continue;
+
                     if (instruction_info != null && instruction_info.size() > 0) {
                         pool_inss_trans.add(document);
                         pool_files_trans.add(document);
@@ -139,14 +205,35 @@ public class InsAndFlashMontor {
 //            mongoClient.close();
         }
 
+        private boolean checkInstructionInfo(ArrayList<Document> instruction_info) {
+            if (instruction_info == null)
+                return false;
+
+            for (Document document : instruction_info) {
+
+                if (!document.containsKey("valid") || !Objects.equals(document.get("valid").getClass().getName(), "java.lang.Boolean"))
+                    return false;
+
+                if (!document.containsKey("sequence_code") || !Objects.equals(document.get("sequence_code").getClass().getName(), "java.lang.String"))
+                    return false;
+
+
+//                System.out.println(document.get("execution_time").getClass().getName());
+                if (!document.containsKey("execution_time") || !Objects.equals(document.get("execution_time").getClass().getName(), "java.util.Date"))
+                    return false;
+            }
+
+            return true;
+        }
+
         private void procInsPool(ArrayList<Document> pool_inss_image, ArrayList<Document> pool_inss_trans) {
             Map<Date, Document> insPool = new TreeMap<>();
 
             Date now = Date.from(Instant.now()/*.minusSeconds(3600 * 24 * 365 * 10L)*/);
 
-            insertInsData(pool_inss_image, insPool, now);
+            insertInsData(pool_inss_image, insPool, now, true);
 
-            insertInsData(pool_inss_trans, insPool, now);
+            insertInsData(pool_inss_trans, insPool, now, false);
 
             MongoCollection<Document> pool_instruction = mongoDatabase.getCollection("pool_instruction");
 //            for (Document d : pool_instruction.find()) {
@@ -172,16 +259,21 @@ public class InsAndFlashMontor {
 //            mongoClient.close();
         }
 
-        private void insertInsData(ArrayList<Document> pool_inss, Map<Date, Document> insPool, Date now) {
+        private void insertInsData(ArrayList<Document> pool_inss, Map<Date, Document> insPool, Date now, Boolean isImage) {
             for (Document d : pool_inss) {
                 //System.out.println(d.toJson());
                 ArrayList<Document> instruction_info = (ArrayList<Document>) d.get("instruction_info");
                 for (Document ins : instruction_info) {
 
                     Document newIns = Document.parse(ins.toJson());
+
+                    String number = isImage ? d.getString("mission_number") : d.getString("transmission_number");
+
                     if (newIns.getBoolean("valid")) {
                         newIns.remove("valid");
-                        newIns.append("mission_number", d.getString("mission_number"));
+
+                        newIns.append("mission_number", number);
+
                         Date t = newIns.getDate("execution_time");
 
                         if (t.before(now))
@@ -191,7 +283,7 @@ public class InsAndFlashMontor {
 //                            insPool.put(t, newIns);
 
                         int i = 1;
-                        while(insPool.containsKey(t)){
+                        while (insPool.containsKey(t)) {
                             t.setTime(t.getTime() + i);
                             i++;
                         }
@@ -199,7 +291,7 @@ public class InsAndFlashMontor {
 
                     } else {
                         //TODO 删除文件
-                        String filename = FilePathUtil.getRealFilePath(ConfigManager.getInstance().fetchInsFilePath() + d.getString("mission_number"));
+                        String filename = FilePathUtil.getRealFilePath(ConfigManager.getInstance().fetchInsFilePath() + number);
                         //+ newIns.getString("sequence_code"));
 
                         File f = new File(filename);
@@ -226,6 +318,13 @@ public class InsAndFlashMontor {
             return instruction_info.get(instruction_info.size() - 1).getDate("execution_time");
         }
 
+        private Date getExecTimeCachu(Document d) {
+            if (d.containsKey("expected_start_time") && d.getDate("expected_start_time") != null) {
+                return d.getDate("expected_start_time");
+            } else
+                return null;
+        }
+
         private void procFilePool(ArrayList<Document> pool_files_image, ArrayList<Document> pool_files_trans, boolean isRT) {
             Instant instant = Instant.now();
 
@@ -234,26 +333,34 @@ public class InsAndFlashMontor {
             Date zeroTime = Date.from(instant.minusSeconds(60 * 60 * 24 * 365 * 10L));//时间零点初始化为十年前
 
             Date stopTime = isRT ? Date.from(instant) : Date.from(instant.plusSeconds(60 * 60 * 24 * 365 * 10L));
-            for (Document d : pool_files_image) {
-                if (d.getString("work_mode").contains("擦除") && d.getBoolean("clear_all")) {
-                    Date execution_time = getExecTime(d);
-
-                    if (execution_time == null)
-                        continue;
-
-                    if (execution_time.after(zeroTime))
-                        zeroTime = execution_time;
-                }
-            }
+//            for (Document d : pool_files_image) {
+//                if (d.getString("work_mode").contains("擦除") && d.getBoolean("clear_all")) {
+//                    Date execution_time = getExecTimeCachu(d);
+//
+//                    if (execution_time == null)
+//                        continue;
+//
+//                    if (execution_time.after(zeroTime) && execution_time.before(now))
+//                        zeroTime = execution_time;
+//                }
+//            }
 
             Map<Integer, Pair<Boolean, Boolean>> fileStatus = Maps.newLinkedHashMap();//第一个布尔值表示vaild，第二个表示replayed
             Map<Integer, Date> fileRecordTime = Maps.newLinkedHashMap();
             Map<Integer, Pair<Date, Date>> fileWindows = Maps.newLinkedHashMap();
+            Map<Integer, Document> fileImageMission = Maps.newLinkedHashMap();
+            Map<Integer, Double> fileRecordSize = Maps.newLinkedHashMap();
+
 
             TreeMap<Date, Pair<Boolean, Document>> all_pool = new TreeMap<>();
 
             for (Document d : pool_files_image) {
-                Date execution_time = getExecTime(d);
+                Date execution_time = null;
+
+                if (d.getString("work_mode").contains("擦除"))
+                    execution_time = getExecTimeCachu(d);
+                else
+                    execution_time = getExecTime(d);
 
                 if (execution_time == null)
                     continue;
@@ -298,28 +405,32 @@ public class InsAndFlashMontor {
             for (Date date : all_pool.keySet()) {
                 Document d = all_pool.get(date).getValue();
                 Date execution_time = getExecTime(d);
-                if (all_pool.get(date).getKey()) {
+                if (all_pool.get(date).getKey()) {//记录任务
                     try {
 
                         if (d.getString("work_mode").contains("擦除")) {
-                            ArrayList<String> filenos = (ArrayList<String>) d.get("clear_filenos");
-
+                            ArrayList<String> filenos = new ArrayList<>();
+                            if (d.getBoolean("clear_all")) {
+                                for (int i = 0; i < 64; i++) {
+                                    filenos.add(String.valueOf(i));
+                                }
+                            } else {
+                                filenos = (ArrayList<String>) d.get("clear_filenos");
+                            }
                             for (String file_no : filenos) {
                                 if (fileStatus.containsKey(Integer.parseInt(file_no))) {
 
                                     boolean isReplayed = fileStatus.get(Integer.parseInt(file_no)).getValue();//判断是否被计算过
 
                                     if (isReplayed) {
-                                        ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
-                                        Document window = image_windows.get(0);
-                                        Date start_time = window.getDate("start_time");
-                                        Date end_time = window.getDate("end_time");
-                                        totalSize -= calcPBSize(start_time, end_time);
+                                        totalSize -= fileRecordSize.get(Integer.parseInt(file_no));
                                     }
 
                                     fileStatus.remove(Integer.parseInt(file_no));
                                     fileRecordTime.remove(Integer.parseInt(file_no));
                                     fileWindows.remove(Integer.parseInt(file_no));
+                                    fileImageMission.remove(Integer.parseInt(file_no));
+                                    fileRecordSize.remove(Integer.parseInt(file_no));
                                 }
                             }
 
@@ -334,11 +445,16 @@ public class InsAndFlashMontor {
                                 fileStatus.remove(file_no);
                                 fileRecordTime.remove(file_no);
                                 fileWindows.remove(file_no);
+                                fileImageMission.remove(file_no);
+                                fileRecordSize.remove(file_no);
                             }
 
                             fileStatus.put(file_no, new Pair<>(false, false));
                             fileRecordTime.put(file_no, execution_time);
                             fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
+                            fileImageMission.put(file_no, d);
+                            double size = calcRDSize(fileWindows.get(file_no).getKey(), fileWindows.get(file_no).getValue(), d);
+                            fileRecordSize.put(file_no, size);
                         }
 
                     } catch (Exception e) {
@@ -346,7 +462,7 @@ public class InsAndFlashMontor {
                 } else {
 
                     try {
-                        ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
+                        ArrayList<Document> image_windows = (ArrayList<Document>) d.get("transmission_window");
 
                         //Document window = image_windows.get(0);
 
@@ -355,7 +471,13 @@ public class InsAndFlashMontor {
                                 Date start_time = window.getDate("start_time");
                                 Date end_time = window.getDate("end_time");
 
-                                totalSize += calcPBSize(start_time, end_time);
+                                double filemaxsize = 0.0;
+
+                                for (int i : fileRecordSize.keySet()) {
+                                    filemaxsize += fileRecordSize.get(i);
+                                }
+
+                                totalSize += calcPBSize(start_time, end_time) < filemaxsize ? calcPBSize(start_time, end_time) : filemaxsize;
                             }
 
                         } else if (d.getString("mode").contains("file")) {
@@ -365,21 +487,22 @@ public class InsAndFlashMontor {
                                 //fileWindows.remove(file_no);
                                 needCalc = !fileStatus.get(file_no).getValue();//判断是否需要计算容量
                                 fileStatus.remove(file_no);
-                                fileRecordTime.remove(file_no);
-                            }
+//                                fileRecordTime.remove(file_no);
+                                fileStatus.put(file_no, new Pair<>(false, true));
 
-                            fileStatus.put(file_no, new Pair<>(false, true));
-                            fileRecordTime.put(file_no, execution_time);
-                            //fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
-
-
-                            if (needCalc) {
-                                for (Document window : image_windows) {
-                                    Date start_time = window.getDate("start_time");
-                                    Date end_time = window.getDate("end_time");
-                                    totalSize += calcPBSize(start_time, end_time);
+                                if (needCalc) {
+                                    for (Document window : image_windows) {
+                                        Date start_time = window.getDate("start_time");
+                                        Date end_time = window.getDate("end_time");
+                                        if (fileWindows.containsKey(file_no)) {
+                                            totalSize += calcPBSize(start_time, end_time) < fileRecordSize.get(file_no) ? calcPBSize(start_time, end_time) : fileRecordSize.get(file_no);
+                                        } else
+                                            totalSize = 0.0;
+                                    }
                                 }
                             }
+//                            fileRecordTime.put(file_no, execution_time);
+                            //fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
                         } else {
                         }
                     } catch (Exception e) {
@@ -398,10 +521,7 @@ public class InsAndFlashMontor {
                     if (fileStatus.containsKey(i)) {
                         data.append("valid", fileStatus.get(i).getKey());
                         data.append("replayed", fileStatus.get(i).getValue());
-                        double size = 0.0;
-                        if (fileWindows.containsKey(i)) {
-                            size = calcRDSize(fileWindows.get(i).getKey(), fileWindows.get(i).getValue());
-                        }
+                        double size = fileRecordSize.get(i);
                         allsize += size;
                         data.append("size", size);
                         data.append("window_start_time", fileWindows.get(i).getKey());
@@ -454,12 +574,266 @@ public class InsAndFlashMontor {
             return spanSec * v_playback;
         }
 
-        private double calcRDSize(Date start_time, Date end_time) {
+        private double calcRDSize(Date start_time, Date end_time, Document imageMisson) {
             long spanMills = end_time.toInstant().toEpochMilli() - start_time.toInstant().toEpochMilli();
 
             double spanSec = spanMills / 1000.0;
 
-            return spanSec * v_record;
+            double size = getSizePerSec(imageMisson);
+
+            return spanSec * size;
+        }
+
+        private double getSizePerSec(Document imageMisson) {
+            try {
+                double ret = 0.0;
+                Boolean[] camEnables = new Boolean[4];
+                Double[] frameP = new Double[4];
+
+                for (int i = 0; i < camEnables.length; i++) {
+                    camEnables[i] = false;
+                }
+
+                ArrayList<Document> expected_cam = (ArrayList<Document>) imageMisson.get("expected_cam");
+
+                if (expected_cam == null)
+                    return ret;
+
+                if (expected_cam.size() == 0)
+                    return ret;
+
+                Document sat = expected_cam.get(0);
+
+                ArrayList<Document> sensors = (ArrayList<Document>) sat.get("sensors");
+
+                for (Document sensor : sensors) {
+                    String code = sensor.getString("code");
+                    int i = 0;
+                    for (String sensorCode : sensorCodes) {
+                        if (code.equals(sensorCode)) {
+                            camEnables[i] = true;
+                            break;
+                        }
+                        i++;
+                    }
+                }
+
+                //计算压缩比
+                double compressRate = 1.5;
+                String P02 = "";
+
+                ArrayList<Document> mission_params = (ArrayList<Document>) imageMisson.get("mission_params");
+
+                for (Document mission_param : mission_params) {
+                    if (mission_param.getString("code").equals("P02")) {
+                        P02 = mission_param.getString("value");
+                    }
+                }
+
+                if (P02.equals("")) {
+                    ArrayList<Document> default_mission_params = (ArrayList<Document>) imageMisson.get("default_mission_params");
+
+                    for (Document default_mission_param : default_mission_params) {
+                        if (default_mission_param.getString("code").equals("P02")) {
+                            P02 = default_mission_param.getString("default_value");
+                        }
+                    }
+                }
+
+                if (!P02.equals("")) {
+                    if (P02.equals("1"))
+                        compressRate = 2.0;
+                }
+                //压缩比计算完成
+
+                //计算帧频
+                if (camEnables[0] && camEnables[1]) {
+                    String P08_AB = "";
+
+                    for (Document mission_param : mission_params) {
+                        if (mission_param.getString("code").equals("P08_AB")) {
+                            P08_AB = mission_param.getString("value");
+                        }
+                    }
+
+                    if (P08_AB.equals("")) {
+                        ArrayList<Document> default_mission_params = (ArrayList<Document>) imageMisson.get("default_mission_params");
+
+                        for (Document default_mission_param : default_mission_params) {
+                            if (default_mission_param.getString("code").equals("P08_AB")) {
+                                P08_AB = default_mission_param.getString("default_value");
+                            }
+                        }
+                    }
+
+                    if (P08_AB.equals("1")) {
+                        frameP[0] = 0.5;
+                        frameP[1] = 0.5;
+                    } else {
+                        frameP[0] = 1.0;
+                        frameP[1] = 1.0;
+                    }
+                } else if (camEnables[0] && !camEnables[1]) {
+                    String P08_A = "";
+
+                    for (Document mission_param : mission_params) {
+                        if (mission_param.getString("code").equals("P08_A")) {
+                            P08_A = mission_param.getString("value");
+                        }
+                    }
+
+                    if (P08_A.equals("")) {
+                        ArrayList<Document> default_mission_params = (ArrayList<Document>) imageMisson.get("default_mission_params");
+
+                        for (Document default_mission_param : default_mission_params) {
+                            if (default_mission_param.getString("code").equals("P08_A")) {
+                                P08_A = default_mission_param.getString("default_value");
+                            }
+                        }
+                    }
+
+                    if (P08_A.equals("1")) {
+                        frameP[0] = 0.5;
+                    } else {
+                        frameP[0] = 1.0;
+                    }
+
+                } else if (!camEnables[0] && camEnables[1]) {
+                    String P08_B = "";
+
+                    for (Document mission_param : mission_params) {
+                        if (mission_param.getString("code").equals("P08_B")) {
+                            P08_B = mission_param.getString("value");
+                        }
+                    }
+
+                    if (P08_B.equals("")) {
+                        ArrayList<Document> default_mission_params = (ArrayList<Document>) imageMisson.get("default_mission_params");
+
+                        for (Document default_mission_param : default_mission_params) {
+                            if (default_mission_param.getString("code").equals("P08_B")) {
+                                P08_B = default_mission_param.getString("default_value");
+                            }
+                        }
+                    }
+
+                    if (P08_B.equals("0")) {
+                        frameP[1] = 1.0;
+                    } else if (P08_B.equals("2")) {
+                        frameP[1] = 3.0;
+                    } else if (P08_B.equals("3")) {
+                        frameP[1] = 4.0;
+                    } else if (P08_B.equals("4")) {
+                        frameP[1] = 5.0;
+                    } else if (P08_B.equals("5")) {
+                        frameP[1] = 0.5;
+                    } else if (P08_B.equals("6")) {
+                        frameP[1] = 0.2;
+                    } else if (P08_B.equals("7")) {
+                        frameP[1] = 0.1;
+                    } else {
+                        frameP[1] = 1.0;
+                    }
+                } else {
+                }
+
+                if (camEnables[2] && camEnables[3]) {
+                    String P09_AB = "";
+
+                    for (Document mission_param : mission_params) {
+                        if (mission_param.getString("code").equals("P09_AB")) {
+                            P09_AB = mission_param.getString("value");
+                        }
+                    }
+
+                    if (P09_AB.equals("")) {
+                        ArrayList<Document> default_mission_params = (ArrayList<Document>) imageMisson.get("default_mission_params");
+
+                        for (Document default_mission_param : default_mission_params) {
+                            if (default_mission_param.getString("code").equals("P08_AB")) {
+                                P09_AB = default_mission_param.getString("default_value");
+                            }
+                        }
+                    }
+
+                    if (P09_AB.equals("1")) {
+                        frameP[2] = 0.5;
+                        frameP[3] = 0.5;
+                    } else {
+                        frameP[2] = 1.0;
+                        frameP[3] = 1.0;
+                    }
+                } else if (camEnables[2] && !camEnables[3]) {
+                    String P09_A = "";
+
+                    for (Document mission_param : mission_params) {
+                        if (mission_param.getString("code").equals("P09_A")) {
+                            P09_A = mission_param.getString("value");
+                        }
+                    }
+
+                    if (P09_A.equals("")) {
+                        ArrayList<Document> default_mission_params = (ArrayList<Document>) imageMisson.get("default_mission_params");
+
+                        for (Document default_mission_param : default_mission_params) {
+                            if (default_mission_param.getString("code").equals("P09_A")) {
+                                P09_A = default_mission_param.getString("default_value");
+                            }
+                        }
+                    }
+
+                    if (P09_A.equals("1")) {
+                        frameP[2] = 0.5;
+                    } else if (P09_A.equals("2")) {
+                        frameP[2] = 0.2;
+                    } else if (P09_A.equals("3")) {
+                        frameP[2] = 0.1;
+                    } else {
+                        frameP[2] = 1.0;
+                    }
+
+                } else if (!camEnables[2] && camEnables[3]) {
+                    String P09_B = "";
+
+                    for (Document mission_param : mission_params) {
+                        if (mission_param.getString("code").equals("P09_B")) {
+                            P09_B = mission_param.getString("value");
+                        }
+                    }
+
+                    if (P09_B.equals("")) {
+                        ArrayList<Document> default_mission_params = (ArrayList<Document>) imageMisson.get("default_mission_params");
+
+                        for (Document default_mission_param : default_mission_params) {
+                            if (default_mission_param.getString("code").equals("P09_B")) {
+                                P09_B = default_mission_param.getString("default_value");
+                            }
+                        }
+                    }
+
+                    if (P09_B.equals("1")) {
+                        frameP[3] = 0.5;
+                    } else if (P09_B.equals("2")) {
+                        frameP[3] = 0.2;
+                    } else if (P09_B.equals("3")) {
+                        frameP[3] = 0.1;
+                    } else {
+                        frameP[3] = 1.0;
+                    }
+                } else {
+                }
+                //帧频计算完成
+
+                for (int i = 0; i < 4; i++) {
+                    if (camEnables[i]) {
+                        ret += v_records[i] * frameP[i] / compressRate;
+                    }
+                }
+                return ret;
+            } catch (Exception e) {
+                return 0.0;
+            }
         }
     }
 }
+

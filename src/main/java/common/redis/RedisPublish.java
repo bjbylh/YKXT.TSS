@@ -59,7 +59,7 @@ public class RedisPublish {
     }
 
     public static void main(String[] args) {
-        RedisPublish.newRTOrbitGorecastTask();
+        RedisPublish.newCronOrbitGorecastTask();
     }
 
 }

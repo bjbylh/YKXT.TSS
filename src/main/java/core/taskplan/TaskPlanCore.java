@@ -40,6 +40,12 @@ public class TaskPlanCore {
     public void startup() {
         Thread t = new Thread(new TaskPlanCore.proc(taskId));
         t.start();
+//        try {
+//            Thread.sleep(1000 * 3600 * 12);// 运行一断时间后中断线程
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+//        t.interrupt();
     }
 
     private class proc implements Runnable {
@@ -570,7 +576,8 @@ public class TaskPlanCore {
                 FindIterable<Document> documents = image_order.find(query);
                 params = new ArrayList<>();
                 for (Document d : documents) {
-                    params.add(d.getObjectId("_id").toString());
+                    if (d.getString("image_mode").equals("常规") || d.getString("image_mode").equals("凝视") || d.getString("image_mode").equals("定标"))
+                        params.add(d.getString("order_number"));
                 }
             } else {
                 Document condtion = new Document();
@@ -603,7 +610,7 @@ public class TaskPlanCore {
                 FindIterable<Document> documents = station_mission.find(query);
                 params = new ArrayList<>();
                 for (Document d : documents) {
-                    params.add(d.getObjectId("_id").toString());
+                    params.add(d.getString("order_number"));
                 }
             } else {
                 Document condtion = new Document();

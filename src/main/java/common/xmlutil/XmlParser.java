@@ -56,7 +56,7 @@ public class XmlParser {
                     return ret;
                 }
             }
-        } catch (DocumentException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             ret.clear();
             ret.put("ERROR", e.getMessage());
