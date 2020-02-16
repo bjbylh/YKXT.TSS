@@ -9,6 +9,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.UpdateOptions;
 import common.ConfigManager;
 import common.FilePathUtil;
+import common.def.FileType;
 import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import javafx.util.Pair;
@@ -236,9 +237,6 @@ public class InsAndFlashMontor {
             insertInsData(pool_inss_trans, insPool, now, false);
 
             MongoCollection<Document> pool_instruction = mongoDatabase.getCollection("pool_instruction");
-//            for (Document d : pool_instruction.find()) {
-//                pool_instruction.deleteOne(d);
-//            }
 
             ArrayList<Document> data = new ArrayList<>();
             for (Document d : insPool.values()) {
@@ -333,24 +331,39 @@ public class InsAndFlashMontor {
             Date zeroTime = Date.from(instant.minusSeconds(60 * 60 * 24 * 365 * 10L));//时间零点初始化为十年前
 
             Date stopTime = isRT ? Date.from(instant) : Date.from(instant.plusSeconds(60 * 60 * 24 * 365 * 10L));
-//            for (Document d : pool_files_image) {
-//                if (d.getString("work_mode").contains("擦除") && d.getBoolean("clear_all")) {
-//                    Date execution_time = getExecTimeCachu(d);
-//
-//                    if (execution_time == null)
-//                        continue;
-//
-//                    if (execution_time.after(zeroTime) && execution_time.before(now))
-//                        zeroTime = execution_time;
-//                }
-//            }
+
+            for (Document d : pool_files_image) {
+                if (d.getString("work_mode").contains("擦除") && d.getBoolean("clear_all")) {
+                    Date execution_time = getExecTimeCachu(d);
+
+                    if (execution_time == null)
+                        continue;
+
+                    if (execution_time.after(zeroTime) && execution_time.before(now))
+                        zeroTime = execution_time;
+                }
+            }
 
             Map<Integer, Pair<Boolean, Boolean>> fileStatus = Maps.newLinkedHashMap();//第一个布尔值表示vaild，第二个表示replayed
             Map<Integer, Date> fileRecordTime = Maps.newLinkedHashMap();
             Map<Integer, Pair<Date, Date>> fileWindows = Maps.newLinkedHashMap();
             Map<Integer, Document> fileImageMission = Maps.newLinkedHashMap();
             Map<Integer, Double> fileRecordSize = Maps.newLinkedHashMap();
+            Map<Integer, Double> filePlayBackSize = Maps.newLinkedHashMap();
+            Map<Integer, FileType> filePlayBackStatus = Maps.newLinkedHashMap();
 
+            for (int i = 0; i < 64; i++) {
+                fileStatus.put(i, new Pair<>(true, false));
+                fileRecordTime.put(i, zeroTime);
+                fileWindows.put(i, new Pair<>(zeroTime, zeroTime));
+                fileImageMission.put(i, new Document());
+                fileRecordSize.put(i, 0.0);
+                filePlayBackSize.put(i, 0.0);
+                filePlayBackStatus.put(i, FileType.INIT);
+            }
+
+            ArrayList<Integer> SortedFileNo = new ArrayList<>();
+            int PlayBackFileNoNow = -1;
 
             TreeMap<Date, Pair<Boolean, Document>> all_pool = new TreeMap<>();
 
@@ -399,10 +412,11 @@ public class InsAndFlashMontor {
                 all_pool.put(execution_time, new Pair(false, d));
             }
 
-            double totalSize = 0L;//单位
+//            double totalSize = 0L;//单位
             ArrayList<Document> stepRcd = new ArrayList<>();
 
             for (Date date : all_pool.keySet()) {
+                double totalSize = 0.0;
                 Document d = all_pool.get(date).getValue();
                 Date execution_time = getExecTime(d);
                 if (all_pool.get(date).getKey()) {//记录任务
@@ -418,96 +432,358 @@ public class InsAndFlashMontor {
                                 filenos = (ArrayList<String>) d.get("clear_filenos");
                             }
                             for (String file_no : filenos) {
-                                if (fileStatus.containsKey(Integer.parseInt(file_no))) {
+//                                if (fileStatus.containsKey(Integer.parseInt(file_no))) {
 
-                                    boolean isReplayed = fileStatus.get(Integer.parseInt(file_no)).getValue();//判断是否被计算过
+                                //boolean isReplayed = true;//fileStatus.get(Integer.parseInt(file_no)).getValue();//判断是否被计算过
 
-                                    if (isReplayed) {
-                                        totalSize -= fileRecordSize.get(Integer.parseInt(file_no));
+//                                FileType fileType = filePlayBackStatus.get(Integer.parseInt(file_no));
+////                                if (isReplayed) {
+//                                if (fileType.name().equals(FileType.FINISHED.name())) {
+//                                    totalSize -= fileRecordSize.get(Integer.parseInt(file_no));
+//                                } else if (fileType.name().equals(FileType.PLAYING.name())) {
+//                                    totalSize -= filePlayBackSize.get(Integer.parseInt(file_no));
+//                                } else {
+//                                }
+//                                }
+
+
+                                if (SortedFileNo.contains(Integer.parseInt(file_no))) {
+                                    if (PlayBackFileNoNow == Integer.parseInt(file_no)) {
+                                        if (SortedFileNo.size() == 1) {
+                                            PlayBackFileNoNow = -1;
+                                        } else {
+                                            if (SortedFileNo.get(0) == PlayBackFileNoNow) {//第一个
+                                                PlayBackFileNoNow = -1;
+                                            } else {
+                                                for (int i = 1; i < SortedFileNo.size(); i++) {
+                                                    if (i == PlayBackFileNoNow) {
+                                                        PlayBackFileNoNow = SortedFileNo.get(i - 1);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    ArrayList<Integer> newSortedFileNo = new ArrayList<>();
+                                    for (Integer fileno : SortedFileNo) {
+                                        if (fileno != Integer.parseInt(file_no))
+                                            newSortedFileNo.add(fileno);
                                     }
 
-                                    fileStatus.remove(Integer.parseInt(file_no));
-                                    fileRecordTime.remove(Integer.parseInt(file_no));
-                                    fileWindows.remove(Integer.parseInt(file_no));
-                                    fileImageMission.remove(Integer.parseInt(file_no));
-                                    fileRecordSize.remove(Integer.parseInt(file_no));
+                                    SortedFileNo = newSortedFileNo;
                                 }
-                            }
 
+                                fileStatus.remove(Integer.parseInt(file_no));
+                                fileStatus.put(Integer.parseInt(file_no), new Pair<>(true, false));
+
+                                fileRecordTime.remove(Integer.parseInt(file_no));
+                                fileRecordTime.put(Integer.parseInt(file_no), zeroTime);
+
+                                fileWindows.remove(Integer.parseInt(file_no));
+                                fileWindows.put(Integer.parseInt(file_no), new Pair<>(zeroTime, zeroTime));
+
+                                fileImageMission.remove(Integer.parseInt(file_no));
+                                fileImageMission.put(Integer.parseInt(file_no), new Document());
+
+                                fileRecordSize.remove(Integer.parseInt(file_no));
+                                fileRecordSize.put(Integer.parseInt(file_no), 0.0);
+
+                                filePlayBackSize.remove(Integer.parseInt(file_no));
+                                filePlayBackSize.put(Integer.parseInt(file_no), 0.0);
+
+                                filePlayBackStatus.remove(Integer.parseInt(file_no));
+                                filePlayBackStatus.put(Integer.parseInt(file_no), FileType.INIT);
+                            }
                         } else {
-                            int file_no = Integer.parseInt(d.getString("record_file_no"));
+                            String file_no = d.getString("record_file_no");
 
                             ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
 
                             Document window = image_windows.get(0);
 
-                            if (fileStatus.containsKey(file_no)) {
-                                fileStatus.remove(file_no);
-                                fileRecordTime.remove(file_no);
-                                fileWindows.remove(file_no);
-                                fileImageMission.remove(file_no);
-                                fileRecordSize.remove(file_no);
-                            }
+                            //为避免重复，先删除可能的文件号
+                            //boolean isReplayed = true;//fileStatus.get(Integer.parseInt(file_no)).getValue();//判断是否被计算过
 
-                            fileStatus.put(file_no, new Pair<>(false, false));
-                            fileRecordTime.put(file_no, execution_time);
-                            fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
-                            fileImageMission.put(file_no, d);
-                            double size = calcRDSize(fileWindows.get(file_no).getKey(), fileWindows.get(file_no).getValue(), d);
-                            fileRecordSize.put(file_no, size);
+//                            FileType fileType = filePlayBackStatus.get(Integer.parseInt(file_no));
+//
+//                            if (fileType.name().equals(FileType.FINISHED.name())) {
+//                                totalSize -= fileRecordSize.get(Integer.parseInt(file_no));
+//                            } else if (fileType.name().equals(FileType.PLAYING.name())) {
+//                                totalSize -= filePlayBackSize.get(Integer.parseInt(file_no));
+//                            } else {
+//                            }
+
+                            if (SortedFileNo.contains(Integer.parseInt(file_no))) {
+                                if (PlayBackFileNoNow == Integer.parseInt(file_no)) {
+                                    if (SortedFileNo.size() == 1) {
+                                        PlayBackFileNoNow = -1;
+                                    } else {
+                                        if (SortedFileNo.get(0) == PlayBackFileNoNow) {//第一个
+                                            PlayBackFileNoNow = -1;
+                                        } else {
+                                            for (int i = 1; i < SortedFileNo.size(); i++) {
+                                                if (i == PlayBackFileNoNow) {
+                                                    PlayBackFileNoNow = SortedFileNo.get(i - 1);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                ArrayList<Integer> newSortedFileNo = new ArrayList<>();
+                                for (Integer fileno : SortedFileNo) {
+                                    if (fileno != Integer.parseInt(file_no))
+                                        newSortedFileNo.add(fileno);
+                                }
+
+                                SortedFileNo = newSortedFileNo;
+                            }
+                            //删除完毕
+
+                            fileStatus.remove(Integer.parseInt(file_no));
+                            fileStatus.put(Integer.parseInt(file_no), new Pair<>(false, false));
+
+                            fileRecordTime.remove(Integer.parseInt(file_no));
+                            fileRecordTime.put(Integer.parseInt(file_no), execution_time);
+
+                            fileWindows.remove(Integer.parseInt(file_no));
+                            fileWindows.put(Integer.parseInt(file_no), new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
+
+                            fileImageMission.remove(Integer.parseInt(file_no));
+                            fileImageMission.put(Integer.parseInt(file_no), d);
+
+                            double size = calcRDSize(fileWindows.get(Integer.parseInt(file_no)).getKey(), fileWindows.get(Integer.parseInt(file_no)).getValue(), d);
+                            fileRecordSize.remove(Integer.parseInt(file_no));
+                            fileRecordSize.put(Integer.parseInt(file_no), size);
+
+                            filePlayBackSize.remove(Integer.parseInt(file_no));
+                            filePlayBackSize.put(Integer.parseInt(file_no), 0.0);
+
+                            filePlayBackStatus.remove(Integer.parseInt(file_no));
+                            filePlayBackStatus.put(Integer.parseInt(file_no), FileType.INIT);
+
+                            SortedFileNo.add(Integer.parseInt(file_no));
                         }
 
                     } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                } else {
+                } else {//回放模式
 
                     try {
                         ArrayList<Document> image_windows = (ArrayList<Document>) d.get("transmission_window");
-
-                        //Document window = image_windows.get(0);
+                        double filemaxsize = 0.0;
 
                         if (d.getString("mode").contains("sequential")) {
                             for (Document window : image_windows) {
                                 Date start_time = window.getDate("start_time");
                                 Date end_time = window.getDate("end_time");
 
-                                double filemaxsize = 0.0;
-
-                                for (int i : fileRecordSize.keySet()) {
-                                    filemaxsize += fileRecordSize.get(i);
-                                }
-
-                                totalSize += calcPBSize(start_time, end_time) < filemaxsize ? calcPBSize(start_time, end_time) : filemaxsize;
+                                filemaxsize += calcPBSize(start_time, end_time);
                             }
 
-                        } else if (d.getString("mode").contains("file")) {
-                            boolean needCalc = false;
-                            int file_no = Integer.parseInt(d.getString("record_file_no"));
-                            if (fileStatus.containsKey(file_no)) {
-                                //fileWindows.remove(file_no);
-                                needCalc = !fileStatus.get(file_no).getValue();//判断是否需要计算容量
-                                fileStatus.remove(file_no);
-//                                fileRecordTime.remove(file_no);
-                                fileStatus.put(file_no, new Pair<>(false, true));
+                            if (PlayBackFileNoNow == -1) {
+                                if (SortedFileNo.size() > 0) {
+                                    for (int fileno : SortedFileNo) {
+                                        if (filemaxsize <= fileRecordSize.get(fileno)) {
+                                            filePlayBackSize.remove(fileno);
+                                            filePlayBackSize.put(fileno, fileRecordSize.get(fileno) - filemaxsize);
 
-                                if (needCalc) {
-                                    for (Document window : image_windows) {
-                                        Date start_time = window.getDate("start_time");
-                                        Date end_time = window.getDate("end_time");
-                                        if (fileWindows.containsKey(file_no)) {
-                                            totalSize += calcPBSize(start_time, end_time) < fileRecordSize.get(file_no) ? calcPBSize(start_time, end_time) : fileRecordSize.get(file_no);
-                                        } else
-                                            totalSize = 0.0;
+                                            filePlayBackStatus.remove(fileno);
+                                            filePlayBackStatus.put(fileno, FileType.PLAYING);
+
+                                            PlayBackFileNoNow = fileno;
+
+                                            break;
+                                        } else {
+                                            filePlayBackSize.remove(fileno);
+                                            filePlayBackSize.put(fileno, fileRecordSize.get(fileno));
+
+                                            filePlayBackStatus.remove(fileno);
+                                            filePlayBackStatus.put(fileno, FileType.FINISHED);
+
+                                            filemaxsize -= fileRecordSize.get(fileno);
+                                        }
+                                    }
+
+                                    if (SortedFileNo.size() > 1 && PlayBackFileNoNow != SortedFileNo.get(SortedFileNo.size() - 1)) {//初始化未被回放的文件
+                                        filePlayBackSize.remove(PlayBackFileNoNow);
+                                        filePlayBackSize.put(PlayBackFileNoNow, 0.0);
+
+                                        filePlayBackStatus.remove(PlayBackFileNoNow);
+                                        filePlayBackStatus.put(PlayBackFileNoNow, FileType.INIT);
+                                    }
+                                }
+                            } else {
+                                if (SortedFileNo.size() > 0) {
+                                    if (SortedFileNo.contains(PlayBackFileNoNow)) {
+                                        boolean isNotReached = true;
+                                        for (int fileno : SortedFileNo) {//清理之前的文件
+                                            if (fileno != PlayBackFileNoNow) {
+                                                if (isNotReached) {
+                                                    filePlayBackSize.remove(fileno);
+                                                    filePlayBackSize.put(fileno, fileRecordSize.get(fileno));
+
+                                                    filePlayBackStatus.remove(fileno);
+                                                    filePlayBackStatus.put(fileno, FileType.FINISHED);
+                                                } else {
+                                                    break;
+                                                }
+
+                                            } else {
+                                                if (isNotReached)
+                                                    isNotReached = false;
+                                            }
+                                        }
+
+                                        boolean notBegin = true;
+
+                                        for (int fileno : SortedFileNo) {
+                                            if (notBegin && (fileno != PlayBackFileNoNow))
+                                                continue;
+
+                                            notBegin = false;
+
+
+                                            if (fileno == PlayBackFileNoNow) {
+                                                if (filemaxsize <= (fileRecordSize.get(fileno) - filePlayBackSize.get(fileno))) {
+                                                    filePlayBackSize.remove(fileno);
+                                                    filePlayBackSize.put(fileno, fileRecordSize.get(fileno) + filemaxsize);
+
+                                                    filePlayBackStatus.remove(fileno);
+                                                    filePlayBackStatus.put(fileno, FileType.PLAYING);
+
+                                                    PlayBackFileNoNow = fileno;
+
+                                                    break;
+                                                } else {
+
+                                                    filemaxsize -= (fileRecordSize.get(fileno) - filePlayBackSize.get(fileno));
+
+                                                    filePlayBackSize.remove(fileno);
+                                                    filePlayBackSize.put(fileno, fileRecordSize.get(fileno));
+
+                                                    filePlayBackStatus.remove(fileno);
+                                                    filePlayBackStatus.put(fileno, FileType.FINISHED);
+
+
+                                                    fileStatus.remove(fileno);
+                                                    fileStatus.put(fileno, new Pair<>(false, true));
+                                                }
+                                            } else {
+                                                if (filemaxsize <= (fileRecordSize.get(fileno))) {
+                                                    filePlayBackSize.remove(fileno);
+                                                    filePlayBackSize.put(fileno, fileRecordSize.get(fileno) - filemaxsize);
+
+                                                    filePlayBackStatus.remove(fileno);
+                                                    filePlayBackStatus.put(fileno, FileType.PLAYING);
+
+                                                    PlayBackFileNoNow = fileno;
+
+                                                    break;
+                                                } else {
+                                                    filemaxsize -= fileRecordSize.get(fileno);
+
+                                                    filePlayBackSize.remove(fileno);
+                                                    filePlayBackSize.put(fileno, fileRecordSize.get(fileno));
+
+                                                    filePlayBackStatus.remove(fileno);
+                                                    filePlayBackStatus.put(fileno, FileType.FINISHED);
+
+                                                    fileStatus.remove(fileno);
+                                                    fileStatus.put(fileno, new Pair<>(false, true));
+                                                }
+                                            }
+                                        }
+
+                                        boolean initStart = false;
+                                        if (SortedFileNo.size() > 1 ) {//初始化未被回放的文件
+                                            for (int fileno : SortedFileNo) {
+                                                if(fileno == PlayBackFileNoNow && (filePlayBackStatus.get(fileno).name().equals(FileType.FINISHED) ||filePlayBackStatus.get(fileno).name().equals(FileType.PLAYING))){
+                                                    initStart = true;
+                                                }
+
+                                                if(!initStart)
+                                                    continue;
+
+                                                if(fileno == PlayBackFileNoNow)
+                                                    continue;
+
+                                                filePlayBackSize.remove(PlayBackFileNoNow);
+                                                filePlayBackSize.put(PlayBackFileNoNow, 0.0);
+
+                                                filePlayBackStatus.remove(PlayBackFileNoNow);
+                                                filePlayBackStatus.put(PlayBackFileNoNow, FileType.INIT);
+                                            }
+                                        }
+                                    } else {
+                                        PlayBackFileNoNow = -1;
+                                        for (int fileno : SortedFileNo) {
+                                            if (filemaxsize <= fileRecordSize.get(fileno)) {
+                                                filePlayBackSize.remove(fileno);
+                                                filePlayBackSize.put(fileno, fileRecordSize.get(fileno) - filemaxsize);
+
+                                                filePlayBackStatus.remove(fileno);
+                                                filePlayBackStatus.put(fileno, FileType.PLAYING);
+
+                                                PlayBackFileNoNow = fileno;
+
+                                                break;
+                                            } else {
+                                                filePlayBackSize.remove(fileno);
+                                                filePlayBackSize.put(fileno, fileRecordSize.get(fileno));
+
+                                                filePlayBackStatus.remove(fileno);
+                                                filePlayBackStatus.put(fileno, FileType.FINISHED);
+
+                                                filemaxsize -= fileRecordSize.get(fileno);
+                                            }
+                                        }
+
+                                        boolean initStart = false;
+                                        if (SortedFileNo.size() > 1 ) {//初始化未被回放的文件
+                                            for (int fileno : SortedFileNo) {
+                                                if(fileno == PlayBackFileNoNow && (filePlayBackStatus.get(fileno).name().equals(FileType.FINISHED) ||filePlayBackStatus.get(fileno).name().equals(FileType.PLAYING))){
+                                                    initStart = true;
+                                                }
+
+                                                if(!initStart)
+                                                    continue;
+
+                                                if(fileno == PlayBackFileNoNow)
+                                                    continue;
+
+                                                filePlayBackSize.remove(PlayBackFileNoNow);
+                                                filePlayBackSize.put(PlayBackFileNoNow, 0.0);
+
+                                                filePlayBackStatus.remove(PlayBackFileNoNow);
+                                                filePlayBackStatus.put(PlayBackFileNoNow, FileType.INIT);
+                                            }
+                                        }
                                     }
                                 }
                             }
-//                            fileRecordTime.put(file_no, execution_time);
-                            //fileWindows.put(file_no, new Pair<>(window.getDate("start_time"), window.getDate("end_time")));
-                        } else {
+
+                        } else if (d.getString("mode").contains("file")) {
+
+                            int file_no = Integer.parseInt(d.getString("record_file_no"));
+
+                            double playbacksize = 0.0;
+
+                            for (Document window : image_windows) {
+                                Date start_time = window.getDate("start_time");
+                                Date end_time = window.getDate("end_time");
+
+                                playbacksize += calcPBSize(start_time, end_time);
+                            }
+
+                            if (playbacksize > fileRecordSize.get(file_no)) {
+                                fileStatus.remove(file_no);
+                                fileStatus.put(file_no, new Pair<>(false, true));
+                            }
                         }
                     } catch (Exception e) {
                     }
                 }
+
 
                 long pool_size = 64;
                 double flash_usage;
@@ -536,9 +812,14 @@ public class InsAndFlashMontor {
                 }
                 flash_usage = allsize / storage_capacity;
                 doc.append("flash_usage", flash_usage);
+
+                for (int fileno : SortedFileNo){
+                    totalSize += filePlayBackSize.get(fileno);
+                }
                 doc.append("replayed_size", totalSize);
 
                 stepRcd.add(doc);
+
             }
 
             Document save = new Document();
@@ -546,10 +827,14 @@ public class InsAndFlashMontor {
             MongoCollection<Document> pool_files = mongoDatabase.getCollection("pool_files");
             Bson queryBson;
 
-            if (isRT) {
+            if (isRT)
+
+            {
                 save.append("type", "REALTIME");
                 queryBson = Filters.eq("type", "REALTIME");
-            } else {
+            } else
+
+            {
                 save.append("type", "FORECAST");
                 queryBson = Filters.eq("type", "FORECAST");
             }
@@ -558,7 +843,9 @@ public class InsAndFlashMontor {
 
             if (pool_files.count(queryBson) <= 0)
                 pool_files.insertOne(save);
-            else {
+            else
+
+            {
                 Document first = pool_files.find(queryBson).first();
                 Document modifiers = new Document();
                 modifiers.append("$set", save);
