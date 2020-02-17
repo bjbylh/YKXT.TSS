@@ -1,10 +1,6 @@
 package srv;
 
-import common.def.Topic;
-import common.redis.TaskBuilderService;
-import common.redis.subscribe.RedisTaskSubscriber;
 import srv.task.InsAndFlashMontor;
-import srv.task.TaskMonitor;
 
 import java.io.IOException;
 
@@ -14,12 +10,12 @@ import java.io.IOException;
 public class Server {
     public static void main(String[] args) throws InterruptedException, IOException {
         //启动任务监视线程
-        TaskMonitor.getInstance().startup();
+//        TaskMonitor.getInstance().startup();
 
         //启动新任务监听线程
-        RedisTaskSubscriber newTaskSubscriber = new RedisTaskSubscriber();
-        TaskBuilderService newTaskBuilderService = new TaskBuilderService(newTaskSubscriber, Topic.CMD_RECV);
-        newTaskBuilderService.startup();
+//        RedisTaskSubscriber newTaskSubscriber = new RedisTaskSubscriber();
+//        TaskBuilderService newTaskBuilderService = new TaskBuilderService(newTaskSubscriber, Topic.CMD_RECV);
+//        newTaskBuilderService.startup();
 
         //启动控制监视线程
 //        TaskStatusSubscriber taskStatusSubscriber = new TaskStatusSubscriber();

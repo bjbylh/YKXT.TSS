@@ -1,5 +1,7 @@
 package core.taskplan;
 
+//import com.company.MangoDBConnector;
+
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -146,11 +148,66 @@ public class OrderOverall {
                     }
                     //判定指令部分
                     if (CombineFlag == true) {
-                        if (Instruction.get(ConventionalImagModeList.get(i)) == Instruction.get(ConventionalImagModeList.get(j)) &&
-                                StationNumber.get(ConventionalImagModeList.get(i)) == StationNumber.get(ConventionalImagModeList.get(j)) &&
-                                RecordFileNo.get(ConventionalImagModeList.get(i)) == RecordFileNo.get(ConventionalImagModeList.get(j)) &&
-                                AutoAsignRecordFile.get(ConventionalImagModeList.get(i)) == AutoAsignRecordFile.get(ConventionalImagModeList.get(j)) &&
-                                MissionParams.get(ConventionalImagModeList.get(i)) == MissionParams.get(ConventionalImagModeList.get(j))) {
+                        boolean InstructionFlag=false;
+                        boolean StationNumberFlag=false;
+                        boolean RecordFileNoFlag=false;
+                        boolean AutoAsignRecordFileFlag=false;
+                        boolean MissionParamsFlag=false;
+                        if (Instruction.get(ConventionalImagModeList.get(i))==null || Instruction.get(ConventionalImagModeList.get(j))==null) {
+                            if (Instruction.get(ConventionalImagModeList.get(i))==null && Instruction.get(ConventionalImagModeList.get(j))==null) {
+                                InstructionFlag=true;
+                            }
+                        }else {
+                            if (Instruction.get(ConventionalImagModeList.get(i)).equals(Instruction.get(ConventionalImagModeList.get(j)))) {
+                                InstructionFlag=true;
+                            }
+                        }
+                        if (StationNumber.get(ConventionalImagModeList.get(i))==null || StationNumber.get(ConventionalImagModeList.get(j))==null) {
+                            if (StationNumber.get(ConventionalImagModeList.get(i))==null && StationNumber.get(ConventionalImagModeList.get(j))==null) {
+                                StationNumberFlag=true;
+                            }
+                        }else {
+                            if (StationNumber.get(ConventionalImagModeList.get(i)).equals(StationNumber.get(ConventionalImagModeList.get(j)))) {
+                                StationNumberFlag=true;
+                            }
+                        }
+                        if (RecordFileNo.get(ConventionalImagModeList.get(i))==null || RecordFileNo.get(ConventionalImagModeList.get(j))==null) {
+                            if (RecordFileNo.get(ConventionalImagModeList.get(i))==null && RecordFileNo.get(ConventionalImagModeList.get(j))==null) {
+                                RecordFileNoFlag=true;
+                            }
+                        }else {
+                            if (RecordFileNo.get(ConventionalImagModeList.get(i)).equals(RecordFileNo.get(ConventionalImagModeList.get(j)))) {
+                                RecordFileNoFlag=true;
+                            }
+                        }
+                        if (AutoAsignRecordFile.get(ConventionalImagModeList.get(i))==null || AutoAsignRecordFile.get(ConventionalImagModeList.get(j))==null) {
+                            if (AutoAsignRecordFile.get(ConventionalImagModeList.get(i))==null && AutoAsignRecordFile.get(ConventionalImagModeList.get(j))==null) {
+                                AutoAsignRecordFileFlag=true;
+                            }
+                        }else {
+                            if (AutoAsignRecordFile.get(ConventionalImagModeList.get(i)).equals(AutoAsignRecordFile.get(ConventionalImagModeList.get(j)))) {
+                                AutoAsignRecordFileFlag=true;
+                            }
+                        }
+                        if (MissionParams.get(ConventionalImagModeList.get(i))==null || MissionParams.get(ConventionalImagModeList.get(j))==null) {
+                            if (MissionParams.get(ConventionalImagModeList.get(i))==null && MissionParams.get(ConventionalImagModeList.get(j))==null) {
+                                MissionParamsFlag=true;
+                            }
+                        }else {
+                            if (MissionParams.get(ConventionalImagModeList.get(i)).equals(MissionParams.get(ConventionalImagModeList.get(j)))) {
+                                MissionParamsFlag=true;
+                            }
+                        }
+                        System.out.println(InstructionFlag);
+                        System.out.println(StationNumberFlag);
+                        System.out.println(RecordFileNoFlag);
+                        System.out.println(AutoAsignRecordFileFlag);
+                        System.out.println(MissionParamsFlag);
+                        if (InstructionFlag &&
+                                StationNumberFlag &&
+                                RecordFileNoFlag &&
+                                AutoAsignRecordFileFlag &&
+                                MissionParamsFlag) {
                             CombineFlag = true;
                         } else {
                             CombineFlag = false;

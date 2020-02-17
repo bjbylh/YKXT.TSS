@@ -15,7 +15,9 @@ import core.taskplan.InstructionSequenceTime.TimeVariable;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
-import java.io.*;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
@@ -184,7 +186,12 @@ public class InsGenWithoutTaskPlanInf {
         //判断任务所要匹配的指令块模板
         Map<Integer,ArrayList<String>> MissionTaskModel=new HashMap<>();
         ArrayList<String> MissionTaskModelChildTemp=new ArrayList<>();
-        MissionTaskModelChildTemp.add("TASK01");
+        if (MissionImageModel.get(0).equals("定标")) {
+            MissionTaskModelChildTemp.add("TASK11");
+            MissionTaskModelChildTemp.add("TASK06");
+        }else {
+            MissionTaskModelChildTemp.add("TASK01");
+        }
         MissionTaskModel.put(0,MissionTaskModelChildTemp);
 
         //指令生成
@@ -1271,10 +1278,10 @@ public class InsGenWithoutTaskPlanInf {
                                                                         MetaHex="100280210118";
                                                                         MetaHex=MetaHex+"A102";
                                                                         MetaHex=MetaHex+"0707";
-                                                                    }else if (InstCode.equals("K4418")) {
-                                                                        MetaHex="100280210118";
-                                                                        MetaHex=MetaHex+"A102";
-                                                                        MetaHex=MetaHex+"0808";
+                                                                    //}else if (InstCode.equals("K4418")) {
+                                                                        //    MetaHex="100280210118";
+                                                                    //    MetaHex=MetaHex+"A102";
+                                                                    //    MetaHex=MetaHex+"0808";
                                                                     }else if (InstCode.equals("K4419")) {
                                                                         MetaHex="100280210118";
                                                                         MetaHex=MetaHex+"A200";
@@ -2149,10 +2156,10 @@ public class InsGenWithoutTaskPlanInf {
                                                                     MetaHex="100280210118";
                                                                     MetaHex=MetaHex+"A102";
                                                                     MetaHex=MetaHex+"0707";
-                                                                }else if (InstCode.equals("K4418")) {
-                                                                    MetaHex="100280210118";
-                                                                    MetaHex=MetaHex+"A102";
-                                                                    MetaHex=MetaHex+"0808";
+                                                                //}else if (InstCode.equals("K4418")) {
+                                                                //    MetaHex="100280210118";
+                                                                //    MetaHex=MetaHex+"A102";
+                                                                 //   MetaHex=MetaHex+"0808";
                                                                 }else if (InstCode.equals("K4419")) {
                                                                     MetaHex="100280210118";
                                                                     MetaHex=MetaHex+"A200";

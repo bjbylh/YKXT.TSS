@@ -43,6 +43,7 @@ public class InsAndFlashMontor {
         return ourInstance;
     }
 
+    @SuppressWarnings("unchecked")
     private InsAndFlashMontor() {
         mongoClient = MangoDBConnector.getClient();
         mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
@@ -113,6 +114,7 @@ public class InsAndFlashMontor {
             }
         }
 
+        @SuppressWarnings("unchecked")
         private void check() throws IOException {
 
             ArrayList<Document> pool_inss_image = new ArrayList<>();
@@ -165,7 +167,7 @@ public class InsAndFlashMontor {
                     if (!checkInstructionInfo(instruction_info))
                         continue;
 
-                    if (instruction_info != null && instruction_info.size() > 0) {
+                    if (instruction_info.size() > 0) {
                         pool_inss_image.add(document);
 
                         if (document.containsKey("work_mode") && (document.getString("work_mode").contains("记录") || document.getString("work_mode").contains("擦除"))) {
@@ -239,9 +241,8 @@ public class InsAndFlashMontor {
             MongoCollection<Document> pool_instruction = mongoDatabase.getCollection("pool_instruction");
 
             ArrayList<Document> data = new ArrayList<>();
-            for (Document d : insPool.values()) {
-                data.add(d);
-            }
+
+            data.addAll(insPool.values());
 
             Document insertD = new Document();
             insertD.append("sequences", data);
@@ -257,6 +258,7 @@ public class InsAndFlashMontor {
 //            mongoClient.close();
         }
 
+        @SuppressWarnings("unchecked")
         private void insertInsData(ArrayList<Document> pool_inss, Map<Date, Document> insPool, Date now, Boolean isImage) {
             for (Document d : pool_inss) {
                 //System.out.println(d.toJson());
@@ -308,6 +310,7 @@ public class InsAndFlashMontor {
             }
         }
 
+        @SuppressWarnings("unchecked")
         private Date getExecTime(Document d) {
             ArrayList<Document> instruction_info = (ArrayList<Document>) d.get("instruction_info");
             if (!instruction_info.get(instruction_info.size() - 1).getBoolean("valid"))
@@ -323,6 +326,7 @@ public class InsAndFlashMontor {
                 return null;
         }
 
+        @SuppressWarnings("unchecked")
         private void procFilePool(ArrayList<Document> pool_files_image, ArrayList<Document> pool_files_trans, boolean isRT) {
             Instant instant = Instant.now();
 
@@ -432,20 +436,6 @@ public class InsAndFlashMontor {
                                 filenos = (ArrayList<String>) d.get("clear_filenos");
                             }
                             for (String file_no : filenos) {
-//                                if (fileStatus.containsKey(Integer.parseInt(file_no))) {
-
-                                //boolean isReplayed = true;//fileStatus.get(Integer.parseInt(file_no)).getValue();//判断是否被计算过
-
-//                                FileType fileType = filePlayBackStatus.get(Integer.parseInt(file_no));
-////                                if (isReplayed) {
-//                                if (fileType.name().equals(FileType.FINISHED.name())) {
-//                                    totalSize -= fileRecordSize.get(Integer.parseInt(file_no));
-//                                } else if (fileType.name().equals(FileType.PLAYING.name())) {
-//                                    totalSize -= filePlayBackSize.get(Integer.parseInt(file_no));
-//                                } else {
-//                                }
-//                                }
-
 
                                 if (SortedFileNo.contains(Integer.parseInt(file_no))) {
                                     if (PlayBackFileNoNow == Integer.parseInt(file_no)) {
@@ -501,17 +491,6 @@ public class InsAndFlashMontor {
                             Document window = image_windows.get(0);
 
                             //为避免重复，先删除可能的文件号
-                            //boolean isReplayed = true;//fileStatus.get(Integer.parseInt(file_no)).getValue();//判断是否被计算过
-
-//                            FileType fileType = filePlayBackStatus.get(Integer.parseInt(file_no));
-//
-//                            if (fileType.name().equals(FileType.FINISHED.name())) {
-//                                totalSize -= fileRecordSize.get(Integer.parseInt(file_no));
-//                            } else if (fileType.name().equals(FileType.PLAYING.name())) {
-//                                totalSize -= filePlayBackSize.get(Integer.parseInt(file_no));
-//                            } else {
-//                            }
-
                             if (SortedFileNo.contains(Integer.parseInt(file_no))) {
                                 if (PlayBackFileNoNow == Integer.parseInt(file_no)) {
                                     if (SortedFileNo.size() == 1) {
@@ -600,9 +579,15 @@ public class InsAndFlashMontor {
                                             filePlayBackStatus.remove(fileno);
                                             filePlayBackStatus.put(fileno, FileType.FINISHED);
 
+                                            fileStatus.remove(fileno);
+                                            fileStatus.put(fileno, new Pair<>(false, true));
+
                                             filemaxsize -= fileRecordSize.get(fileno);
+
+                                            PlayBackFileNoNow = fileno;
                                         }
                                     }
+
 
                                     if (SortedFileNo.size() > 1 && PlayBackFileNoNow != SortedFileNo.get(SortedFileNo.size() - 1)) {//初始化未被回放的文件
                                         filePlayBackSize.remove(PlayBackFileNoNow);
@@ -663,7 +648,6 @@ public class InsAndFlashMontor {
 
                                                     filePlayBackStatus.remove(fileno);
                                                     filePlayBackStatus.put(fileno, FileType.FINISHED);
-
 
                                                     fileStatus.remove(fileno);
                                                     fileStatus.put(fileno, new Pair<>(false, true));
@@ -781,6 +765,7 @@ public class InsAndFlashMontor {
                             }
                         }
                     } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
 

@@ -840,11 +840,13 @@ public class CalibrateInsGenInf {
                                                                         MetaHex="100280010118";
                                                                         MetaHex=MetaHex+"A102";
                                                                         MetaHex=MetaHex+"0707";
-                                                                    }else if (InstCode.equals("K4418")) {
-                                                                        MetaHex="100280010118";
-                                                                        MetaHex=MetaHex+"A102";
-                                                                        MetaHex=MetaHex+"0808";
-                                                                    }else if (InstCode.equals("K4419")) {
+                                                                    }
+//                                                                    else if (InstCode.equals("K4418")) {
+//                                                                        MetaHex="100280010118";
+//                                                                        MetaHex=MetaHex+"A102";
+//                                                                        MetaHex=MetaHex+"0808";
+//                                                                    }
+                                                                    else if (InstCode.equals("K4419")) {
                                                                         MetaHex="100280010118";
                                                                         MetaHex=MetaHex+"A200";
                                                                     }else if (InstCode.equals("K4420")) {

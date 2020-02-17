@@ -1,6 +1,5 @@
 package core.taskplan;
 
-//import com.company.MangoDBConnector;
 import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -11,6 +10,7 @@ import org.bson.Document;
 
 import javax.swing.*;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -456,6 +456,8 @@ public class MissionPlanning {
         ArrayList<ArrayList<String>> MissionForOrderNumbers=new ArrayList<>();
         MissionNumber = 0;
 
+        ArrayList<Date[]> MissionStarStopTimeList=new ArrayList<>();
+
         for (Document document : ImageMissionjson) {
             if (document.get("mission_state").equals("被退回")) {
                 continue;
@@ -598,18 +600,28 @@ public class MissionPlanning {
                     }
                 }
 
+                //读取任务期望时间
+                Date expected_start_time = document.getDate("expected_start_time");
+                Date expected_stop_time=document.getDate("expected_end_time");
+                Date[] MissionStarStopTime_iList=new Date[]{expected_start_time,expected_stop_time};
+                MissionStarStopTimeList.add(MissionNumber,MissionStarStopTime_iList);
+
                 MissionStareTime[MissionNumber] = Double.parseDouble(document.getString("min_stare_time"));
                 MissionPriority[MissionNumber] = Integer.parseInt(document.getString("priority"));
                 MissionSerialNumber[MissionNumber] = document.getString("mission_number");
                 if (document.getString("image_mode").equals("常规")) {
                     MissionImagingMode[MissionNumber] = 1;
                     MissionStareTime[MissionNumber]=10;
+                    MissionPriority[MissionNumber]=2*MissionPriority[MissionNumber];
                 } else if (document.getString("image_mode").equals("凝视")) {
                     MissionImagingMode[MissionNumber] = 2;
                     MissionStareTime[MissionNumber] = Double.parseDouble(document.getString("min_stare_time"));
+                    MissionPriority[MissionNumber]=2*MissionPriority[MissionNumber];
                 } else if (document.getString("image_mode").equals("定标")) {
                     MissionImagingMode[MissionNumber] = 3;
-                    MissionStareTime[MissionNumber]=10;
+                    //MissionStareTime[MissionNumber]=10;
+                    MissionStareTime[MissionNumber]=(int) Duration.between(expected_start_time.toInstant(),expected_stop_time.toInstant()).getSeconds();
+                    MissionPriority[MissionNumber]=2*MissionPriority[MissionNumber]-1;
                 }
                 if (document.getString("image_type").equals("Point")) {
                     MissionTargetType[MissionNumber] = 1;
@@ -892,6 +904,32 @@ public class MissionPlanning {
             if (TimePeriodNumAll[MissionSequence[i]] == 0) {
                 PlanningMissionFailReason[MissionSequence[i]] = 2;
             }else {
+                //定标规划
+                if (MissionImagingMode[MissionSequence[i]] == 3) {
+                    int FlagSum = 0;
+                    for (int j = VisibilityTimePeriodAll[MissionSequence[i]][0]; j < VisibilityTimePeriodAll[MissionSequence[i]][1]; j++) {
+                        if(j<0 || j>=(int) OrbitDataCount){
+                            FlagSum=1;
+                            break;
+                        }else {
+                            FlagSum = FlagSum + PlanningFlag[j];
+                        }
+                    }
+                    if (FlagSum == 0) {
+                        PlanningMissionFailReason[MissionSequence[i]] = 1;
+                        PlanningMissionTimePeriod[MissionSequence[i]][0] = VisibilityTimePeriodAll[MissionSequence[i]][0];
+                        PlanningMissionTimePeriod[MissionSequence[i]][1] = VisibilityTimePeriodAll[MissionSequence[i]][1];
+                        PlanningMissionLoad[MissionSequence[i]] = VisibilityLoadType[MissionSequence[i]][0];
+                        for (int l = VisibilityTimePeriodAll[MissionSequence[i]][0]; l < VisibilityTimePeriodAll[MissionSequence[i]][1]; l++) {
+                            PlanningFlag[l] = MissionSequence[i] + 1;
+                        }
+                        break;
+                    }else if (FlagSum != 0 && FlagSum != 1) {
+                        PlanningMissionFailReason[MissionSequence[i]] = 3;
+                    }
+                    continue;
+                }
+
                 //目标点位置经纬度，区域目标取中心点
                 double[] TargetPosition_LLA = {0, 0, 0};
                 if (MissionTargetType[MissionSequence[i]] == 1) {
@@ -1180,7 +1218,7 @@ public class MissionPlanning {
                                     document.append("record_file_no",PoolFileCanUse.get(PoolFileNum-1).toString());
                                 }
                             }
-                            
+
                             if(document.containsKey("_id"))
                                 document.remove("_id");
                             Document modifiers_mid=new Document();

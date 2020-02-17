@@ -101,6 +101,7 @@ public class VisibilityCalculation {
         ArrayList<double[]> MissionTargetHeightList = new ArrayList<double[]>();
         ArrayList<String> MissionTransferStationList=new ArrayList<String>();
         ArrayList<ArrayList<String>> MissionForOrderNumbers=new ArrayList<>();
+        ArrayList<Date[]> MissionStarStopTimeList=new ArrayList<>();
         MissionNumber = 0;
 
         //恒星定标、临边观测
@@ -214,6 +215,8 @@ public class VisibilityCalculation {
                     double[] MissionStopTime_iList = new double[6];
                     MissionStopTime_iList=DateToDouble(expected_stop_time);
                     MissionStopTimeList.add(MissionNumber, MissionStopTime_iList);
+                    Date[] MissionStarStopTime_iList=new Date[]{expected_start_time,expected_stop_time};
+                    MissionStarStopTimeList.add(MissionNumber,MissionStarStopTime_iList);
                     //读取任务编号
                     String MissionSerialNumber_iList = document.getString("mission_number");
                     MissionSerialNumberList.add(MissionNumber, MissionSerialNumber_iList);
@@ -490,6 +493,31 @@ public class VisibilityCalculation {
         for (int Mission_i = 0; Mission_i < MissionNumber; Mission_i++) {
             ArrayList<ArrayList<int[]>> VisibilityTimePeriod_iList = new ArrayList<ArrayList<int[]>>();
             ArrayList<Integer> TimePeriodNum_iList = new ArrayList<Integer>();
+
+            //定标
+            if (MissionImagingModeList.get(Mission_i) == 3) {
+                //载荷循环
+                for (int Load_i = 0; Load_i < LoadNumber; Load_i++) {
+                    ArrayList<int[]> VisibilityTimeperiod_iiList = new ArrayList<int[]>();
+                    int TimePeriodNum_iiList = 0;
+                    //判断载荷是否使用
+                    if (MissionLoadTypeList.get(Mission_i)[Load_i] == 1) {
+                        TimePeriodNum_iiList=1;
+                        int[] VisibilityTimeperiod_iiiList=new int[2];
+                        VisibilityTimeperiod_iiiList[0]=(int) ((JD(MissionStarTimeList.get(Mission_i))-JD(OrbitTimeList.get(0)))*24*60*60);
+                        VisibilityTimeperiod_iiiList[1]=(int) ((JD(MissionStopTimeList.get(Mission_i))-JD(OrbitTimeList.get(0)))*24*60*60);
+                        VisibilityTimePeriod_iList.add(Load_i, VisibilityTimeperiod_iiList);
+                        TimePeriodNum_iList.add(Load_i, TimePeriodNum_iiList);
+                    } else {
+                        VisibilityTimePeriod_iList.add(Load_i, VisibilityTimeperiod_iiList);
+                        TimePeriodNum_iList.add(Load_i, TimePeriodNum_iiList);
+                    }
+                }
+                VisibilityTimePeriodList.add(Mission_i, VisibilityTimePeriod_iList);
+                TimePeriodNumList.add(Mission_i, TimePeriodNum_iList);
+                continue;
+            }
+
             //判断是否为实传任务
             if (MissionWorkModeList.get(Mission_i) == 1) {
                 //搜索地面站资源信息
@@ -836,8 +864,13 @@ public class VisibilityCalculation {
                     AvailWindowjsonObject.append("load_number", j + 1);
                     AvailWindowjsonObject.append("amount_window", TimePeriodNumList.get(i).get(j));
                     AvailWindowjsonObject.append("window_number", k + 1);
-                    AvailWindowjsonObject.append("window_start_time", OrbitTimeDateList.get(VisibilityTimePeriodList.get(i).get(j).get(k)[0]));
-                    AvailWindowjsonObject.append("window_end_time", OrbitTimeDateList.get(VisibilityTimePeriodList.get(i).get(j).get(k)[1]));
+                    if (MissionImagingModeList.get(i) == 3) {
+                        AvailWindowjsonObject.append("window_start_time", MissionStarStopTimeList.get(i)[0]);
+                        AvailWindowjsonObject.append("window_end_time", MissionStarStopTimeList.get(i)[1]);
+                    }else {
+                        AvailWindowjsonObject.append("window_start_time", OrbitTimeDateList.get(VisibilityTimePeriodList.get(i).get(j).get(k)[0]));
+                        AvailWindowjsonObject.append("window_end_time", OrbitTimeDateList.get(VisibilityTimePeriodList.get(i).get(j).get(k)[1]));
+                    }
                     AvailWindowjsonArray.add(AvailWindowjsonObject);
                     WindowsNum = WindowsNum + 1;
                 }
@@ -1387,6 +1420,31 @@ public class VisibilityCalculation {
         for (int Mission_i = 0; Mission_i < MissionNumber; Mission_i++) {
             ArrayList<ArrayList<int[]>> VisibilityTimePeriod_iList = new ArrayList<ArrayList<int[]>>();
             ArrayList<Integer> TimePeriodNum_iList = new ArrayList<Integer>();
+
+            //定标
+            if (MissionImagingModeList.get(Mission_i) == 3) {
+                //载荷循环
+                for (int Load_i = 0; Load_i < LoadNumber; Load_i++) {
+                    ArrayList<int[]> VisibilityTimeperiod_iiList = new ArrayList<int[]>();
+                    int TimePeriodNum_iiList = 0;
+                    //判断载荷是否使用
+                    if (MissionLoadTypeList.get(Mission_i)[Load_i] == 1) {
+                        TimePeriodNum_iiList=1;
+                        int[] VisibilityTimeperiod_iiiList=new int[2];
+                        VisibilityTimeperiod_iiiList[0]=(int) ((JD(MissionStarTimeList.get(Mission_i))-JD(OrbitTimeList.get(0)))*24*60*60);
+                        VisibilityTimeperiod_iiiList[1]=(int) ((JD(MissionStopTimeList.get(Mission_i))-JD(OrbitTimeList.get(0)))*24*60*60);
+                        VisibilityTimePeriod_iList.add(Load_i, VisibilityTimeperiod_iiList);
+                        TimePeriodNum_iList.add(Load_i, TimePeriodNum_iiList);
+                    } else {
+                        VisibilityTimePeriod_iList.add(Load_i, VisibilityTimeperiod_iiList);
+                        TimePeriodNum_iList.add(Load_i, TimePeriodNum_iiList);
+                    }
+                }
+                VisibilityTimePeriodList.add(Mission_i, VisibilityTimePeriod_iList);
+                TimePeriodNumList.add(Mission_i, TimePeriodNum_iList);
+                continue;
+            }
+
             //判断是否为实传任务
             if (MissionWorkModeList.get(Mission_i) == 1) {
                 //搜索地面站资源信息
