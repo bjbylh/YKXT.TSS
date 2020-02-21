@@ -51,7 +51,7 @@ public class TaskMonitor {
             while (true) {
                 try {
                     check();
-                    Thread.sleep(1000 * 30);
+                    Thread.sleep(1000 * 5);
                 } catch (IOException | InterruptedException e) {
                     e.printStackTrace();
                 }

@@ -24,7 +24,7 @@ public class CamAndScStatus {
     private CamAndScStatus() {
     }
 
-    public Document getSatus(Instant now, Boolean isRealtime) {
+    public Document getStatus(Instant now, Boolean isRealtime) {
         Document ret = new Document();
 
         String CamGFAStatus = "ON";
@@ -51,8 +51,10 @@ public class CamAndScStatus {
             MongoClient mongoClient = MangoDBConnector.getClient();
             MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
-            ArrayList<Document> pool_inss_image = new ArrayList<>();
-            ArrayList<Document> pool_inss_trans = new ArrayList<>();
+            Map<Date, Document> insPool = new TreeMap<>();
+//
+//            ArrayList<Document> pool_inss_image = new ArrayList<>();
+//            ArrayList<Document> pool_inss_trans = new ArrayList<>();
 
             MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
             FindIterable<Document> image_missions = image_mission.find();
@@ -63,13 +65,25 @@ public class CamAndScStatus {
                     if (!document.containsKey("instruction_info"))
                         continue;
 
+                    if (!document.containsKey("mission_params") || document.get("mission_params") == null)
+                        continue;
+
+                    if (!document.containsKey("default_mission_params") || document.get("default_mission_params") == null)
+                        continue;
+
                     ArrayList<Document> instruction_info = (ArrayList<Document>) document.get("instruction_info");
 
                     if (!checkInstructionInfo(instruction_info))
                         continue;
 
                     if (instruction_info.size() > 0) {
-                        pool_inss_image.add(document);
+
+                        Document document1 = instruction_info.get(instruction_info.size() - 1);
+
+                        Date time = document1.getDate("execution_time");
+
+                        if (!insPool.containsKey(time))
+                            insPool.put(time, document);
                     }
                 }
             }
@@ -78,30 +92,80 @@ public class CamAndScStatus {
             FindIterable<Document> transmission_missions = transmission_mission.find();
 
             for (Document document : transmission_missions) {
+                System.out.println(document);
                 if (!document.containsKey("fail_reason") || document.getString("fail_reason").equals("")) {
                     if (!document.containsKey("instruction_info") || !document.getString("fail_reason").equals(""))
                         continue;
 
+                    if (!document.containsKey("mission_params") || document.get("mission_params") == null)
+                        continue;
+
+                    if (!document.containsKey("default_mission_params") || document.get("default_mission_params") == null)
+                        continue;
+
                     ArrayList<Document> instruction_info = (ArrayList<Document>) document.get("instruction_info");
+
+                    ArrayList<Document> mission_params = (ArrayList<Document>) document.get("mission_params");
+
+                    ArrayList<Document> default_mission_params = (ArrayList<Document>) document.get("default_mission_params");
 
                     if (!checkInstructionInfo(instruction_info))
                         continue;
 
-                    if (instruction_info.size() > 0) {
-                        pool_inss_trans.add(document);
+                    if (instruction_info.size() > 0 && mission_params.size() > 0 && default_mission_params.size() > 0) {
+
+                        Document document1 = instruction_info.get(instruction_info.size() - 1);
+
+                        Date time = document1.getDate("execution_time");
+
+                        if (!insPool.containsKey(time))
+                            insPool.put(time, document);
                     }
                 }
             }
 
-            if (pool_inss_image.size() > 0 || pool_inss_trans.size() > 0) {
-                Map<Date, Document> insPool = new TreeMap<>();
+            if (insPool.size() > 0) {
+                for (Date t : insPool.keySet()) {
+                    DevStatusEnum camGFAStatusEnum = getCamGFAStatus(insPool.get(t));
+                    DevStatusEnum camGFBStatusEnum = getCamGFBStatus(insPool.get(t));
+                    DevStatusEnum camDGAStatusEnum = getCamDGAStatus(insPool.get(t));
+                    DevStatusEnum camDGBStatusEnum = getCamDGBStatus(insPool.get(t));
+                    DevStatusEnum SCDevStatusEnum = getSCDevStatus(insPool.get(t));
 
-                insertInsData(pool_inss_image, insPool, Date.from(now), true);
+                    if (camGFAStatusEnum.name().equals(DevStatusEnum.OFF)) {
+                        CamGFAStatus = "OFF";
+                    } else if (camGFAStatusEnum.name().equals(DevStatusEnum.ON)) {
+                        CamGFAStatus = "ON";
+                    } else {
+                    }
 
-                insertInsData(pool_inss_trans, insPool, Date.from(now), false);
+                    if (camGFBStatusEnum.name().equals(DevStatusEnum.OFF)) {
+                        CamGFBStatus = "OFF";
+                    } else if (camGFBStatusEnum.name().equals(DevStatusEnum.ON)) {
+                        CamGFBStatus = "ON";
+                    } else {
+                    }
 
-                for (Date t : insPool.keySet()){
+                    if (camDGAStatusEnum.name().equals(DevStatusEnum.OFF)) {
+                        CamDGAStatus = "OFF";
+                    } else if (camDGAStatusEnum.name().equals(DevStatusEnum.ON)) {
+                        CamDGAStatus = "ON";
+                    } else {
+                    }
 
+                    if (camDGBStatusEnum.name().equals(DevStatusEnum.OFF)) {
+                        CamDGBStatus = "OFF";
+                    } else if (camDGBStatusEnum.name().equals(DevStatusEnum.ON)) {
+                        CamDGBStatus = "ON";
+                    } else {
+                    }
+
+                    if (SCDevStatusEnum.name().equals(DevStatusEnum.OFF)) {
+                        SCDevStatus = "OFF";
+                    } else if (SCDevStatusEnum.name().equals(DevStatusEnum.ON)) {
+                        SCDevStatus = "ON";
+                    } else {
+                    }
                 }
             }
 
@@ -116,31 +180,280 @@ public class CamAndScStatus {
         }
     }
 
-    private void insertInsData(ArrayList<Document> pool_inss, Map<Date, Document> insPool, Date now, Boolean isImage) {
-        for (Document d : pool_inss) {
-            //System.out.println(d.toJson());
-            ArrayList<Document> instruction_info = (ArrayList<Document>) d.get("instruction_info");
-            for (Document ins : instruction_info) {
+    private DevStatusEnum getCamGFAStatus(Document mission) {
+        DevStatusEnum ret = DevStatusEnum.NONE;
 
-                Document newIns = Document.parse(ins.toJson());
+        ArrayList<Document> instruction_info = (ArrayList<Document>) mission.get("instruction_info");
 
-                if (newIns.getBoolean("valid")) {
-                    newIns.remove("valid");
+        ArrayList<Document> mission_params = (ArrayList<Document>) mission.get("mission_params");
 
-                    Date t = newIns.getDate("execution_time");
+        ArrayList<Document> default_mission_params = (ArrayList<Document>) mission.get("default_mission_params");
 
-                    if (t.after(now))
-                        continue;
+        for (Document meta : instruction_info) {
+            if (meta.getString("sequence_code").equals("TCGFG01") && meta.getBoolean("valid")) {
+                ArrayList<String> P07 = new ArrayList<>();
 
-                    int i = 1;
-                    while (insPool.containsKey(t)) {
-                        t.setTime(t.getTime() + i);
-                        i++;
+                for (Document mission_param : mission_params) {
+                    if (mission_param.getString("code").equals("P07")) {
+                        P07 = (ArrayList<String>) mission_param.get("value");
                     }
-                    insPool.put(t, newIns);
+                }
+
+                if (P07 == null || P07.size() == 0) {
+                    for (Document default_mission_param : default_mission_params) {
+                        if (default_mission_param.getString("code").equals("P07")) {
+                            P07 = (ArrayList<String>) default_mission_param.get("default_value");
+                        }
+                    }
+                }
+
+                if (P07 != null && P07.contains("0")) {
+                    ret = DevStatusEnum.ON;
+                }
+            } else if (meta.getString("sequence_code").equals("TCGFG03") && meta.getBoolean("valid")) {
+                String P165 = "";
+
+                for (Document mission_param : mission_params) {
+                    if (mission_param.getString("code").equals("P165")) {
+                        P165 = mission_param.getString("value");
+                    }
+                }
+
+                if (P165.equals("")) {
+                    for (Document default_mission_param : default_mission_params) {
+                        if (default_mission_param.getString("code").equals("P165")) {
+                            P165 = default_mission_param.getString("default_value");
+                        }
+                    }
+                }
+
+                if (P165.equals("1") || P165.equals("3")) {
+                    ret = DevStatusEnum.OFF;
                 }
             }
         }
+
+        return ret;
+    }
+
+    private DevStatusEnum getCamGFBStatus(Document mission) {
+        DevStatusEnum ret = DevStatusEnum.NONE;
+
+        ArrayList<Document> instruction_info = (ArrayList<Document>) mission.get("instruction_info");
+
+        ArrayList<Document> mission_params = (ArrayList<Document>) mission.get("mission_params");
+
+        ArrayList<Document> default_mission_params = (ArrayList<Document>) mission.get("default_mission_params");
+
+        for (Document meta : instruction_info) {
+            if (meta.getString("sequence_code").equals("TCGFG01") && meta.getBoolean("valid")) {
+                ArrayList<String> P07 = new ArrayList<>();
+
+                for (Document mission_param : mission_params) {
+                    if (mission_param.getString("code").equals("P07")) {
+                        P07 = (ArrayList<String>) mission_param.get("value");
+                    }
+                }
+
+                if (P07 == null || P07.size() == 0) {
+                    for (Document default_mission_param : default_mission_params) {
+                        if (default_mission_param.getString("code").equals("P07")) {
+                            P07 = (ArrayList<String>) default_mission_param.get("default_value");
+                        }
+                    }
+                }
+
+                if (P07 != null && P07.contains("1")) {
+                    ret = DevStatusEnum.ON;
+                }
+            } else if (meta.getString("sequence_code").equals("TCGFG03") && meta.getBoolean("valid")) {
+                String P165 = "";
+
+                for (Document mission_param : mission_params) {
+                    if (mission_param.getString("code").equals("P165")) {
+                        P165 = mission_param.getString("value");
+                    }
+                }
+
+                if (P165.equals("")) {
+                    for (Document default_mission_param : default_mission_params) {
+                        if (default_mission_param.getString("code").equals("P165")) {
+                            P165 = default_mission_param.getString("default_value");
+                        }
+                    }
+                }
+
+                if (P165.equals("2") || P165.equals("3")) {
+                    ret = DevStatusEnum.OFF;
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    private DevStatusEnum getCamDGAStatus(Document mission) {
+        DevStatusEnum ret = DevStatusEnum.NONE;
+
+        ArrayList<Document> instruction_info = (ArrayList<Document>) mission.get("instruction_info");
+
+        ArrayList<Document> mission_params = (ArrayList<Document>) mission.get("mission_params");
+
+        ArrayList<Document> default_mission_params = (ArrayList<Document>) mission.get("default_mission_params");
+
+        for (Document meta : instruction_info) {
+            if (meta.getString("sequence_code").equals("TCDGG01") && meta.getBoolean("valid")) {
+                ArrayList<String> P07 = new ArrayList<>();
+
+                for (Document mission_param : mission_params) {
+                    if (mission_param.getString("code").equals("P07")) {
+                        P07 = (ArrayList<String>) mission_param.get("value");
+                    }
+                }
+
+                if (P07 == null || P07.size() == 0) {
+                    for (Document default_mission_param : default_mission_params) {
+                        if (default_mission_param.getString("code").equals("P07")) {
+                            P07 = (ArrayList<String>) default_mission_param.get("default_value");
+                        }
+                    }
+                }
+
+                if (P07 != null && P07.contains("2")) {
+                    ret = DevStatusEnum.ON;
+                }
+            } else if (meta.getString("sequence_code").equals("TCDGG03") && meta.getBoolean("valid")) {
+                String P167 = "";
+
+                for (Document mission_param : mission_params) {
+                    if (mission_param.getString("code").equals("P167")) {
+                        P167 = mission_param.getString("value");
+                    }
+                }
+
+                if (P167.equals("")) {
+                    for (Document default_mission_param : default_mission_params) {
+                        if (default_mission_param.getString("code").equals("P167")) {
+                            P167 = default_mission_param.getString("default_value");
+                        }
+                    }
+                }
+
+                if (P167.equals("1") || P167.equals("3")) {
+                    ret = DevStatusEnum.OFF;
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    private DevStatusEnum getCamDGBStatus(Document mission) {
+        DevStatusEnum ret = DevStatusEnum.NONE;
+
+        ArrayList<Document> instruction_info = (ArrayList<Document>) mission.get("instruction_info");
+
+        ArrayList<Document> mission_params = (ArrayList<Document>) mission.get("mission_params");
+
+        ArrayList<Document> default_mission_params = (ArrayList<Document>) mission.get("default_mission_params");
+
+        for (Document meta : instruction_info) {
+            if (meta.getString("sequence_code").equals("TCDGG01") && meta.getBoolean("valid")) {
+                ArrayList<String> P07 = new ArrayList<>();
+
+                for (Document mission_param : mission_params) {
+                    if (mission_param.getString("code").equals("P07")) {
+                        P07 = (ArrayList<String>) mission_param.get("value");
+                    }
+                }
+
+                if (P07 == null || P07.size() == 0) {
+                    for (Document default_mission_param : default_mission_params) {
+                        if (default_mission_param.getString("code").equals("P07")) {
+                            P07 = (ArrayList<String>) default_mission_param.get("default_value");
+                        }
+                    }
+                }
+
+                if (P07 != null && P07.contains("3")) {
+                    ret = DevStatusEnum.ON;
+                }
+            } else if (meta.getString("sequence_code").equals("TCDGG03") && meta.getBoolean("valid")) {
+                String P167 = "";
+
+                for (Document mission_param : mission_params) {
+                    if (mission_param.getString("code").equals("P167")) {
+                        P167 = mission_param.getString("value");
+                    }
+                }
+
+                if (P167.equals("")) {
+                    for (Document default_mission_param : default_mission_params) {
+                        if (default_mission_param.getString("code").equals("P167")) {
+                            P167 = default_mission_param.getString("default_value");
+                        }
+                    }
+                }
+
+                if (P167.equals("2") || P167.equals("3")) {
+                    ret = DevStatusEnum.OFF;
+                }
+            }
+        }
+        return ret;
+    }
+
+    private DevStatusEnum getSCDevStatus(Document mission) {
+        DevStatusEnum ret = DevStatusEnum.NONE;
+
+        ArrayList<Document> instruction_info = (ArrayList<Document>) mission.get("instruction_info");
+
+        ArrayList<Document> mission_params = (ArrayList<Document>) mission.get("mission_params");
+
+        ArrayList<Document> default_mission_params = (ArrayList<Document>) mission.get("default_mission_params");
+
+        for (Document meta : instruction_info) {
+            if (meta.getString("sequence_code").equals("TCKG02") && meta.getBoolean("valid")) {
+                String P170 = "";
+
+                for (Document mission_param : mission_params) {
+                    if (mission_param.getString("code").equals("P170")) {
+                        P170 = mission_param.getString("value");
+                    }
+                }
+
+                if (P170.equals("")) {
+                    for (Document default_mission_param : default_mission_params) {
+                        if (default_mission_param.getString("code").equals("P170")) {
+                            P170 = default_mission_param.getString("default_value");
+                        }
+                    }
+                }
+
+                if (P170 == "0") {
+                    ret = DevStatusEnum.ON;
+                }
+            } else if (meta.getString("sequence_code").equals("TCS297") && meta.getBoolean("valid")) {
+                ret = DevStatusEnum.ON;
+            } else if
+                    (
+                    (meta.getString("sequence_code").equals("TCAG01") && meta.getBoolean("valid"))
+                            ||
+                            (meta.getString("sequence_code").equals("TCAG02") && meta.getBoolean("valid"))
+                            ||
+                            (meta.getString("sequence_code").equals("TCAG03") && meta.getBoolean("valid"))
+                            ||
+                            (meta.getString("sequence_code").equals("TCAG04") && meta.getBoolean("valid"))
+                            ||
+                            (meta.getString("sequence_code").equals("TCAG05") && meta.getBoolean("valid"))
+                            ||
+                            (meta.getString("sequence_code").equals("TCAG06") && meta.getBoolean("valid"))
+
+                    ) {
+                ret = DevStatusEnum.OFF;
+            }
+        }
+        return ret;
     }
 
     private boolean checkInstructionInfo(ArrayList<Document> instruction_info) {
@@ -162,5 +475,10 @@ public class CamAndScStatus {
         }
 
         return true;
+    }
+
+    public static void main(String[] args) {
+        Document status = CamAndScStatus.getInstance().getStatus(Instant.now(), false);
+        System.out.println(status.toJson());
     }
 }
