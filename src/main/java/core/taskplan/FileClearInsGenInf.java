@@ -9,9 +9,7 @@ import common.mongo.MangoDBConnector;
 import core.taskplan.InstructionSequenceTime.SequenceID;
 import org.bson.Document;
 
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.*;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -56,6 +54,9 @@ public class FileClearInsGenInf {
         HashMap<String, Date> MissionInstructionTime = new HashMap<>();
         ArrayList<String> HashMapKey_File = new ArrayList<>();
         String FileFolder = "";
+        Map<Integer, Map<String, String>> insTimeMap = new HashMap<>();
+
+        Map<String, String> it = new HashMap<>();
         if (Mission != null) {
             Instant exetime = ZeroTimeIns;
             String MissionNumber = "";
@@ -94,6 +95,7 @@ public class FileClearInsGenInf {
             MissionInstructionTime.put("TCS207", TCS207Time);
             HashMapKey_File.add("TCS207");
 
+            it.put("TCS207" + "_" + Instant.now().toEpochMilli(), TCS207Time.toString() + "十六进制：" + KaiShiShiJian + "十进制：" + (long) Integer.parseInt(KaiShiShiJian, 16));
             //
             String TCAG06 = "";
             String TCA01 = "100201210111400131A5";
@@ -130,6 +132,8 @@ public class FileClearInsGenInf {
             Date TCAG06Time = Date.from(exetime.plusSeconds(-30));
             MissionInstructionTime.put("TCAG06", TCAG06Time);
             HashMapKey_File.add("TCAG06");
+
+            it.put("TCAG06" + "_" + Instant.now().toEpochMilli(), TCAG06Time.toString() + "十六进制：" + KaiShiShiJian + "十进制：" + (long) Integer.parseInt(KaiShiShiJian, 16));
 
             //
             String TCA303 = "";
@@ -179,6 +183,7 @@ public class FileClearInsGenInf {
             Date TCA303Time = Date.from(exetime);
             MissionInstructionTime.put("TCA303", TCA303Time);
             HashMapKey_File.add("TCA303");
+            it.put("TCA303" + "_" + Instant.now().toEpochMilli(), TCA303Time.toString() + "十六进制：" + KaiShiShiJian + "十进制：" + (long) Integer.parseInt(KaiShiShiJian, 16));
 
             //
             String TCS297 = "1002802105";
@@ -221,6 +226,9 @@ public class FileClearInsGenInf {
             Date TCS205Time = Date.from(exetime.plusSeconds(60));
             MissionInstructionTime.put("TCKG02", TCS205Time);
             HashMapKey_File.add("TCKG02");
+
+            it.put("TCKG02" + "_" + Instant.now().toEpochMilli(), TCS205Time.toString() + "十六进制：" + KaiShiShiJian + "十进制：" + (long) Integer.parseInt(KaiShiShiJian, 16));
+
 
             HashMap<String, byte[]> InstructionArrayChild = new HashMap<>();
             for (Map.Entry<String, String> entry : FileClear.entrySet()) {
@@ -321,6 +329,12 @@ public class FileClearInsGenInf {
                 bytesTotxt(Instruction.getValue(), realPath);
             }
 
+            String InsTimeFileName = "Ins-Time.txt";
+            String InsTimeFileNameRealPath = FilePathUtil.getRealFilePath(FileFolder + "\\" + InsTimeFileName);
+
+            insTimeMap.put(0, it);
+            StringToFile(insTimeMap.get(0), InsTimeFileNameRealPath);
+
             //数据库传出
             ArrayList<Document> InstructionInfojsonArry = new ArrayList<>();
             if (!InstructionArrayChild.isEmpty()) {
@@ -350,6 +364,32 @@ public class FileClearInsGenInf {
         mongoClient.close();
         //返回加文件名的路径
         return FileFolder;
+    }
+
+    private static void StringToFile(Map<String, String> it, String FilePath) {
+        File target = new File(FilePath);
+        //如果文件存在，删除
+        if (target.exists() && target.isFile()) {
+            boolean flag = target.delete();
+        }
+
+        try {
+            if (target.createNewFile()) {
+
+                Writer out = new FileWriter(FilePath);
+
+                for (String s : it.keySet()) {
+                    out.write("ins:");
+                    out.write(s);
+                    out.write("   time:");
+                    out.write(it.get(s));
+                    out.write("\r\n");
+                }
+                out.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     //byte型数组按二进制输出到txt文件

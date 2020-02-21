@@ -19,7 +19,6 @@
             <xs:element type="xs:string" name="orbitID"/>
             <xs:element type="xs:string" name="isQuickView"/>
             <xs:element type="xs:string" name="isCloud"/>
-            <xs:element type="xs:string" name="isDataCheck"/>
             <xs:element type="xs:string" name="receiveStartTime"/>
             <xs:element type="xs:string" name="receiveStopTime"/>
             <xs:element type="xs:string" name="satelliteCaptureStartTime"/>

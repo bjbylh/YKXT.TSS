@@ -29,7 +29,7 @@ public class InsAndFlashMontor {
 
     public double storage_capacity = 0.0;
 
-    public Long[] v_records = new Long[4];
+    public Double[] v_records = new Double[4];
 
     public long v_playback = 0L;
 
@@ -66,13 +66,13 @@ public class InsAndFlashMontor {
         for (Document document : properties) {
 
             if (document.getString("key").equals("v_record_1") && document.getString("group").equals("payload1")) {
-                v_records[0] = Long.parseLong(document.getString("value"));
+                v_records[0] = Double.parseDouble(document.getString("value"));
             } else if (document.getString("key").equals("v_record_2") && document.getString("group").equals("payload2")) {
-                v_records[1] = Long.parseLong(document.getString("value"));
+                v_records[1] = Double.parseDouble(document.getString("value"));
             } else if (document.getString("key").equals("v_record_3") && document.getString("group").equals("payload3")) {
-                v_records[2] = Long.parseLong(document.getString("value"));
+                v_records[2] = Double.parseDouble(document.getString("value"));
             } else if (document.getString("key").equals("v_record_4") && document.getString("group").equals("payload4")) {
-                v_records[3] = Long.parseLong(document.getString("value"));
+                v_records[3] = Double.parseDouble(document.getString("value"));
             } else {
             }
         }
@@ -435,7 +435,11 @@ public class InsAndFlashMontor {
                             } else {
                                 filenos = (ArrayList<String>) d.get("clear_filenos");
                             }
+
+
                             for (String file_no : filenos) {
+                                if(file_no.equals(""))
+                                    continue;
 
                                 if (SortedFileNo.contains(Integer.parseInt(file_no))) {
                                     if (PlayBackFileNoNow == Integer.parseInt(file_no)) {

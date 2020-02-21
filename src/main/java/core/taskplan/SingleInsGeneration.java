@@ -304,7 +304,7 @@ public class SingleInsGeneration {
                                                         //System.out.println(MetaParamsId);
                                                         float temeratureFloat=Float.parseFloat(MissionMetaParamsChildParamsChild.get("value").toString());
                                                         String MetaParamsIdValue = TemperatureFlotToStr(temeratureFloat);
-                                                        int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                        int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                         int byteLength = MetaParamsChild.getInteger("byte_length");
                                                         byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                         for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -338,7 +338,7 @@ public class SingleInsGeneration {
                                                     if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
                                                         //System.out.println(MetaParamsId);
                                                         String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("value").toString();
-                                                        int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                        int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                         int byteLength = MetaParamsChild.getInteger("byte_length");
                                                         byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                         for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -357,7 +357,7 @@ public class SingleInsGeneration {
                                                         if (TaskParams.containsKey("default_value") && TaskParams.get("default_value")!=null && !TaskParams.get("default_value").equals("")) {
                                                             //System.out.println(MetaParamsId);
                                                             String MetaParamsIdValue = TaskParams.get("default_value").toString();
-                                                            int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                            int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                             int byteLength = MetaParamsChild.getInteger("byte_length");
                                                             byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                             for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -402,7 +402,7 @@ public class SingleInsGeneration {
                                                 Document sequencemapping= (Document) MetaParamsChild.get("mapping");
                                                 if (sequencemapping.containsKey(SequenceParamsValue) && sequencemapping.get(SequenceParamsValue)!=null && !sequencemapping.get(SequenceParamsValue).equals("")) {
                                                     MetaParamsCode = sequencemapping.get(SequenceParamsValue).toString();
-                                                    int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                    int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                     int byteLength = MetaParamsChild.getInteger("byte_length");
                                                     byte[] bytevalueHex = hexStringToBytes(MetaParamsCode);
                                                     for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -412,7 +412,7 @@ public class SingleInsGeneration {
                                                     }
                                                 }
                                             }else {
-                                                int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                 int byteLength = MetaParamsChild.getInteger("byte_length");
                                                 byte[] bytevalueHex = hexStringToBytes(SequenceParamsValue);
                                                 for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -757,7 +757,7 @@ public class SingleInsGeneration {
                                                                         //System.out.println(MetaParamsId);
                                                                         float temeratureFloat=Float.parseFloat(MissionMetaParamsChildParamsChild.get("value").toString());
                                                                         String MetaParamsIdValue = TemperatureFlotToStr(temeratureFloat);
-                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                         int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                         byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                                         for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -809,7 +809,7 @@ public class SingleInsGeneration {
                                                                     if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
                                                                         //System.out.println(MetaParamsId);
                                                                         String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("value").toString();
-                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                         int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                         byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                                         for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -828,7 +828,7 @@ public class SingleInsGeneration {
                                                                         if (TaskParams.containsKey("default_value") && TaskParams.get("default_value")!=null && !TaskParams.get("default_value").equals("")) {
                                                                             //System.out.println(MetaParamsId);
                                                                             String MetaParamsIdValue = TaskParams.get("default_value").toString();
-                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                             int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                             byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                                             for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -873,7 +873,7 @@ public class SingleInsGeneration {
                                                                 Document sequencemapping= (Document) MetaParamsChild.get("mapping");
                                                                 if (sequencemapping.containsKey(SequenceParamsValue) && sequencemapping.get(SequenceParamsValue)!=null && !sequencemapping.get(SequenceParamsValue).equals("")) {
                                                                     MetaParamsCode = sequencemapping.get(SequenceParamsValue).toString();
-                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                     int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                     byte[] bytevalueHex = hexStringToBytes(MetaParamsCode);
                                                                     for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -883,7 +883,7 @@ public class SingleInsGeneration {
                                                                     }
                                                                 }
                                                             }else {
-                                                                int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                                int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                 int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                 byte[] bytevalueHex = hexStringToBytes(SequenceParamsValue);
                                                                 for (int j = byteIndex; j < byteIndex + byteLength; j++) {

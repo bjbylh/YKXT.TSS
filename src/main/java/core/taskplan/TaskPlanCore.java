@@ -157,13 +157,46 @@ public class TaskPlanCore {
                     Date normal_orbit_startTime = Date.from(Instant.now().plusSeconds(24 * 60 * 60 * 10000));
                     Date normal_orbit_endTime = Date.from(Instant.now().minusSeconds(24 * 60 * 60 * 10000));
 
+                    ArrayList<Document> NewMissionjson = new ArrayList<>();
+
+
                     for (Document d : Missionjson) {
-                        if (d.containsKey("image_window")) {
-                            ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
-                            Document window = image_windows.get(0);
-                            normal_orbit_startTime = window.getDate("start_time");
-                            normal_orbit_endTime = window.getDate("end_time");
+                        try {
+                            if (d.containsKey("image_window")) {
+                                ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");
+                                Document window = image_windows.get(0);
+
+                                if (window.get("start_time").getClass().getName().equals("java.util.Date") && window.get("end_time").getClass().getName().equals("java.util.Date")) {
+                                    if (window.getDate("start_time").before(normal_orbit_startTime))
+                                        normal_orbit_startTime = window.getDate("start_time");
+
+                                    if (window.getDate("end_time").after(normal_orbit_endTime))
+                                        normal_orbit_endTime = window.getDate("end_time");
+
+                                    NewMissionjson.add(d);
+                                }
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
+                    }
+
+
+                    if (Transmissionjson != null && Transmissionjson.containsKey("transmission_window")) {
+
+                        ArrayList<Document> transmission_window = (ArrayList<Document>) Transmissionjson.get("transmission_window");
+                        for (Document window : transmission_window) {
+                            try {
+                                if (window.getDate("start_time").before(normal_orbit_startTime))
+                                    normal_orbit_startTime = window.getDate("start_time");
+
+                                if (window.getDate("end_time").after(normal_orbit_endTime))
+                                    normal_orbit_endTime = window.getDate("end_time");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+
                     }
 
                     MongoCollection<Document> normal_attitude = mongoDatabase.getCollection("normal_attitude");
@@ -173,16 +206,23 @@ public class TaskPlanCore {
                     FindIterable<Document> normal_orbit_orbitjson = normal_attitude.find(Filters.and(queryBson));
                     long normal_orbit_count = normal_attitude.count(Filters.and(queryBson));
 
-                    InstructionGeneration.InstructionGenerationII(Missionjson, Transmissionjson, station_missions, normal_orbit_orbitjson, normal_orbit_count, ConfigManager.getInstance().fetchInsFilePath());
+                    InstructionGeneration.InstructionGenerationII(NewMissionjson, Transmissionjson, station_missions, normal_orbit_orbitjson, normal_orbit_count, ConfigManager.getInstance().fetchInsFilePath());
                 }
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
+            } catch (
+                    Exception e)
+
+            {
+                e.printStackTrace();
             }
 
-            System.out.println("[" + Instant.now().toString() + "] " + "Finished");
+            System.out.println("[" + Instant.now().
+
+                    toString() + "] " + "Finished");
             if (TaskType.CRONTAB == taskType)
+
                 updateMainStatus(id, MainTaskStatus.SUSPEND);
             else
+
                 updateMainStatus(id, MainTaskStatus.FINISHED);
             RedisPublish.dbRefresh(id);
 

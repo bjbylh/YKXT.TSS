@@ -1,5 +1,6 @@
 package core.taskplan;
 
+//import com.company.MangoDBConnector;
 import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -185,7 +186,7 @@ public class MissionPlanning {
                 continue;
         }
 
-
+        /*
         //首先判定是否生成固存清除任务
         ArrayList<Integer> PoolFileCanUse=new ArrayList<>();
         if (auto_obliterateFlag.equals("true")) {
@@ -248,7 +249,7 @@ public class MissionPlanning {
                 }
             }
         }
-
+        */
 
         //获取时间
         Date time_point2=new Date();
@@ -674,7 +675,8 @@ public class MissionPlanning {
             //将所有载荷的可见弧段存在一个数组中
             TimePeriodNumAll[i] = 0;
             for (int j = 0; j < LoadNumber; j++) {
-                if (MissionLoadType[i][j] == 1) {
+                //if (MissionLoadType[i][j] == 1) {
+                if (true) {
                     for (int k = 0; k < TimePeriodNum[j][i]; k++) {
                         //定义弧段是否满足成像时长，姿态机动需求标志
                         int StareTimeFlag = 1;
@@ -1183,7 +1185,7 @@ public class MissionPlanning {
                 ImageMissionjson.get(i).append("mission_state", "待执行");
                 ImageMissionjson.get(i).append("image_window", ImageWindowjsonArry);
 
-
+                /*
                 //添加文件号
                 if (ImageMissionjson.get(i).containsKey("record_file_no") && ImageMissionjson.get(i).get("record_file_no").toString().equals("")) {
                     if (PoolFileNum < PoolFileCanUse.size()) {
@@ -1196,7 +1198,7 @@ public class MissionPlanning {
                         PoolFileNum++;
                     }
                 }
-
+                */
 
                 //回溯订单
                 ArrayList<String> MissionForOrderNumbers_i=MissionForOrderNumbers.get(i);
@@ -1207,7 +1209,7 @@ public class MissionPlanning {
                     for (Document document:D_ImageOrderjson) {
                         if (document.get("order_number").equals(OrderNumber)) {
                             document.append("order_state","待执行");
-
+                            /*
                             //添加文件号
                             if (document.containsKey("record_file_no") && document.get("record_file_no").toString().equals("")) {
                                 if (PoolFileNum-1 < PoolFileCanUse.size()) {
@@ -1218,7 +1220,7 @@ public class MissionPlanning {
                                     document.append("record_file_no",PoolFileCanUse.get(PoolFileNum-1).toString());
                                 }
                             }
-
+                            */
                             if(document.containsKey("_id"))
                                 document.remove("_id");
                             Document modifiers_mid=new Document();

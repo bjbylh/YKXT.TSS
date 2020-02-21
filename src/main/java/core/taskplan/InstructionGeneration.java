@@ -301,6 +301,9 @@ public class InstructionGeneration {
         ArrayList<ArrayList<Integer>> MissionInstructionId = new ArrayList<>();
         ArrayList<ArrayList<Date>> MissionInstructionTime = new ArrayList<>();
         ArrayList<ArrayList<String>> MissionInstructionHex = new ArrayList<>();
+
+        Map<Integer, Map<String, String>> insTimeMap = new HashMap<>();
+
         for (int i = 0; i < MissionNum; i++) {
             //添加指令参数
             ArrayList<Document> MissionInstructionArrayChildTemp = (ArrayList<Document>) MissionInstructionArray.get(i);
@@ -745,6 +748,9 @@ public class InstructionGeneration {
             ArrayList<Date> MissionInstructionTimeChild = new ArrayList<>();
             ArrayList<String> MissionInstructionHexChild = new ArrayList<>();
             ArrayList<String> MissionInstructionWorkCode = new ArrayList<>();
+
+            ArrayList<Integer> MissionInstructionTimeUpdateStatus = new ArrayList<>();
+
             double InstDelta_tAll = 0;
             double InstDelta_tLastAll = 0;
             Date time_point = MissionStarTimeArray.get(i);
@@ -1092,7 +1098,7 @@ public class InstructionGeneration {
                                                                                                 //System.out.println(MetaParamsId);
                                                                                                 float temeratureFloat = Float.parseFloat(MissionMetaParamsChildParamsChild.get("value").toString());
                                                                                                 String MetaParamsIdValue = TemperatureFlotToStr(temeratureFloat);
-                                                                                                int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                                                                int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                                                 int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                                 byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                                                                 for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1144,7 +1150,7 @@ public class InstructionGeneration {
                                                                                             if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
                                                                                                 //System.out.println(MetaParamsId);
                                                                                                 String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("value").toString();
-                                                                                                int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                                                                int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                                                 int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                                 byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                                                                 for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1163,7 +1169,7 @@ public class InstructionGeneration {
                                                                                                 if (TaskParams.containsKey("default_value") && TaskParams.get("default_value") != null && !TaskParams.get("default_value").equals("")) {
                                                                                                     //System.out.println(MetaParamsId);
                                                                                                     String MetaParamsIdValue = TaskParams.get("default_value").toString();
-                                                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                                                     int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                                     byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                                                                     for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1208,7 +1214,7 @@ public class InstructionGeneration {
                                                                                         Document sequencemapping = (Document) MetaParamsChild.get("mapping");
                                                                                         if (sequencemapping.containsKey(SequenceParamsValue) && sequencemapping.get(SequenceParamsValue) != null && !sequencemapping.get(SequenceParamsValue).equals("")) {
                                                                                             MetaParamsCode = sequencemapping.get(SequenceParamsValue).toString();
-                                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                                             int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                             byte[] bytevalueHex = hexStringToBytes(MetaParamsCode);
                                                                                             for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1218,7 +1224,7 @@ public class InstructionGeneration {
                                                                                             }
                                                                                         }
                                                                                     } else {
-                                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                                         int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                         byte[] bytevalueHex = hexStringToBytes(SequenceParamsValue);
                                                                                         for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1411,10 +1417,10 @@ public class InstructionGeneration {
                                                                         MetaHex = "100280210118";
                                                                         MetaHex = MetaHex + "A102";
                                                                         MetaHex = MetaHex + "0707";
-                                                                    } else if (InstCode.equals("K4418")) {
-                                                                        MetaHex = "100280210118";
-                                                                        MetaHex = MetaHex + "A102";
-                                                                        MetaHex = MetaHex + "0808";
+                                                                        //} else if (InstCode.equals("K4418")) {
+                                                                        //    MetaHex = "100280210118";
+                                                                        //    MetaHex = MetaHex + "A102";
+                                                                        //    MetaHex = MetaHex + "0808";
                                                                     } else if (InstCode.equals("K4419")) {
                                                                         MetaHex = "100280210118";
                                                                         MetaHex = MetaHex + "A200";
@@ -1569,6 +1575,8 @@ public class InstructionGeneration {
                         continue;
                     }
                 }
+                Map<String, String> it = new HashMap<>();
+
                 //更新执行时间
                 for (int j = 0; j < MissionInstructionHexChild.size(); j++) {
                     String KaiShiShiJian = timeHashMap.get(MissionInstructionCodeChild.get(j)).ExecutionTime(timeVariable, MissionInstructionWorkCode.get(j)).toUpperCase();
@@ -1579,21 +1587,40 @@ public class InstructionGeneration {
                     } else if (KaiShiShiJian.length() > 8) {
                         KaiShiShiJian = KaiShiShiJian.substring(KaiShiShiJian.length() - 8);
                     }
+//                    if (KaiShiShiJian.equals("040319B8"))
+//                        System.out.println();
+
                     String YingYongShuJuTemp = MissionInstructionHexChild.get(j);
-                    MissionInstructionHexChild.set(j, KaiShiShiJian + YingYongShuJuTemp);
+                    if (!MissionInstructionTimeUpdateStatus.contains(j)) {
+                        MissionInstructionHexChild.set(j, KaiShiShiJian + YingYongShuJuTemp);
+                        MissionInstructionTimeUpdateStatus.add(j);
+                    }
                     Instant time_ZhiXing = zerostart;
                     time_ZhiXing = time_ZhiXing.plusSeconds((long) (Integer.parseInt(KaiShiShiJian, 16)));
                     Date time_ZhixingDate = Date.from(time_ZhiXing);
                     MissionInstructionTimeChild.set(j, time_ZhixingDate);
                     System.out.println("序列号：" + MissionInstructionCodeChild.get(j));
                     System.out.println("执行时间：" + Integer.parseInt(KaiShiShiJian, 16));
+
+                    it.put(MissionInstructionCodeChild.get(j) + "_" + Instant.now().toEpochMilli(), time_ZhixingDate.toString() + " 十六进制：" + KaiShiShiJian + " 十进制：" + (long) (Integer.parseInt(KaiShiShiJian, 16)));
                 }
+
+                insTimeMap.put(i, it);
             }
+
+            MissionInstructionTimeUpdateStatus.clear();
 
             ArrayList<byte[]> InstructionArrayChild = new ArrayList<>();
             for (String ZhilingKuai_02 : MissionInstructionHexChild) {
                 //String YingYongShuJu = KaiShiShiJian + ZhiLingID + ZhiLingNum + YouXiaoData;
                 String ShuJuQuTou = "100B8021";
+//                String sub1 = ZhilingKuai_02.substring(0, 8);
+//                String sub2 = ZhilingKuai_02.substring(8, 16);
+//
+//                if (sub1.equals(sub2)) {
+//                    System.out.println("sub1:" + sub1 + " sub2:" + sub2);
+//                }
+
                 int BaoChang = (ShuJuQuTou + ZhilingKuai_02).length() / 2 + 2 - 1;
                 String BaoChangstr = String.format("%04X", BaoChang);
                 int BaoXuLieIDNum = SequenceID.PackageId;
@@ -1613,6 +1640,13 @@ public class InstructionGeneration {
                 BaoXuLieIDStr = Integer.toHexString(Integer.parseInt(BaoXuLieIDStr, 2)).toUpperCase();
                 String BaoZhuDaoTou = "1C11" + BaoXuLieIDStr + BaoChangstr;
                 String total = BaoZhuDaoTou + ShuJuQuTou + ZhilingKuai_02 + ISO(BaoZhuDaoTou + ShuJuQuTou + ZhilingKuai_02);
+
+//                String sub3 = total.substring(20, 28);
+//                String sub4 = total.substring(28, 36);
+//
+//                if (sub3.equals(sub4)) {
+//                    System.out.println("sub1:" + sub1 + " sub2:" + sub2);
+//                }
 
                 int fangshizi = -1;
                 //添加填充域
@@ -1702,6 +1736,10 @@ public class InstructionGeneration {
                 bytesTotxt(InstructionArray.get(i).get(j), realPath);
             }
 
+            String InsTimeFileName = "Ins-Time.txt";
+            String InsTimeFileNameRealPath = FilePathUtil.getRealFilePath(FileFolder + "\\" + InsTimeFileName);
+
+            StringToFile(insTimeMap.get(i), InsTimeFileNameRealPath);
             //数据库传出
             ArrayList<Document> InstructionInfojsonArry = new ArrayList<>();
             if (MissionInstructionCode.get(i).size() > 0) {
@@ -1859,7 +1897,11 @@ public class InstructionGeneration {
         ArrayList<ArrayList<String>> MissionInstructionCode = new ArrayList<>();
         ArrayList<ArrayList<Integer>> MissionInstructionId = new ArrayList<>();
         ArrayList<ArrayList<Date>> MissionInstructionTime = new ArrayList<>();
+        ArrayList<ArrayList<String>> MissionInstructionTimeString = new ArrayList<>();
         ArrayList<ArrayList<String>> MissionInstructionHex = new ArrayList<>();
+
+        Map<Integer, Map<String, String>> insTimeMap = new HashMap<>();
+
         for (int i = 0; i < TransMissionStarTimeArray.size(); i++) {
             //添加指令参数
             ArrayList<Document> MissionInstructionArrayChildTemp = (ArrayList<Document>) MissionInstructionArray.get(0);
@@ -1918,6 +1960,7 @@ public class InstructionGeneration {
             ArrayList<String> MissionInstructionCodeChild = new ArrayList<>();
             ArrayList<Integer> MissionInstructionIdChild = new ArrayList<>();
             ArrayList<Date> MissionInstructionTimeChild = new ArrayList<>();
+            ArrayList<String> MissionInstructionTimeStringChild = new ArrayList<>();
             ArrayList<String> MissionInstructionHexChild = new ArrayList<>();
             double InstDelta_tAll = 0;
             double InstDelta_tLastAll = 0;
@@ -2134,7 +2177,7 @@ public class InstructionGeneration {
                                                                                         if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
                                                                                             //System.out.println(MetaParamsId);
                                                                                             String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("value").toString();
-                                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                                             int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                             byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                                                             for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -2164,7 +2207,7 @@ public class InstructionGeneration {
                                                                                     Document sequencemapping = (Document) MetaParamsChild.get("mapping");
                                                                                     if (sequencemapping.containsKey(SequenceParamsValue) && sequencemapping.get(SequenceParamsValue) != null && !sequencemapping.get(SequenceParamsValue).equals("")) {
                                                                                         MetaParamsCode = sequencemapping.get(SequenceParamsValue).toString();
-                                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                                         int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                         byte[] bytevalueHex = hexStringToBytes(MetaParamsCode);
                                                                                         for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -2174,7 +2217,7 @@ public class InstructionGeneration {
                                                                                         }
                                                                                     }
                                                                                 } else {
-                                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index");
+                                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                                     int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                     byte[] bytevalueHex = hexStringToBytes(SequenceParamsValue);
                                                                                     for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -2427,6 +2470,8 @@ public class InstructionGeneration {
                     continue;
                 }
             }
+
+            Map<String, String> it = new HashMap<>();
             //更新执行时间
             for (int j = 0; j < MissionInstructionHexChild.size(); j++) {
                 String KaiShiShiJian = timeHashMap.get(MissionInstructionCodeChild.get(j)).ExecutionTime(timeVariable, workcode).toUpperCase();
@@ -2443,7 +2488,13 @@ public class InstructionGeneration {
                 time_ZhiXing = time_ZhiXing.plusSeconds((long) (Integer.parseInt(KaiShiShiJian, 16)));
                 Date time_ZhixingDate = Date.from(time_ZhiXing);
                 MissionInstructionTimeChild.set(j, time_ZhixingDate);
+                MissionInstructionTimeStringChild.add(j, KaiShiShiJian);
+                //System.out.println("序列号：" + MissionInstructionCodeChild.get(j));
+                //System.out.println("执行时间：" + Integer.parseInt(KaiShiShiJian, 16));
+
+                //it.put(MissionInstructionCodeChild.get(j) + "_" + Instant.now().toEpochMilli(), time_ZhixingDate.toString());
             }
+            //insTimeMap.put(i, it);
 
             ArrayList<byte[]> InstructionArrayChild = new ArrayList<>();
             for (String ZhilingKuai_02 : MissionInstructionHexChild) {
@@ -2523,6 +2574,7 @@ public class InstructionGeneration {
             MissionInstructionId.add(i, MissionInstructionIdChild);
             MissionInstructionTime.add(i, MissionInstructionTimeChild);
             MissionInstructionHex.add(i, MissionInstructionHexChild);
+            MissionInstructionTimeString.add(i, MissionInstructionTimeStringChild);
         }
 
         //指令输出
@@ -2547,6 +2599,7 @@ public class InstructionGeneration {
                     }
                 }
             }
+            Map<String, String> it = new HashMap<>();
             for (int j = 0; j < InstructionArray.get(i).size(); j++) {
                 //指令文件命名
                 Date cal = new Date();
@@ -2557,7 +2610,19 @@ public class InstructionGeneration {
                 String FileName = MissionInstructionId.get(i).get(j) + "-" + MissionInstructionCode.get(i).get(j) + "-" + DateString + "-" + TransMissionNumbers.get(0);
                 String realPath = FilePathUtil.getRealFilePath(FileFolder + "\\" + FileName);
                 bytesTotxt(InstructionArray.get(i).get(j), realPath);
+
+                System.out.println("序列号：" + MissionInstructionCode.get(i).get(j));
+                System.out.println("执行时间：" + Integer.parseInt(MissionInstructionTimeString.get(i).get(j), 16));
+
+                it.put(MissionInstructionId.get(i).get(j) + "_" + MissionInstructionCode.get(i).get(j) + "_" + Instant.now().toEpochMilli(), MissionInstructionTime.get(i).get(j).toString() + "十六进制：" +
+                        MissionInstructionTimeString.get(i).get(j) + "十进制：" + (long) Integer.parseInt(MissionInstructionTimeString.get(i).get(j), 16));
             }
+            insTimeMap.put(i, it);
+
+            String InsTimeFileName = "Ins-Time-" + i + ".txt";
+            String InsTimeFileNameRealPath = FilePathUtil.getRealFilePath(FileFolder + "\\" + InsTimeFileName);
+
+            StringToFile(insTimeMap.get(i), InsTimeFileNameRealPath);
 
             //数据库传出
             if (MissionInstructionCode.get(i).size() > 0) {
@@ -2598,6 +2663,32 @@ public class InstructionGeneration {
             if (target.createNewFile()) {
                 DataOutputStream out = new DataOutputStream(new FileOutputStream(FilePath, true));
                 out.write(bytes);
+                out.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void StringToFile(Map<String, String> it, String FilePath) {
+        File target = new File(FilePath);
+        //如果文件存在，删除
+        if (target.exists() && target.isFile()) {
+            boolean flag = target.delete();
+        }
+
+        try {
+            if (target.createNewFile()) {
+
+                Writer out = new FileWriter(FilePath);
+
+                for (String s : it.keySet()) {
+                    out.write("ins:");
+                    out.write(s);
+                    out.write("   time:");
+                    out.write(it.get(s));
+                    out.write("\r\n");
+                }
                 out.close();
             }
         } catch (Exception e) {
