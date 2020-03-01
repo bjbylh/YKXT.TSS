@@ -17,6 +17,7 @@ import common.redis.RedisPublish;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
+import srv.task.CamAndScStatus;
 
 import java.text.ParseException;
 import java.time.Instant;
@@ -118,9 +119,13 @@ public class TaskPlanCore {
             //姿态角计算
             if (MOD_ATTITUDE_CALCULATION(subList[3])) return;
 
-            System.out.println("[" + Instant.now().toString() + "] " + "资源平衡");
-            //资源平衡
-            if (MOD_ENERGY_CALCULATION(subList[4])) return;
+            Boolean needEnergyCalculation = true;
+
+            if (needEnergyCalculation) {
+                System.out.println("[" + Instant.now().toString() + "] " + "资源平衡");
+                //资源平衡
+                if (MOD_ENERGY_CALCULATION(subList[4])) return;
+            }
 
             try {
                 if (ConfigManager.getInstance().fetchDebug()) {
@@ -206,12 +211,19 @@ public class TaskPlanCore {
                     FindIterable<Document> normal_orbit_orbitjson = normal_attitude.find(Filters.and(queryBson));
                     long normal_orbit_count = normal_attitude.count(Filters.and(queryBson));
 
-                    InstructionGeneration.InstructionGenerationII(NewMissionjson, Transmissionjson, station_missions, normal_orbit_orbitjson, normal_orbit_count, ConfigManager.getInstance().fetchInsFilePath());
-                }
-            } catch (
-                    Exception e)
+                    Document cam = null;
 
-            {
+                    if (TaskType.CRONTAB == taskType) {
+                        cam = CamAndScStatus.getInstance().getStatus(Instant.now().plusSeconds(3600*24), false);
+
+                    } else {
+                        cam = CamAndScStatus.getInstance().getStatus(Instant.now(), true);
+                    }
+
+
+                    InstructionGeneration.InstructionGenerationII(NewMissionjson, Transmissionjson, station_missions, normal_orbit_orbitjson, normal_orbit_count, ConfigManager.getInstance().fetchInsFilePath(), cam);
+                }
+            } catch (Exception e) {
                 e.printStackTrace();
             }
 

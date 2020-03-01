@@ -29,7 +29,7 @@ public class InsGenWithoutTaskPlanInf {
     private static double[] ZeroTime = {2018, 1, 1, 0, 0, 0};//参考时间
     private static Instant ZeroTimeIns=Instant.parse("2018-01-01T00:00:00.00Z");
 
-    public static String InsGenWithoutTaskPlanInf(Document imageOrder, Document stationMission, String FilePath) {
+    public static String InsGenWithoutTaskPlanInf(Document imageOrder, Document stationMission, String FilePath,Document CamStatus) {
 
         //传输任务，回放任务
         if (stationMission != null && stationMission.size()>0) {
@@ -110,6 +110,7 @@ public class InsGenWithoutTaskPlanInf {
         //将表中properties内容存入properties列表中
         ArrayList<Document> properties=(ArrayList<Document>) first.get("properties");
         Instant zerostart=ZeroTimeIns;
+        String Cam_force_Powoff = "false";
         String LoadNumberIni="0";
         for (Document document:properties){
             if (document.getString("key").equals("t0")){
@@ -123,6 +124,8 @@ public class InsGenWithoutTaskPlanInf {
                 ZeroTime[5]=zerostart0.getSecond();
             }else if (document.getString("key").equals("default_cam")) {
                 LoadNumberIni=document.get("value").toString();
+            }else if (document.getString("key").equals("cam_force_powoff")) {
+                Cam_force_Powoff = document.get("value").toString();
             }
         }
 
@@ -139,6 +142,7 @@ public class InsGenWithoutTaskPlanInf {
         ArrayList<String> MissionImageModel=new ArrayList<>();
         ArrayList<ArrayList<double[]>> MissionTargetAreaList = new ArrayList<ArrayList<double[]>>();
         ArrayList<Object> MissionInstructionDefautArray=new ArrayList<>();
+        ArrayList<int[]> MissionLoadTypeList = new ArrayList<int[]>();
         int MissionNum = 0;
         if (ImageMissionjson != null) {
             for (Document document : ImageMissionjson) {
@@ -170,7 +174,51 @@ public class InsGenWithoutTaskPlanInf {
                             double[] MissionTargetArea_iListChild=new double[]{0,0};
                             MissionTargetAreaList.add(MissionNum, MissionTargetArea_iList);
                         }
-
+                        int[] MissionLoadType_iList = new int[]{0,0,0,0};
+                        Boolean MissionLoadTypeFlag=true;
+                        if (document.containsKey("mission_params") && document.get("mission_params")!=null) {
+                            ArrayList<Document> MissionParamsTemp= (ArrayList<Document>) document.get("mission_params");
+                            for (Document document1:MissionParamsTemp) {
+                                if (document1.containsKey("code") && document1.get("code")!=null && document1.get("code").equals("P_SATELLITE_USE")) {
+                                    if (document1.containsKey("value") && document1.get("value")!=null && !document1.get("value").equals("")) {
+                                        if (document1.get("value").equals("1")) {
+                                            MissionLoadType_iList[0]=1;
+                                            MissionLoadTypeFlag=false;
+                                        }else if (document1.get("value").equals("2")) {
+                                            MissionLoadType_iList[1]=1;
+                                            MissionLoadTypeFlag=false;
+                                        }else if (document1.get("value").equals("3")) {
+                                            MissionLoadType_iList[2]=1;
+                                            MissionLoadTypeFlag=false;
+                                        }else if (document1.get("value").equals("4")) {
+                                            MissionLoadType_iList[3]=1;
+                                            MissionLoadTypeFlag=false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (MissionLoadTypeFlag) {
+                            if (document.containsKey("default_mission_params") && document.get("default_mission_params")!=null) {
+                                ArrayList<Document> MissionParamsTemp= (ArrayList<Document>) document.get("default_mission_params");
+                                for (Document document1:MissionParamsTemp) {
+                                    if (document1.containsKey("code") && document1.get("code")!=null && document1.get("code").equals("P_SATELLITE_USE")) {
+                                        if (document1.containsKey("default_value") && document1.get("default_value")!=null && !document1.get("default_value").equals("")) {
+                                            if (document1.get("default_value").equals("1")) {
+                                                MissionLoadType_iList[0]=1;
+                                            }else if (document1.get("default_value").equals("2")) {
+                                                MissionLoadType_iList[1]=1;
+                                            }else if (document1.get("default_value").equals("3")) {
+                                                MissionLoadType_iList[2]=1;
+                                            }else if (document1.get("default_value").equals("4")) {
+                                                MissionLoadType_iList[3]=1;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        MissionLoadTypeList.add(MissionNum, MissionLoadType_iList);
                         MissionNum = MissionNum + 1;
                     }else {
                         continue;
@@ -190,7 +238,71 @@ public class InsGenWithoutTaskPlanInf {
             MissionTaskModelChildTemp.add("TASK11");
             MissionTaskModelChildTemp.add("TASK06");
         }else {
-            MissionTaskModelChildTemp.add("TASK01");
+            if (Cam_force_Powoff.equals("false")) {
+                if (MissionLoadTypeList.get(0)[0]==1){
+                    if (CamStatus.get("CamGFAStatus").toString().equals("ON")) {
+                        MissionTaskModelChildTemp.add("TASK10");//任务恢复
+                        MissionTaskModelChildTemp.add("TASK03");//关机
+                    }else {
+                        MissionTaskModelChildTemp.add("TASK01");//常规成像
+                    }
+                }else if (MissionLoadTypeList.get(0)[1]==1){
+                    if (CamStatus.get("CamGFBStatus").toString().equals("ON")) {
+                        MissionTaskModelChildTemp.add("TASK10");//任务恢复
+                        MissionTaskModelChildTemp.add("TASK03");//关机
+                    }else {
+                        MissionTaskModelChildTemp.add("TASK01");//常规成像
+                    }
+                }else if (MissionLoadTypeList.get(0)[2]==1){
+                    if (CamStatus.get("CamDGAStatus").toString().equals("ON")) {
+                        MissionTaskModelChildTemp.add("TASK10");//任务恢复
+                        MissionTaskModelChildTemp.add("TASK03");//关机
+                    }else {
+                        MissionTaskModelChildTemp.add("TASK01");//常规成像
+                    }
+                }else if (MissionLoadTypeList.get(0)[3]==1){
+                    if (CamStatus.get("CamDGBStatus").toString().equals("ON")) {
+                        MissionTaskModelChildTemp.add("TASK10");//任务恢复
+                        MissionTaskModelChildTemp.add("TASK03");//关机
+                    }else {
+                        MissionTaskModelChildTemp.add("TASK01");//常规成像
+                    }
+                }
+            } else {
+                if (MissionLoadTypeList.get(0)[0]==1){
+                    if (CamStatus.get("CamGFAStatus").toString().equals("ON")) {
+                        MissionTaskModelChildTemp.add("TASK10");//任务恢复
+                        MissionTaskModelChildTemp.add("TASK09");//任务暂停
+                    }else {
+                        MissionTaskModelChildTemp.add("TASK02");//开机不关机
+                        MissionTaskModelChildTemp.add("TASK09");//任务暂停
+                    }
+                }else if (MissionLoadTypeList.get(0)[1]==1){
+                    if (CamStatus.get("CamGFBStatus").toString().equals("ON")) {
+                        MissionTaskModelChildTemp.add("TASK10");//任务恢复
+                        MissionTaskModelChildTemp.add("TASK09");//任务暂停
+                    }else {
+                        MissionTaskModelChildTemp.add("TASK02");//开机不关机
+                        MissionTaskModelChildTemp.add("TASK09");//任务暂停
+                    }
+                }else if (MissionLoadTypeList.get(0)[2]==1){
+                    if (CamStatus.get("CamDGAStatus").toString().equals("ON")) {
+                        MissionTaskModelChildTemp.add("TASK10");//任务恢复
+                        MissionTaskModelChildTemp.add("TASK09");//任务暂停
+                    }else {
+                        MissionTaskModelChildTemp.add("TASK02");//开机不关机
+                        MissionTaskModelChildTemp.add("TASK09");//任务暂停
+                    }
+                }else if (MissionLoadTypeList.get(0)[3]==1){
+                    if (CamStatus.get("CamDGBStatus").toString().equals("ON")) {
+                        MissionTaskModelChildTemp.add("TASK10");//任务恢复
+                        MissionTaskModelChildTemp.add("TASK09");//任务暂停
+                    }else {
+                        MissionTaskModelChildTemp.add("TASK02");//开机不关机
+                        MissionTaskModelChildTemp.add("TASK09");//任务暂停
+                    }
+                }
+            }
         }
         MissionTaskModel.put(0,MissionTaskModelChildTemp);
 
@@ -959,7 +1071,7 @@ public class InsGenWithoutTaskPlanInf {
                                                                                                 //System.out.println(MetaParamsId);
                                                                                                 float temeratureFloat=Float.parseFloat(MissionMetaParamsChildParamsChild.get("value").toString());
                                                                                                 String MetaParamsIdValue = TemperatureFlotToStr(temeratureFloat);
-                                                                                                int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                                int byteIndex = MetaParamsChild.getInteger("byte_index");
                                                                                                 int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                                 byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                                                                 for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1011,7 +1123,7 @@ public class InsGenWithoutTaskPlanInf {
                                                                                             if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
                                                                                                 //System.out.println(MetaParamsId);
                                                                                                 String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("value").toString();
-                                                                                                int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                                int byteIndex = MetaParamsChild.getInteger("byte_index");
                                                                                                 int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                                 byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                                                                 for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1030,7 +1142,7 @@ public class InsGenWithoutTaskPlanInf {
                                                                                                 if (TaskParams.containsKey("default_value") && TaskParams.get("default_value")!=null && !TaskParams.get("default_value").equals("")) {
                                                                                                     //System.out.println(MetaParamsId);
                                                                                                     String MetaParamsIdValue = TaskParams.get("default_value").toString();
-                                                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index");
                                                                                                     int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                                     byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                                                                     for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1075,7 +1187,7 @@ public class InsGenWithoutTaskPlanInf {
                                                                                         Document sequencemapping= (Document) MetaParamsChild.get("mapping");
                                                                                         if (sequencemapping.containsKey(SequenceParamsValue) && sequencemapping.get(SequenceParamsValue)!=null && !sequencemapping.get(SequenceParamsValue).equals("")) {
                                                                                             MetaParamsCode = sequencemapping.get(SequenceParamsValue).toString();
-                                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index");
                                                                                             int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                             byte[] bytevalueHex = hexStringToBytes(MetaParamsCode);
                                                                                             for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1085,7 +1197,7 @@ public class InsGenWithoutTaskPlanInf {
                                                                                             }
                                                                                         }
                                                                                     }else {
-                                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index");
                                                                                         int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                         byte[] bytevalueHex = hexStringToBytes(SequenceParamsValue);
                                                                                         for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1279,7 +1391,7 @@ public class InsGenWithoutTaskPlanInf {
                                                                         MetaHex=MetaHex+"A102";
                                                                         MetaHex=MetaHex+"0707";
                                                                     //}else if (InstCode.equals("K4418")) {
-                                                                        //    MetaHex="100280210118";
+                                                                    //    MetaHex="100280210118";
                                                                     //    MetaHex=MetaHex+"A102";
                                                                     //    MetaHex=MetaHex+"0808";
                                                                     }else if (InstCode.equals("K4419")) {
@@ -1998,7 +2110,7 @@ public class InsGenWithoutTaskPlanInf {
                                                                                         if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
                                                                                             //System.out.println(MetaParamsId);
                                                                                             String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("value").toString();
-                                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index");
                                                                                             int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                             byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                                                             for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -2029,7 +2141,7 @@ public class InsGenWithoutTaskPlanInf {
                                                                                     Document sequencemapping= (Document) MetaParamsChild.get("mapping");
                                                                                     if (sequencemapping.containsKey(SequenceParamsValue) && sequencemapping.get(SequenceParamsValue)!=null && !sequencemapping.get(SequenceParamsValue).equals("")) {
                                                                                         MetaParamsCode = sequencemapping.get(SequenceParamsValue).toString();
-                                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index");
                                                                                         int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                         byte[] bytevalueHex = hexStringToBytes(MetaParamsCode);
                                                                                         for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -2039,7 +2151,7 @@ public class InsGenWithoutTaskPlanInf {
                                                                                         }
                                                                                     }
                                                                                 }else {
-                                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index");
                                                                                     int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                     byte[] bytevalueHex = hexStringToBytes(SequenceParamsValue);
                                                                                     for (int j = byteIndex; j < byteIndex + byteLength; j++) {

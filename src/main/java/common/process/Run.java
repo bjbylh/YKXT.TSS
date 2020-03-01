@@ -9,12 +9,12 @@ import java.io.*;
  */
 public class Run {
 
-    public static Boolean Exec(String path, String exeName, String param) {
+    public static Boolean Exec(String path, String input, String output) {
         new Thread(() -> {
             Process p;
             try {
 //                ProcessBuilder builder = new ProcessBuilder("cmd", "/c", "java", "-jar", "core-1.0-SNAPSHOT.jar", id);
-                ProcessBuilder builder = new ProcessBuilder(path + exeName, param);
+                ProcessBuilder builder = new ProcessBuilder(path + "地面运控系统控制计算软件.exe", input, output);
 
                 builder.directory(new File(path));
                 builder.redirectErrorStream(true);

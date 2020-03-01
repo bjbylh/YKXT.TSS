@@ -186,7 +186,7 @@ public class MissionPlanning {
                 continue;
         }
 
-        /*
+
         //首先判定是否生成固存清除任务
         ArrayList<Integer> PoolFileCanUse=new ArrayList<>();
         if (auto_obliterateFlag.equals("true")) {
@@ -249,7 +249,7 @@ public class MissionPlanning {
                 }
             }
         }
-        */
+
 
         //获取时间
         Date time_point2=new Date();
@@ -675,8 +675,7 @@ public class MissionPlanning {
             //将所有载荷的可见弧段存在一个数组中
             TimePeriodNumAll[i] = 0;
             for (int j = 0; j < LoadNumber; j++) {
-                //if (MissionLoadType[i][j] == 1) {
-                if (true) {
+                if (MissionLoadType[i][j] == 1) {
                     for (int k = 0; k < TimePeriodNum[j][i]; k++) {
                         //定义弧段是否满足成像时长，姿态机动需求标志
                         int StareTimeFlag = 1;
@@ -890,7 +889,7 @@ public class MissionPlanning {
         ArrayList<int[]> SunAvoidTimePeriodList=AvoidSunshineII(OrbitTimeList, OrbitSatPositionGEIList, OrbitSatVelocityGEIList );
         for (int i = 0; i < SunAvoidTimePeriodList.size(); i++) {
             for (int j = SunAvoidTimePeriodList.get(i)[0]; j <= SunAvoidTimePeriodList.get(i)[1]; j++) {
-                //PlanningFlag[j] = 100;
+                PlanningFlag[j] = 100;
             }
         }
 
@@ -1185,7 +1184,7 @@ public class MissionPlanning {
                 ImageMissionjson.get(i).append("mission_state", "待执行");
                 ImageMissionjson.get(i).append("image_window", ImageWindowjsonArry);
 
-                /*
+
                 //添加文件号
                 if (ImageMissionjson.get(i).containsKey("record_file_no") && ImageMissionjson.get(i).get("record_file_no").toString().equals("")) {
                     if (PoolFileNum < PoolFileCanUse.size()) {
@@ -1198,7 +1197,7 @@ public class MissionPlanning {
                         PoolFileNum++;
                     }
                 }
-                */
+
 
                 //回溯订单
                 ArrayList<String> MissionForOrderNumbers_i=MissionForOrderNumbers.get(i);
@@ -1209,7 +1208,7 @@ public class MissionPlanning {
                     for (Document document:D_ImageOrderjson) {
                         if (document.get("order_number").equals(OrderNumber)) {
                             document.append("order_state","待执行");
-                            /*
+
                             //添加文件号
                             if (document.containsKey("record_file_no") && document.get("record_file_no").toString().equals("")) {
                                 if (PoolFileNum-1 < PoolFileCanUse.size()) {
@@ -1220,7 +1219,7 @@ public class MissionPlanning {
                                     document.append("record_file_no",PoolFileCanUse.get(PoolFileNum-1).toString());
                                 }
                             }
-                            */
+                            
                             if(document.containsKey("_id"))
                                 document.remove("_id");
                             Document modifiers_mid=new Document();
@@ -1305,12 +1304,20 @@ public class MissionPlanning {
                                 if (document.containsKey("available_window") && document.get("available_window")!=null) {
                                     ArrayList<Document> TranAvailableWindow= (ArrayList<Document>) document.get("available_window");
                                     for (Document document1:TranAvailableWindow) {
-                                        if (document1.containsKey("window_start_time") && document1.get("window_start_time")!=null) {
-                                            Document TranWindowjsonObject = new Document();
-                                            TranWindowjsonObject.append("station_name", document.get("station_name").toString());
-                                            TranWindowjsonObject.append("start_time", document1.getDate("window_start_time"));
-                                            TranWindowjsonObject.append("end_time", document1.getDate("window_end_time"));
-                                            TranWindowjsonArry.add(TranWindowjsonObject);
+                                        if (document1.containsKey("mission_number") && document1.get("mission_number")!=null) {
+                                            ArrayList<String> mission_numberArray= (ArrayList<String>) document1.get("mission_number");
+                                            for (String document2:mission_numberArray) {
+                                                if (document2.equals(StationMissionNumberList.get(i))) {
+                                                    if (document1.containsKey("window_start_time") && document1.get("window_start_time")!=null) {
+                                                        Document TranWindowjsonObject = new Document();
+                                                        TranWindowjsonObject.append("station_name", document.get("station_name").toString());
+                                                        TranWindowjsonObject.append("start_time", document1.getDate("window_start_time"));
+                                                        TranWindowjsonObject.append("end_time", document1.getDate("window_end_time"));
+                                                        //TranWindowjsonObject.append("mission_number", StationMissionNumberList.get(i));
+                                                        TranWindowjsonArry.add(TranWindowjsonObject);
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -1318,6 +1325,7 @@ public class MissionPlanning {
                         }
                     }
                 }
+
                 /*
                 //搜索地面站
                 int StationNumber_ForMissionOut=0;
@@ -1367,8 +1375,74 @@ public class MissionPlanning {
                 TranWindowjsonArry.add(TranWindowjsonObject);
             }
              */
+            //合并重合窗口
+            ArrayList<Boolean> TranWindowjsonArryFlag=new ArrayList<>();
+            ArrayList<Document> TranWindowjsonArryTemp=new ArrayList<>();
+            for (int j = 0; j < TranWindowjsonArry.size(); j++) {
+                TranWindowjsonArryFlag.add(true);
+            }
+            for (int j = 0; j < TranWindowjsonArry.size(); j++) {
+                if (TranWindowjsonArryFlag.get(j)) {
+                    for (int k = j+1; k < TranWindowjsonArry.size(); k++) {
+                        if (TranWindowjsonArryFlag.get(k)) {
+                            if (TranWindowjsonArry.get(j).get("station_name").toString().equals(TranWindowjsonArry.get(k).get("station_name").toString())) {
+                                /*
+                                System.out.println(TranWindowjsonArry.get(j).getDate("start_time").compareTo(TranWindowjsonArry.get(k).getDate("start_time"))>=0);
+                                System.out.println(TranWindowjsonArry.get(j).getDate("start_time").compareTo(TranWindowjsonArry.get(k).getDate("end_time"))<=0);
+                                System.out.println(TranWindowjsonArry.get(j).getDate("end_time").compareTo(TranWindowjsonArry.get(k).getDate("start_time"))>=0);
+                                System.out.println(TranWindowjsonArry.get(j).getDate("end_time").compareTo(TranWindowjsonArry.get(k).getDate("end_time"))<=0);
+                                System.out.println(TranWindowjsonArry.get(k).getDate("start_time").compareTo(TranWindowjsonArry.get(j).getDate("start_time"))>=0);
+                                System.out.println(TranWindowjsonArry.get(k).getDate("start_time").compareTo(TranWindowjsonArry.get(j).getDate("end_time"))<=0);
+                                System.out.println(TranWindowjsonArry.get(k).getDate("end_time").compareTo(TranWindowjsonArry.get(j).getDate("start_time"))>=0);
+                                System.out.println(TranWindowjsonArry.get(k).getDate("end_time").compareTo(TranWindowjsonArry.get(j).getDate("end_time"))<=0);
+                                System.out.println((TranWindowjsonArry.get(j).getDate("start_time").compareTo(TranWindowjsonArry.get(k).getDate("start_time"))>=0 &&
+                                        TranWindowjsonArry.get(j).getDate("start_time").compareTo(TranWindowjsonArry.get(k).getDate("end_time"))<=0));
+                                System.out.println(TranWindowjsonArry.get(j).getDate("end_time").compareTo(TranWindowjsonArry.get(k).getDate("start_time"))>=0 &&
+                                        TranWindowjsonArry.get(j).getDate("end_time").compareTo(TranWindowjsonArry.get(k).getDate("end_time"))<=0);
+                                System.out.println(TranWindowjsonArry.get(k).getDate("start_time").compareTo(TranWindowjsonArry.get(j).getDate("start_time"))>=0 &&
+                                        TranWindowjsonArry.get(k).getDate("start_time").compareTo(TranWindowjsonArry.get(j).getDate("end_time"))<=0);
+                                System.out.println(TranWindowjsonArry.get(k).getDate("end_time").compareTo(TranWindowjsonArry.get(j).getDate("start_time"))>=0 &&
+                                        TranWindowjsonArry.get(k).getDate("end_time").compareTo(TranWindowjsonArry.get(j).getDate("end_time"))<=0);
+                                */
+                                if ((TranWindowjsonArry.get(j).getDate("start_time").compareTo(TranWindowjsonArry.get(k).getDate("start_time"))>=0 &&
+                                        TranWindowjsonArry.get(j).getDate("start_time").compareTo(TranWindowjsonArry.get(k).getDate("end_time"))<=0) ||
+                                        (TranWindowjsonArry.get(j).getDate("end_time").compareTo(TranWindowjsonArry.get(k).getDate("start_time"))>=0 &&
+                                                TranWindowjsonArry.get(j).getDate("end_time").compareTo(TranWindowjsonArry.get(k).getDate("end_time"))<=0) ||
+                                        (TranWindowjsonArry.get(k).getDate("start_time").compareTo(TranWindowjsonArry.get(j).getDate("start_time"))>=0 &&
+                                                TranWindowjsonArry.get(k).getDate("start_time").compareTo(TranWindowjsonArry.get(j).getDate("end_time"))<=0) ||
+                                        (TranWindowjsonArry.get(k).getDate("end_time").compareTo(TranWindowjsonArry.get(j).getDate("start_time"))>=0 &&
+                                                TranWindowjsonArry.get(k).getDate("end_time").compareTo(TranWindowjsonArry.get(j).getDate("end_time"))<=0)) {
+                                    Document TranWindowjsonObject=new Document();
+                                    Date start_time=TranWindowjsonArry.get(j).getDate("start_time");
+                                    Date end_time=TranWindowjsonArry.get(j).getDate("end_time");
+                                    if (start_time.compareTo(TranWindowjsonArry.get(k).getDate("start_time"))>0) {
+                                        start_time=TranWindowjsonArry.get(k).getDate("start_time");
+                                    }
+                                    if (end_time.compareTo(TranWindowjsonArry.get(k).getDate("end_time"))<0) {
+                                        end_time=TranWindowjsonArry.get(k).getDate("end_time");
+                                    }
+                                    TranWindowjsonObject.append("station_name", TranWindowjsonArry.get(j).get("station_name").toString());
+                                    TranWindowjsonObject.append("start_time", start_time);
+                                    TranWindowjsonObject.append("end_time", end_time);
+                                    TranWindowjsonArryTemp.add(TranWindowjsonObject);
+                                    TranWindowjsonArry.set(j,TranWindowjsonObject);
+                                    TranWindowjsonArryFlag.set(k,false);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            ArrayList<Document> TranWindowjsonArryAfter=new ArrayList<>();
+            for (int j = 0; j < TranWindowjsonArry.size(); j++) {
+                if (TranWindowjsonArryFlag.get(j)) {
+                    Document TranWindowjsonArryChild=TranWindowjsonArry.get(j);
+                    TranWindowjsonArryAfter.add(TranWindowjsonArryChild);
+                }
+            }
             //地面站，传输任务更新？？？？
-            TransmissionMissionJson.append("transmission_window", TranWindowjsonArry);
+            TransmissionMissionJson.append("transmission_window", TranWindowjsonArryAfter);
+            TransmissionMissionJson.append("fail_reason", "");
 
             if(TransmissionMissionJson.containsKey("_id"))
                 TransmissionMissionJson.remove("_id");

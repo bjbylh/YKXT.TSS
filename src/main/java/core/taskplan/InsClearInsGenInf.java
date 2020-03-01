@@ -23,117 +23,117 @@ import java.util.HashSet;
 public class InsClearInsGenInf {
 
     private static double[] ZeroTime = {2018, 1, 1, 0, 0, 0};//参考时间
-    private static Instant ZeroTimeIns=Instant.parse("2018-01-01T00:00:00.00Z");
+    private static Instant ZeroTimeIns = Instant.parse("2018-01-01T00:00:00.00Z");
 
-    public static String InsClearInsGenInfII(int isTimeSpan, int type, Instant exetime, Instant start, Instant end, HashSet<Integer> insno, String FilePath){
+    public static String InsClearInsGenInfII(int isTimeSpan, int type, Instant exetime, Instant start, Instant end, HashSet<Integer> insno, String FilePath) {
         //连接数据库
         MongoClient mongoClient = MangoDBConnector.getClient();
         //获取名为"temp"的数据库
         MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
         //读入基准时间
         //获取名为“satellite_resource”的表
-        MongoCollection<Document> sate_res=mongoDatabase.getCollection("satellite_resource");
+        MongoCollection<Document> sate_res = mongoDatabase.getCollection("satellite_resource");
         //获取的表存在Document中
-        Document first=sate_res.find().first();
+        Document first = sate_res.find().first();
         //将表中properties内容存入properties列表中
-        ArrayList<Document> properties=(ArrayList<Document>) first.get("properties");
-        Instant zerostart=ZeroTimeIns;
+        ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
+        Instant zerostart = ZeroTimeIns;
 
-        for (Document document:properties){
-            if (document.get("key").toString().equals("t0")){
-                zerostart=document.getDate("value").toInstant();
-                LocalDateTime zerostart0=LocalDateTime.ofInstant(zerostart, ZoneOffset.UTC);
-                ZeroTime[0]=zerostart0.getYear();
-                ZeroTime[1]=zerostart0.getMonthValue();
-                ZeroTime[2]=zerostart0.getDayOfMonth();
-                ZeroTime[3]=zerostart0.getHour();
-                ZeroTime[4]=zerostart0.getMinute();
-                ZeroTime[5]=zerostart0.getSecond();
+        for (Document document : properties) {
+            if (document.get("key").toString().equals("t0")) {
+                zerostart = document.getDate("value").toInstant();
+                LocalDateTime zerostart0 = LocalDateTime.ofInstant(zerostart, ZoneOffset.UTC);
+                ZeroTime[0] = zerostart0.getYear();
+                ZeroTime[1] = zerostart0.getMonthValue();
+                ZeroTime[2] = zerostart0.getDayOfMonth();
+                ZeroTime[3] = zerostart0.getHour();
+                ZeroTime[4] = zerostart0.getMinute();
+                ZeroTime[5] = zerostart0.getSecond();
                 break;
             }
         }
 
-        String str="";
-        String SequNume="";
+        String str = "";
+        String SequNume = "";
         if (isTimeSpan == 0) {
             //指定ID删除
-            String str78910="100B812101";
-            String strAPID="0411";
-            strAPID="";
-            for (Integer idChild:insno) {
-                str78910=str78910+String.format("%04X",idChild);
+            String str78910 = "100B812101";
+            String strAPID = "0411";
+            strAPID = "";
+            for (Integer idChild : insno) {
+                str78910 = str78910 + String.format("%04X", idChild);
             }
-            int IDNum=str78910.length()/2;
-            str=strAPID+String.format("%02X",IDNum)+str78910;
-            SequNume="TCS291";
-        }else if (isTimeSpan == 1) {
+            int IDNum = str78910.length() / 2;
+            str = strAPID + String.format("%02X", IDNum) + str78910;
+            SequNume = "TCS291";
+        } else if (isTimeSpan == 1) {
             //指定时间段删除
-            String str78910="100B8221";
-            String strAPID="0411";
-            strAPID="";
-            int startint= (int) (start.getEpochSecond()-zerostart.getEpochSecond());
-            int endint= (int) (end.getEpochSecond()-zerostart.getEpochSecond());
+            String str78910 = "100B8221";
+            String strAPID = "0411";
+            strAPID = "";
+            int startint = (int) (start.getEpochSecond() - zerostart.getEpochSecond());
+            int endint = (int) (end.getEpochSecond() - zerostart.getEpochSecond());
             if (type == 0) {
                 //区间左
-                str78910=str78910+"11"+String.format("%08X",startint)+String.format("%08X",endint);
-            }else if (type == 1) {
+                str78910 = str78910 + "11" + String.format("%08X", startint) + String.format("%08X", endint);
+            } else if (type == 1) {
                 //区间右
-                str78910=str78910+"22"+String.format("%08X",startint)+String.format("%08X",endint);
-            }else if (type == 2) {
+                str78910 = str78910 + "22" + String.format("%08X", startint) + String.format("%08X", endint);
+            } else if (type == 2) {
                 //区间中间
-                str78910=str78910+"33"+String.format("%08X",startint)+String.format("%08X",endint);
-            }else if (type == 3) {
+                str78910 = str78910 + "33" + String.format("%08X", startint) + String.format("%08X", endint);
+            } else if (type == 3) {
                 //全部删除
-                str78910=str78910+"44"+String.format("%08X",startint)+String.format("%08X",endint);
+                str78910 = str78910 + "44" + String.format("%08X", startint) + String.format("%08X", endint);
             }
-            int IDNum=str78910.length()/2;
-            str=strAPID+String.format("%02X",IDNum)+str78910;
-            SequNume="TCS291";
-        }else if (isTimeSpan == 2) {
+            int IDNum = str78910.length() / 2;
+            str = strAPID + String.format("%02X", IDNum) + str78910;
+            SequNume = "TCS292";
+        } else if (isTimeSpan == 2) {
             //全部删除
-            String str78910="100B8521";
-            String strAPID="0411";
-            strAPID="";
-            int IDNum=4;
-            str=strAPID+String.format("%02X",IDNum)+str78910;
-            SequNume="TCS296";
+            String str78910 = "100B8521";
+            String strAPID = "0411";
+            strAPID = "";
+            int IDNum = 4;
+            str = strAPID + String.format("%02X", IDNum) + str78910;
+            SequNume = "TCS296";
         }
 
 
         //序列
         int ZhiLingIDNum = SequenceID.SequenceId;
-        SequenceID.SequenceId=SequenceID.SequenceId+1;
+        SequenceID.SequenceId = SequenceID.SequenceId + 1;
         if (SequenceID.SequenceId > 255) {
-            SequenceID.SequenceId=0;
+            SequenceID.SequenceId = 0;
         }
-        String ZhiLingXuLieIDString = String.format("%02X",ZhiLingIDNum);
-        ZhiLingXuLieIDString="00"+ZhiLingXuLieIDString;
+        String ZhiLingXuLieIDString = String.format("%02X", ZhiLingIDNum);
+        ZhiLingXuLieIDString = "00" + ZhiLingXuLieIDString;
         String ZhiLingGeShuString = "01";
-        int exetimeint= (int) (exetime.getEpochSecond()-zerostart.getEpochSecond());
-        String KaiShiShiJian=String.format("%08X",exetimeint);
+        int exetimeint = (int) (exetime.getEpochSecond() - zerostart.getEpochSecond());
+        String KaiShiShiJian = String.format("%08X", exetimeint);
 
         //str = KaiShiShiJian + ZhiLingXuLieIDString + ZhiLingGeShuString + str;
 
         //包
         String ShuJuQuTou = "";
-        int BaoChang = (ShuJuQuTou + str).length() / 2 + 2-1;
-        String BaoChangstr = String.format("%04X",BaoChang);
+        int BaoChang = (ShuJuQuTou + str).length() / 2 + 2 - 1;
+        String BaoChangstr = String.format("%04X", BaoChang);
         int BaoXuLieIDNum = SequenceID.PackageId;
-        SequenceID.PackageId=SequenceID.PackageId+1;
+        SequenceID.PackageId = SequenceID.PackageId + 1;
         if (SequenceID.PackageId > 16383) {
-            SequenceID.PackageId=0;
+            SequenceID.PackageId = 0;
         }
-        String BaoXuLieIDStr=Integer.toBinaryString(BaoXuLieIDNum);
+        String BaoXuLieIDStr = Integer.toBinaryString(BaoXuLieIDNum);
         if (BaoXuLieIDStr.length() < 14) {
             for (int i_id = BaoXuLieIDStr.length(); i_id < 14; i_id++) {
-                BaoXuLieIDStr="0"+BaoXuLieIDStr;
+                BaoXuLieIDStr = "0" + BaoXuLieIDStr;
             }
-        }else {
-            BaoXuLieIDStr=BaoXuLieIDStr.substring(BaoXuLieIDStr.length()-14);
+        } else {
+            BaoXuLieIDStr = BaoXuLieIDStr.substring(BaoXuLieIDStr.length() - 14);
         }
-        BaoXuLieIDStr="11"+BaoXuLieIDStr;
-        BaoXuLieIDStr=Integer.toHexString(Integer.parseInt(BaoXuLieIDStr,2)).toUpperCase();
-        String BaoZhuDaoTou = "1C11" +BaoXuLieIDStr+ BaoChangstr;
+        BaoXuLieIDStr = "11" + BaoXuLieIDStr;
+        BaoXuLieIDStr = Integer.toHexString(Integer.parseInt(BaoXuLieIDStr, 2)).toUpperCase();
+        String BaoZhuDaoTou = "1C11" + BaoXuLieIDStr + BaoChangstr;
         String total = BaoZhuDaoTou + ShuJuQuTou + str + ISO(BaoZhuDaoTou + ShuJuQuTou + str);
 
         //添加填充域
@@ -165,10 +165,10 @@ public class InsClearInsGenInf {
 
         byte[] MainBuff = hexStringToBytes(total);
         int a = getCRC_0xFFFF(MainBuff, MainBuff.length);
-        String CRCCode = String.format("%04X",a).toUpperCase();
+        String CRCCode = String.format("%04X", a).toUpperCase();
         if (CRCCode.length() > 4) {
-            CRCCode=CRCCode.substring(CRCCode.length()-4);
-        }else if (CRCCode.length() < 4) {
+            CRCCode = CRCCode.substring(CRCCode.length() - 4);
+        } else if (CRCCode.length() < 4) {
             for (int j = CRCCode.length(); j < 4; j++) {
                 CRCCode = "0" + CRCCode;
             }
@@ -183,7 +183,7 @@ public class InsClearInsGenInf {
             total = "EB907625C3" + total + CRCCode;
         byte[] bytes = hexStringToBytes(total);
 
-        String FileFolder = FilePathUtil.getRealFilePath(FilePath+"\\"+"InsClear");
+        String FileFolder = FilePathUtil.getRealFilePath(FilePath + "\\" + "InsClear");
         File file = new File(FileFolder);
         if (!file.exists()) {
             //如果文件夹不存在，新建
@@ -203,8 +203,8 @@ public class InsClearInsGenInf {
         String StringTime = sdf.format(cal.getTime());
 
         String DateString = StringTime.substring(0, 4) + StringTime.substring(5, 7) + StringTime.substring(8, 10) + StringTime.substring(11, 13) + StringTime.substring(14, 16);
-        String FileName = FileFolder+"\\"+ZhiLingIDNum+"-"+SequNume+"-InsClear-" + DateString;
-        FileName=FilePathUtil.getRealFilePath(FileName);
+        String FileName = FileFolder + "\\" + ZhiLingIDNum + "-" + SequNume + "-InsClear-" + DateString;
+        FileName = FilePathUtil.getRealFilePath(FileName);
         file = new File(FileName);
         if (file.exists()) {
             file.delete();
@@ -241,18 +241,18 @@ public class InsClearInsGenInf {
         int C1 = 0;
         for (int i = 0; i < Frame.length(); i = i + 2) {
             int B = Integer.parseInt(Frame.substring(i, i + 2), 16);
-            C0 = (C0 + B)%255;
-            C1 = (C1 + C0)%255;
+            C0 = (C0 + B) % 255;
+            C1 = (C1 + C0) % 255;
         }
-        int CK1 = (-(C0 + C1))%255;
+        int CK1 = (-(C0 + C1)) % 255;
         if (CK1 < 0) {
-            CK1=CK1+255;
+            CK1 = CK1 + 255;
         }
         int CK2 = C1;
-        String CK1tot = String.format("%02X",CK1).toUpperCase();
-        String CK2tot = String.format("%02X",CK2).toUpperCase();
-        String CK1str=CK1tot;
-        String CK2str=CK2tot;
+        String CK1tot = String.format("%02X", CK1).toUpperCase();
+        String CK2tot = String.format("%02X", CK2).toUpperCase();
+        String CK1str = CK1tot;
+        String CK2str = CK2tot;
         if (CK1tot.length() > 2) {
             CK1str = CK1tot.substring(CK1tot.length() - 2);
         }

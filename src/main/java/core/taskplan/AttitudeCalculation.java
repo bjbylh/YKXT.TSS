@@ -1,6 +1,7 @@
 package core.taskplan;
 
 //import com.company.MangoDBConnector;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mongodb.MongoClient;
@@ -19,6 +20,7 @@ import java.util.Date;
 import static java.lang.Math.*;
 
 //import common.mongo.DbDefine;
+//import common.mongo.MangoDBConnector;
 
 //import common.mongo.DbDefine;
 //import common.mongo.MangoDBConnector;
@@ -44,7 +46,7 @@ public class AttitudeCalculation {
 
     //卫星变量
     //卫星最大机动能力，最大机动欧拉角，格式[绕x轴最大机动角度，绕y轴最大机动角度，绕z轴最大机动角度]，单位：弧度
-    private static double[] SatelliteManeuverEuler = {5 * Math.PI / 180.0, 5 * Math.PI / 180.0, 5 * Math.PI / 180.0};
+    private static double[] SatelliteManeuverEuler = {10 * Math.PI / 180.0, 10 * Math.PI / 180.0, 10 * Math.PI / 180.0};
     private static double[] SatelliteManeuverVelocity = {10 * Math.PI / 180.0, 10 * Math.PI / 180.0, 10 * Math.PI / 180.0};//最大机动角速度
 
     //任务变量
@@ -1897,6 +1899,13 @@ public class AttitudeCalculation {
         }
         Attitude[2] = z;
 
+        if (abs(Attitude[0]) > SatelliteManeuverEuler[0]) {
+            Attitude[0]=(Attitude[0]/abs(Attitude[0]))*SatelliteManeuverEuler[0];
+        }
+        if (abs(Attitude[1]) > SatelliteManeuverEuler[1]) {
+            Attitude[1]=(Attitude[1]/abs(Attitude[1]))*SatelliteManeuverEuler[1];
+        }
+
         /*
         //加入惯性系
         double r = Math.sqrt(Math.pow(SatPosition_GEI[0], 2) + Math.pow(SatPosition_GEI[1], 2) + Math.pow(SatPosition_GEI[2], 2));
@@ -2035,6 +2044,13 @@ public class AttitudeCalculation {
             Attitude[2] = PI;
         }else {
             Attitude[2] = 0;
+        }
+
+        if (abs(Attitude[0]) > SatelliteManeuverEuler[0]) {
+            Attitude[0]=(Attitude[0]/abs(Attitude[0]))*SatelliteManeuverEuler[0];
+        }
+        if (abs(Attitude[1]) > SatelliteManeuverEuler[1]) {
+            Attitude[1]=(Attitude[1]/abs(Attitude[1]))*SatelliteManeuverEuler[1];
         }
     }
 
@@ -2177,6 +2193,13 @@ public class AttitudeCalculation {
             Attitude[2] = 0;
         }
         //Attitude[2]=z;
+
+        if (abs(Attitude[0]) > SatelliteManeuverEuler[0]) {
+            Attitude[0]=(Attitude[0]/abs(Attitude[0]))*SatelliteManeuverEuler[0];
+        }
+        if (abs(Attitude[1]) > SatelliteManeuverEuler[1]) {
+            Attitude[1]=(Attitude[1]/abs(Attitude[1]))*SatelliteManeuverEuler[1];
+        }
     }
 
     //更改后欧拉角姿态角计算，东南地3-2-1
@@ -2317,6 +2340,13 @@ public class AttitudeCalculation {
             Attitude[2] = 0;
         }
         //Attitude[2]=z;
+
+        if (abs(Attitude[0]) > SatelliteManeuverEuler[0]) {
+            Attitude[0]=(Attitude[0]/abs(Attitude[0]))*SatelliteManeuverEuler[0];
+        }
+        if (abs(Attitude[1]) > SatelliteManeuverEuler[1]) {
+            Attitude[1]=(Attitude[1]/abs(Attitude[1]))*SatelliteManeuverEuler[1];
+        }
     }
 
     //姿态角计算，轨道坐标系3-1-2
@@ -2439,6 +2469,13 @@ public class AttitudeCalculation {
             Attitude[2] = PI;
         }else {
             Attitude[2] = 0;
+        }
+
+        if (abs(Attitude[0]) > SatelliteManeuverEuler[0]) {
+            Attitude[0]=(Attitude[0]/abs(Attitude[0]))*SatelliteManeuverEuler[0];
+        }
+        if (abs(Attitude[1]) > SatelliteManeuverEuler[1]) {
+            Attitude[1]=(Attitude[1]/abs(Attitude[1]))*SatelliteManeuverEuler[1];
         }
     }
 

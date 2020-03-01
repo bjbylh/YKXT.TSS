@@ -6,19 +6,20 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.UpdateOptions;
+//import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
+//import com.sun.source.tree.Tree;
 import org.bson.Document;
 
 import javax.swing.*;
+import java.lang.reflect.Array;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
 import static java.lang.Math.*;
-
-//import common.mongo.DbDefine;
-//import com.sun.source.tree.Tree;
 
 //import common.mongo.MangoDBConnector;
 
@@ -971,7 +972,6 @@ public class VisibilityCalculation {
             int WindowsNum = 0;
 
             for (int i = 0; i < StationMissionNum; i++) {
-
                 Document stationInfo = new Document();
                 stationInfo.append("station_name", StationMissionStationNumberList.get(i));
 
@@ -983,18 +983,18 @@ public class VisibilityCalculation {
                     StationWindowjsonObject.append("window_start_time", OrbitTimeDateList.get(StationVisibilityTimePeriodList.get(i).get(j)[0]));
                     StationWindowjsonObject.append("window_end_time", OrbitTimeDateList.get(StationVisibilityTimePeriodList.get(i).get(j)[1]));
                     ArrayList<String> StationMissionNumberArray = new ArrayList<>();
-                    for (int k = 0; k < StationMissionNum; k++) {
-                        StationMissionNumberArray.add(k, StationMissionSerialNumberList.get(k));
-                    }
+                    //for (int k = 0; k < StationMissionNum; k++) {
+                    //    StationMissionNumberArray.add(k, StationMissionSerialNumberList.get(k));
+                    //}
+                    StationMissionNumberArray.add(StationMissionSerialNumberList.get(i));
                     StationWindowjsonObject.append("mission_number", StationMissionNumberArray);
                     StationWindowjsonArray.add(StationWindowjsonObject);
                     WindowsNum = WindowsNum + 1;
                 }
-
                 stationInfo.append("available_window", StationWindowjsonArray);
                 stationInfos.add(stationInfo);
-
             }
+
             if (WindowsNum == 0) {
                 Transmissionjson.append("fail_reason", "不可见");
             } else {
@@ -1984,8 +1984,10 @@ public class VisibilityCalculation {
             if (ViewAng_Min > ViewAngle[i])
                 ViewAng_Min = ViewAngle[i];
         }
-        double[] ViewTheta_xz = {OpticalTheta_xz - ViewAng_Min - Euler_Max[1], OpticalTheta_xz + ViewAng_Min + Euler_Max[1]};
-        double[] ViewTheta_yz = {OpticalTheta_yz - ViewAng_Min - Euler_Max[0], OpticalTheta_yz + ViewAng_Min + Euler_Max[0]};
+        //double[] ViewTheta_xz = {OpticalTheta_xz - ViewAng_Min - Euler_Max[1], OpticalTheta_xz + ViewAng_Min + Euler_Max[1]};
+        //double[] ViewTheta_yz = {OpticalTheta_yz - ViewAng_Min - Euler_Max[0], OpticalTheta_yz + ViewAng_Min + Euler_Max[0]};
+        double[] ViewTheta_xz = {OpticalTheta_xz-   Euler_Max[1], OpticalTheta_xz +  Euler_Max[1]};
+        double[] ViewTheta_yz = {OpticalTheta_yz-   Euler_Max[0], OpticalTheta_yz +  Euler_Max[0]};
 
         if (theta_xz >= ViewTheta_xz[0] && theta_xz <= ViewTheta_xz[1] && theta_yz >= ViewTheta_yz[0] && theta_yz <= ViewTheta_yz[1])
             Visibility_Flag = 1;

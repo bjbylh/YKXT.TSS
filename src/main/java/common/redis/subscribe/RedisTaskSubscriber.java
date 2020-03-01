@@ -21,6 +21,7 @@ import core.taskplan.*;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import redis.clients.jedis.JedisPubSub;
+import srv.task.CamAndScStatus;
 import srv.task.TaskInit;
 import xml.FileBodyType;
 import xml.FileHeaderType;
@@ -123,8 +124,12 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
     private void procInsClear(JsonObject json, String id) {
         try {
-            String[] content = json.get("content").getAsString().split(",");
+            String[] content = null;
             int isTimeSpan = json.get("type").getAsInt();
+
+            if (isTimeSpan != 2)
+                content = json.get("content").getAsString().split(",");
+
             String exeStartTime = json.get("exe_time").getAsString();
 
             LocalDateTime exeStartTime_r = LocalDateTime.parse(exeStartTime, sf);
@@ -156,10 +161,12 @@ public class RedisTaskSubscriber extends JedisPubSub {
                     type = 3;
                 else
                     throw new Exception("错误的数据类型");
-            } else {
+            } else if (isTimeSpan == 0) {
                 for (String insno : content) {
                     insnos.add(Integer.parseInt(insno));
                 }
+            } else {
+
             }
 
             String rst = InsClearInsGenInf.InsClearInsGenInfII(isTimeSpan, type, exeStartTime_i, start_i, end_i, insnos, ConfigManager.getInstance().fetchInsFilePath());
@@ -348,8 +355,10 @@ public class RedisTaskSubscriber extends JedisPubSub {
                     e.printStackTrace();
                 }
             }
+            Document cam = CamAndScStatus.getInstance().getStatus(Instant.now(), true);
 
-            String s = InsGenWithoutTaskPlanInf.InsGenWithoutTaskPlanInf(image_order, station_mission, ConfigManager.getInstance().fetchInsFilePath());
+
+            String s = InsGenWithoutTaskPlanInf.InsGenWithoutTaskPlanInf(image_order, station_mission, ConfigManager.getInstance().fetchInsFilePath(), cam);
 
             mongoClient.close();
             RedisPublish.CommonReturn(id, true, s, MsgType.INS_GEN_FINISHED);

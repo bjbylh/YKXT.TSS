@@ -1,0 +1,17 @@
+{
+"name":"orbit",
+"t0":"2019-01-01 10:01:50",
+"tf":"2019-01-01 11:01:50",
+"time":"2019-01-01 10:01:50",
+"orbit_a":27068,
+"orbit_e":0.73,
+"orbit_i":16,
+"orbit_Omg":0,
+"orbit_w":20,
+"orbit_M":10,
+"angle_sight_xaxis":0,
+"angle_sight_yaxis":0,
+"angle_sight_zaxis":0,
+"type":0,
+"step":1
+}

@@ -162,6 +162,7 @@ public class InsAndFlashMontor {
 
                     if (!document.containsKey("instruction_info"))
                         continue;
+
                     ArrayList<Document> instruction_info = (ArrayList<Document>) document.get("instruction_info");
 
                     if (!checkInstructionInfo(instruction_info))
@@ -263,6 +264,12 @@ public class InsAndFlashMontor {
             for (Document d : pool_inss) {
                 //System.out.println(d.toJson());
                 ArrayList<Document> instruction_info = (ArrayList<Document>) d.get("instruction_info");
+
+                int source = 0;
+
+                if (d.containsKey("image_mode") && d.getString("image_mode").equals("人在回路"))
+                    source = 1;
+
                 for (Document ins : instruction_info) {
 
                     Document newIns = Document.parse(ins.toJson());
@@ -274,13 +281,20 @@ public class InsAndFlashMontor {
 
                         newIns.append("mission_number", number);
 
+                        newIns.append("source", source);
+
                         Date t = newIns.getDate("execution_time");
 
-                        if (t.before(now))
-                            continue;
-
-//                        if (!insPool.containsKey(t))
-//                            insPool.put(t, newIns);
+                        if (
+                                (d.containsKey("image_mode") && d.getString("image_mode").equals("人在回路"))
+                                        &&
+                                        (d.containsKey("output_type") && d.getString("output_type").equals("META"))) {
+                            if (Date.from(Instant.ofEpochMilli(t.toInstant().toEpochMilli() + 24 * 3600 * 1000L)).before(now))
+                                continue;
+                        } else {
+                            if (t.before(now))
+                                continue;
+                        }
 
                         int i = 1;
                         while (insPool.containsKey(t)) {
@@ -423,6 +437,9 @@ public class InsAndFlashMontor {
                 double totalSize = 0.0;
                 Document d = all_pool.get(date).getValue();
                 Date execution_time = getExecTime(d);
+
+                if(execution_time == null)
+                    continue;
                 if (all_pool.get(date).getKey()) {//记录任务
                     try {
 
@@ -438,7 +455,7 @@ public class InsAndFlashMontor {
 
 
                             for (String file_no : filenos) {
-                                if(file_no.equals(""))
+                                if (file_no.equals(""))
                                     continue;
 
                                 if (SortedFileNo.contains(Integer.parseInt(file_no))) {
@@ -683,16 +700,16 @@ public class InsAndFlashMontor {
                                         }
 
                                         boolean initStart = false;
-                                        if (SortedFileNo.size() > 1 ) {//初始化未被回放的文件
+                                        if (SortedFileNo.size() > 1) {//初始化未被回放的文件
                                             for (int fileno : SortedFileNo) {
-                                                if(fileno == PlayBackFileNoNow && (filePlayBackStatus.get(fileno).name().equals(FileType.FINISHED) ||filePlayBackStatus.get(fileno).name().equals(FileType.PLAYING))){
+                                                if (fileno == PlayBackFileNoNow && (filePlayBackStatus.get(fileno).name().equals(FileType.FINISHED) || filePlayBackStatus.get(fileno).name().equals(FileType.PLAYING))) {
                                                     initStart = true;
                                                 }
 
-                                                if(!initStart)
+                                                if (!initStart)
                                                     continue;
 
-                                                if(fileno == PlayBackFileNoNow)
+                                                if (fileno == PlayBackFileNoNow)
                                                     continue;
 
                                                 filePlayBackSize.remove(PlayBackFileNoNow);
@@ -727,16 +744,16 @@ public class InsAndFlashMontor {
                                         }
 
                                         boolean initStart = false;
-                                        if (SortedFileNo.size() > 1 ) {//初始化未被回放的文件
+                                        if (SortedFileNo.size() > 1) {//初始化未被回放的文件
                                             for (int fileno : SortedFileNo) {
-                                                if(fileno == PlayBackFileNoNow && (filePlayBackStatus.get(fileno).name().equals(FileType.FINISHED) ||filePlayBackStatus.get(fileno).name().equals(FileType.PLAYING))){
+                                                if (fileno == PlayBackFileNoNow && (filePlayBackStatus.get(fileno).name().equals(FileType.FINISHED) || filePlayBackStatus.get(fileno).name().equals(FileType.PLAYING))) {
                                                     initStart = true;
                                                 }
 
-                                                if(!initStart)
+                                                if (!initStart)
                                                     continue;
 
-                                                if(fileno == PlayBackFileNoNow)
+                                                if (fileno == PlayBackFileNoNow)
                                                     continue;
 
                                                 filePlayBackSize.remove(PlayBackFileNoNow);
@@ -802,7 +819,7 @@ public class InsAndFlashMontor {
                 flash_usage = allsize / storage_capacity;
                 doc.append("flash_usage", flash_usage);
 
-                for (int fileno : SortedFileNo){
+                for (int fileno : SortedFileNo) {
                     totalSize += filePlayBackSize.get(fileno);
                 }
                 doc.append("replayed_size", totalSize);

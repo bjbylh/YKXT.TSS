@@ -27,12 +27,11 @@ public class CamAndScStatus {
     public Document getStatus(Instant now, Boolean isRealtime) {
         Document ret = new Document();
 
-        String CamGFAStatus = "ON";
-        String CamGFBStatus = "ON";
-        String CamDGAStatus = "ON";
-        String CamDGBStatus = "ON";
-
-        String SCDevStatus = "ON";
+        String CamGFAStatus = "OFF";
+        String CamGFBStatus = "OFF";
+        String CamDGAStatus = "OFF";
+        String CamDGBStatus = "OFF";
+        String SCDevStatus = "OFF";
 
         if (isRealtime) {
 
@@ -52,9 +51,6 @@ public class CamAndScStatus {
             MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
             Map<Date, Document> insPool = new TreeMap<>();
-//
-//            ArrayList<Document> pool_inss_image = new ArrayList<>();
-//            ArrayList<Document> pool_inss_trans = new ArrayList<>();
 
             MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
             FindIterable<Document> image_missions = image_mission.find();
@@ -92,7 +88,6 @@ public class CamAndScStatus {
             FindIterable<Document> transmission_missions = transmission_mission.find();
 
             for (Document document : transmission_missions) {
-                System.out.println(document);
                 if (!document.containsKey("fail_reason") || document.getString("fail_reason").equals("")) {
                     if (!document.containsKey("instruction_info") || !document.getString("fail_reason").equals(""))
                         continue;

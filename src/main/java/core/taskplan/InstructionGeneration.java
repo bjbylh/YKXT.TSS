@@ -13,6 +13,7 @@ import core.taskplan.InstructionSequenceTime.TimeMap;
 import core.taskplan.InstructionSequenceTime.TimeVariable;
 import org.bson.Document;
 
+import javax.swing.*;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
@@ -21,14 +22,17 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 
+import static java.lang.Math.*;
+
 public class InstructionGeneration {
 
     private static double[] ZeroTime = {2018, 1, 1, 0, 0, 0};//参考时间
     private static Instant ZeroTimeIns = Instant.parse("2018-01-01T00:00:00.00Z");
     private static double TaskSelectTime = 3600;//秒
     private static int TimeZone = -8;                     //北京时区到世界时-8
+    private static double Re = 6371393;                  //地球半径，单位为：米
 
-    public static void InstructionGenerationII(ArrayList<Document> ImageMissionjson, Document TransmissionMissionJson, ArrayList<Document> StationMissionjson, FindIterable<Document> Attitudejson, long AttitudeDataCount, String FilePath) {
+    public static void InstructionGenerationII(ArrayList<Document> ImageMissionjson, Document TransmissionMissionJson, ArrayList<Document> StationMissionjson, FindIterable<Document> Attitudejson, long AttitudeDataCount, String FilePath,Document CamStatus) {
         //序列时间设置
         TimeVariable timeVariable = new TimeVariable();
         timeVariable.TSC = 6 + 0.25 + 0.125 + 0.125 + 0.125 + 0.125 + 240 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 +
@@ -118,6 +122,7 @@ public class InstructionGeneration {
         ArrayList<String> MissionImageModel = new ArrayList<>();
         ArrayList<ArrayList<double[]>> MissionTargetAreaList = new ArrayList<>();
         ArrayList<Object> MissionInstructionDefautArray = new ArrayList<>();
+        ArrayList<int[]> MissionLoadTypeList = new ArrayList<>();
         int MissionNum = 0;
         if (ImageMissionjson != null) {
             for (Document document : ImageMissionjson) {
@@ -167,6 +172,51 @@ public class InstructionGeneration {
                             MissionTargetArea_iList.add(new double[]{0, 0});
                             MissionTargetAreaList.add(MissionNum, MissionTargetArea_iList);
                         }
+                        int[] MissionLoadType_iList = new int[]{0,0,0,0};
+                        Boolean MissionLoadTypeFlag=true;
+                        if (document.containsKey("mission_params") && document.get("mission_params")!=null) {
+                            ArrayList<Document> MissionParamsTemp= (ArrayList<Document>) document.get("mission_params");
+                            for (Document document1:MissionParamsTemp) {
+                                if (document1.containsKey("code") && document1.get("code")!=null && document1.get("code").equals("P_SATELLITE_USE")) {
+                                    if (document1.containsKey("value") && document1.get("value")!=null && !document1.get("value").equals("")) {
+                                        if (document1.get("value").equals("1")) {
+                                            MissionLoadType_iList[0]=1;
+                                            MissionLoadTypeFlag=false;
+                                        }else if (document1.get("value").equals("2")) {
+                                            MissionLoadType_iList[1]=1;
+                                            MissionLoadTypeFlag=false;
+                                        }else if (document1.get("value").equals("3")) {
+                                            MissionLoadType_iList[2]=1;
+                                            MissionLoadTypeFlag=false;
+                                        }else if (document1.get("value").equals("4")) {
+                                            MissionLoadType_iList[3]=1;
+                                            MissionLoadTypeFlag=false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (MissionLoadTypeFlag) {
+                            if (document.containsKey("default_mission_params") && document.get("default_mission_params")!=null) {
+                                ArrayList<Document> MissionParamsTemp= (ArrayList<Document>) document.get("default_mission_params");
+                                for (Document document1:MissionParamsTemp) {
+                                    if (document1.containsKey("code") && document1.get("code")!=null && document1.get("code").equals("P_SATELLITE_USE")) {
+                                        if (document1.containsKey("default_value") && document1.get("default_value")!=null && !document1.get("default_value").equals("")) {
+                                            if (document1.get("default_value").equals("1")) {
+                                                MissionLoadType_iList[0]=1;
+                                            }else if (document1.get("default_value").equals("2")) {
+                                                MissionLoadType_iList[1]=1;
+                                            }else if (document1.get("default_value").equals("3")) {
+                                                MissionLoadType_iList[2]=1;
+                                            }else if (document1.get("default_value").equals("4")) {
+                                                MissionLoadType_iList[3]=1;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        MissionLoadTypeList.add(MissionNum, MissionLoadType_iList);
 
                         MissionNum = MissionNum + 1;
                     } else {
@@ -182,75 +232,177 @@ public class InstructionGeneration {
 
         //判断任务所要匹配的指令块模板
         Map<Integer, ArrayList<String>> MissionTaskModel = new HashMap<>();
-        if (Cam_force_Powoff.equals("true")) {
+        if (Cam_force_Powoff.equals("false")) {
             if (MissionLoadNumberArray.size() > 1) {
-                ArrayList<Integer> sortResult = new ArrayList<>();
-                for (int i = 0; i < MissionStarTimeArray.size(); i++) {
-                    int j = i;
-                    sortResult.add(j);
-                }
-                for (int i = 0; i < MissionStarTimeArray.size() - 1; i++) {
-                    for (int j = 0; j < MissionStarTimeArray.size() - 1 - i; j++) {
-                        if (MissionStarTimeArray.get(j).after(MissionStarTimeArray.get(j + 1))) {
-                            Integer temp = sortResult.get(j);
-                            Integer tempJ = sortResult.get(j + 1);
-                            sortResult.set(j, tempJ);
-                            sortResult.set(j + 1, temp);
+                for (int i = 0; i < 4; i++) {
+                    ArrayList<Integer> sortResult = new ArrayList<>();
+                    for (int j = 0; j < MissionStarTimeArray.size(); j++) {
+                        if (MissionLoadTypeList.get(j)[i]==1) {
+                            sortResult.add(j);
                         }
                     }
-                }
-                for (int i = 0; i < sortResult.size(); i++) {
-                    if (i == 0) {
-                        ArrayList<String> MissionTaskModelChild = new ArrayList<>();
-                        double error = MissionStarTimeArray.get(sortResult.get(i + 1)).getTime() / 1000 - MissionEndTimeArray.get(sortResult.get(i)).getTime() / 1000;
-                        if (error < TaskSelectTime) {
-                            MissionTaskModelChild.add("TASK02");
-                            MissionTaskModelChild.add("TASK09");
-                        } else {
-                            MissionTaskModelChild.add("TASK01");
+                    if (sortResult.size() > 1) {
+                        for (int j = 0; j < sortResult.size()-1; j++) {
+                            for (int k = 0; k < sortResult.size()-1-j; k++) {
+                                if (MissionStarTimeArray.get(sortResult.get(k)).after(MissionStarTimeArray.get(sortResult.get(k + 1)))) {
+                                    Integer temp = sortResult.get(k);
+                                    Integer tempJ = sortResult.get(k + 1);
+                                    sortResult.set(k, tempJ);
+                                    sortResult.set(k + 1, temp);
+                                }
+                            }
                         }
-                        MissionTaskModel.put(sortResult.get(i), MissionTaskModelChild);
-                    } else if (i == sortResult.size() - 1) {
-                        ArrayList<String> MissionTaskModelChild = new ArrayList<>();
-                        double error = MissionStarTimeArray.get(sortResult.get(i)).getTime() / 1000 - MissionEndTimeArray.get(sortResult.get(i - 1)).getTime() / 1000;
-                        if (error < TaskSelectTime) {
-                            MissionTaskModelChild.add("TASK10");
-                            MissionTaskModelChild.add("TASK03");
-                        } else {
-                            MissionTaskModelChild.add("TASK01");
+                        for (int j = 0; j < sortResult.size(); j++) {
+                            if (j == 0) {
+                                ArrayList<String> MissionTaskModelChild = new ArrayList<>();
+                                double error = MissionStarTimeArray.get(sortResult.get(j + 1)).getTime() / 1000 - MissionEndTimeArray.get(sortResult.get(j)).getTime() / 1000;
+                                String CamGFAStatus_num="CamGFAStatus";
+                                if (i == 0) {
+                                    CamGFAStatus_num="CamGFAStatus";
+                                }else if (i == 1) {
+                                    CamGFAStatus_num="CamGFBStatus";
+                                }else if (i == 2) {
+                                    CamGFAStatus_num="CamDGAStatus";
+                                }else if (i == 3) {
+                                    CamGFAStatus_num="CamDGBStatus";
+                                }
+                                if (error < TaskSelectTime) {
+                                    if (CamStatus.get(CamGFAStatus_num).toString().equals("ON")) {
+                                        MissionTaskModelChild.add("TASK10");//任务恢复
+                                        MissionTaskModelChild.add("TASK09");//任务暂停
+                                    }else {
+                                        MissionTaskModelChild.add("TASK02");//开机
+                                        MissionTaskModelChild.add("TASK09");//任务暂停
+                                    }
+                                } else {
+                                    if (CamStatus.get(CamGFAStatus_num).toString().equals("ON")) {
+                                        MissionTaskModelChild.add("TASK10");//任务恢复
+                                        MissionTaskModelChild.add("TASK03");//关机
+                                    }else {
+                                        MissionTaskModelChild.add("TASK01");//常规成像
+                                    }
+                                }
+                                MissionTaskModel.put(sortResult.get(j), MissionTaskModelChild);
+                            }else if (j == sortResult.size()-1) {
+                                ArrayList<String> MissionTaskModelChild = new ArrayList<>();
+                                double error = MissionStarTimeArray.get(sortResult.get(j)).getTime() / 1000 - MissionEndTimeArray.get(sortResult.get(j - 1)).getTime() / 1000;
+                                if (error < TaskSelectTime) {
+                                    MissionTaskModelChild.add("TASK10");//任务恢复
+                                    MissionTaskModelChild.add("TASK03");//关机
+                                } else {
+                                    MissionTaskModelChild.add("TASK01");//常规成像
+                                }
+                                MissionTaskModel.put(sortResult.get(j), MissionTaskModelChild);
+                            }else {
+                                ArrayList<String> MissionTaskModelChild = new ArrayList<>();
+                                double error = MissionStarTimeArray.get(sortResult.get(j)).getTime() / 1000 - MissionEndTimeArray.get(sortResult.get(j - 1)).getTime() / 1000;
+                                double error2 = MissionStarTimeArray.get(sortResult.get(j + 1)).getTime() / 1000 - MissionEndTimeArray.get(sortResult.get(j)).getTime() / 1000;
+                                if (error < TaskSelectTime && error2 < TaskSelectTime) {
+                                    MissionTaskModelChild.add("TASK10");//任务恢复
+                                    MissionTaskModelChild.add("TASK09");//任务暂停
+                                } else if (error >= TaskSelectTime && error2 < TaskSelectTime) {
+                                    MissionTaskModelChild.add("TASK02");//开机
+                                    MissionTaskModelChild.add("TASK09");//任务暂停
+                                } else if (error < TaskSelectTime && error2 >= TaskSelectTime) {
+                                    MissionTaskModelChild.add("TASK10");//任务恢复
+                                    MissionTaskModelChild.add("TASK03");//关机
+                                } else {
+                                    MissionTaskModelChild.add("TASK01");//常规成像
+                                }
+                                MissionTaskModel.put(sortResult.get(j), MissionTaskModelChild);
+                            }
                         }
-                        MissionTaskModel.put(sortResult.get(i), MissionTaskModelChild);
-                    } else {
+                    }else if (sortResult.size() == 1) {
                         ArrayList<String> MissionTaskModelChild = new ArrayList<>();
-                        double error = MissionStarTimeArray.get(sortResult.get(i)).getTime() / 1000 - MissionEndTimeArray.get(sortResult.get(i - 1)).getTime() / 1000;
-                        double error2 = MissionStarTimeArray.get(sortResult.get(i + 1)).getTime() / 1000 - MissionEndTimeArray.get(sortResult.get(i)).getTime() / 1000;
-                        if (error < TaskSelectTime && error2 < TaskSelectTime) {
-                            MissionTaskModelChild.add("TASK10");
-                            MissionTaskModelChild.add("TASK09");
-                        } else if (error >= TaskSelectTime && error2 < TaskSelectTime) {
-                            MissionTaskModelChild.add("TASK02");
-                            MissionTaskModelChild.add("TASK09");
-                        } else if (error < TaskSelectTime && error2 >= TaskSelectTime) {
-                            MissionTaskModelChild.add("TASK10");
-                            MissionTaskModelChild.add("TASK03");
-                        } else {
-                            MissionTaskModelChild.add("TASK01");
+                        String CamGFAStatus_num="CamGFAStatus";
+                        if (i == 0) {
+                            CamGFAStatus_num="CamGFAStatus";
+                        }else if (i == 1) {
+                            CamGFAStatus_num="CamGFBStatus";
+                        }else if (i == 2) {
+                            CamGFAStatus_num="CamDGAStatus";
+                        }else if (i == 3) {
+                            CamGFAStatus_num="CamDGBStatus";
                         }
-                        MissionTaskModel.put(sortResult.get(i), MissionTaskModelChild);
+                        if (CamStatus.get(CamGFAStatus_num).toString().equals("ON")) {
+                            MissionTaskModelChild.add("TASK10");//任务恢复
+                            MissionTaskModelChild.add("TASK03");//关机
+                        }else {
+                            MissionTaskModelChild.add("TASK01");//常规成像
+                        }
+                        MissionTaskModel.put(sortResult.get(0), MissionTaskModelChild);
                     }
                 }
             } else {
                 ArrayList<String> MissionTaskModelChild = new ArrayList<>();
-                MissionTaskModelChild.add("TASK01");
+                if (MissionLoadTypeList.get(0)[0]==1){
+                    if (CamStatus.get("CamGFAStatus").toString().equals("ON")) {
+                        MissionTaskModelChild.add("TASK10");//任务恢复
+                        MissionTaskModelChild.add("TASK03");//关机
+                    }else {
+                        MissionTaskModelChild.add("TASK01");//常规成像
+                    }
+                }else if (MissionLoadTypeList.get(0)[1]==1){
+                    if (CamStatus.get("CamGFBStatus").toString().equals("ON")) {
+                        MissionTaskModelChild.add("TASK10");//任务恢复
+                        MissionTaskModelChild.add("TASK03");//关机
+                    }else {
+                        MissionTaskModelChild.add("TASK01");//常规成像
+                    }
+                }else if (MissionLoadTypeList.get(0)[2]==1){
+                    if (CamStatus.get("CamDGAStatus").toString().equals("ON")) {
+                        MissionTaskModelChild.add("TASK10");//任务恢复
+                        MissionTaskModelChild.add("TASK03");//关机
+                    }else {
+                        MissionTaskModelChild.add("TASK01");//常规成像
+                    }
+                }else if (MissionLoadTypeList.get(0)[3]==1){
+                    if (CamStatus.get("CamDGBStatus").toString().equals("ON")) {
+                        MissionTaskModelChild.add("TASK10");//任务恢复
+                        MissionTaskModelChild.add("TASK03");//关机
+                    }else {
+                        MissionTaskModelChild.add("TASK01");//常规成像
+                    }
+                }
                 MissionTaskModel.put(0, MissionTaskModelChild);
             }
         } else {
             for (int i = 0; i < MissionStarTimeArray.size(); i++) {
                 int j = i;
                 ArrayList<String> MissionTaskModelChild = new ArrayList<>();
-                //MissionTaskModelChild.add("TASK01");
-                MissionTaskModelChild.add("TASK10");
-                MissionTaskModelChild.add("TASK09");
+                if (MissionLoadTypeList.get(j)[0]==1){
+                    if (CamStatus.get("CamGFAStatus").toString().equals("ON")) {
+                        MissionTaskModelChild.add("TASK10");//任务恢复
+                        MissionTaskModelChild.add("TASK09");//任务暂停
+                    }else {
+                        MissionTaskModelChild.add("TASK02");//开机不关机
+                        MissionTaskModelChild.add("TASK09");//任务暂停
+                    }
+                }else if (MissionLoadTypeList.get(j)[1]==1){
+                    if (CamStatus.get("CamGFBStatus").toString().equals("ON")) {
+                        MissionTaskModelChild.add("TASK10");//任务恢复
+                        MissionTaskModelChild.add("TASK09");//任务暂停
+                    }else {
+                        MissionTaskModelChild.add("TASK02");//开机不关机
+                        MissionTaskModelChild.add("TASK09");//任务暂停
+                    }
+                }else if (MissionLoadTypeList.get(j)[2]==1){
+                    if (CamStatus.get("CamDGAStatus").toString().equals("ON")) {
+                        MissionTaskModelChild.add("TASK10");//任务恢复
+                        MissionTaskModelChild.add("TASK09");//任务暂停
+                    }else {
+                        MissionTaskModelChild.add("TASK02");//开机不关机
+                        MissionTaskModelChild.add("TASK09");//任务暂停
+                    }
+                }else if (MissionLoadTypeList.get(j)[3]==1){
+                    if (CamStatus.get("CamDGBStatus").toString().equals("ON")) {
+                        MissionTaskModelChild.add("TASK10");//任务恢复
+                        MissionTaskModelChild.add("TASK09");//任务暂停
+                    }else {
+                        MissionTaskModelChild.add("TASK02");//开机不关机
+                        MissionTaskModelChild.add("TASK09");//任务暂停
+                    }
+                }
                 MissionTaskModel.put(j, MissionTaskModelChild);
             }
         }
@@ -276,7 +428,7 @@ public class InstructionGeneration {
                     OrbitTime_iList = DateToDouble(time_point);
                     AttitudeTimeList.add(AttitudeDataNum, OrbitTime_iList);
                     //读取本体系相对于轨道系的312姿态
-                    Document Attitude_OrbitReference_312 = (Document) document.get("Attitude_OrbitReference_312");
+                    Document Attitude_OrbitReference_312 = (Document) document.get("Attitude_EastSouthDown_321");
                     double[] SatPositionGEI = new double[3];
                     SatPositionGEI[0] = Double.parseDouble(Attitude_OrbitReference_312.get("roll_angle").toString());
                     SatPositionGEI[1] = Double.parseDouble(Attitude_OrbitReference_312.get("pitch_angle").toString());
@@ -305,6 +457,8 @@ public class InstructionGeneration {
         Map<Integer, Map<String, String>> insTimeMap = new HashMap<>();
 
         for (int i = 0; i < MissionNum; i++) {
+            //姿态机动角
+            double[] FYGDAttitude=new double[]{0,0};
             //添加指令参数
             ArrayList<Document> MissionInstructionArrayChildTemp = (ArrayList<Document>) MissionInstructionArray.get(i);
             ArrayList<Document> MissionInstructionArrayChild = new ArrayList<>();
@@ -368,6 +522,7 @@ public class InstructionGeneration {
                             break;
                         }
                     }
+                    FYGDAttitude[1]=FYAttitudeTemp;
                     String strtemp = Integer.toHexString(Float.floatToIntBits(FYAttitudeTemp));
                     if (strtemp.length() < 8) {
                         for (int j = strtemp.length() + 1; j <= 8; j++) {
@@ -388,6 +543,7 @@ public class InstructionGeneration {
                             break;
                         }
                     }
+                    FYGDAttitude[0]=GDAttitudeTemp;
                     String strtemp = Integer.toHexString(Float.floatToIntBits(GDAttitudeTemp));
                     if (strtemp.length() < 8) {
                         for (int j = strtemp.length() + 1; j <= 8; j++) {
@@ -566,6 +722,7 @@ public class InstructionGeneration {
                         break;
                     }
                 }
+                FYGDAttitude[1]=FYAttitudeTemp;
                 String strtemp = Integer.toHexString(Float.floatToIntBits(FYAttitudeTemp));
                 if (strtemp.length() < 8) {
                     for (int j = strtemp.length() + 1; j <= 8; j++) {
@@ -590,6 +747,7 @@ public class InstructionGeneration {
                         break;
                     }
                 }
+                FYGDAttitude[0]=GDAttitudeTemp;
                 String strtemp = Integer.toHexString(Float.floatToIntBits(GDAttitudeTemp));
                 if (strtemp.length() < 8) {
                     for (int j = strtemp.length() + 1; j <= 8; j++) {
@@ -748,9 +906,6 @@ public class InstructionGeneration {
             ArrayList<Date> MissionInstructionTimeChild = new ArrayList<>();
             ArrayList<String> MissionInstructionHexChild = new ArrayList<>();
             ArrayList<String> MissionInstructionWorkCode = new ArrayList<>();
-
-            ArrayList<Integer> MissionInstructionTimeUpdateStatus = new ArrayList<>();
-
             double InstDelta_tAll = 0;
             double InstDelta_tLastAll = 0;
             Date time_point = MissionStarTimeArray.get(i);
@@ -1098,7 +1253,7 @@ public class InstructionGeneration {
                                                                                                 //System.out.println(MetaParamsId);
                                                                                                 float temeratureFloat = Float.parseFloat(MissionMetaParamsChildParamsChild.get("value").toString());
                                                                                                 String MetaParamsIdValue = TemperatureFlotToStr(temeratureFloat);
-                                                                                                int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                                int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
                                                                                                 int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                                 byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                                                                 for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1150,7 +1305,7 @@ public class InstructionGeneration {
                                                                                             if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
                                                                                                 //System.out.println(MetaParamsId);
                                                                                                 String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("value").toString();
-                                                                                                int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                                int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
                                                                                                 int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                                 byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                                                                 for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1169,7 +1324,7 @@ public class InstructionGeneration {
                                                                                                 if (TaskParams.containsKey("default_value") && TaskParams.get("default_value") != null && !TaskParams.get("default_value").equals("")) {
                                                                                                     //System.out.println(MetaParamsId);
                                                                                                     String MetaParamsIdValue = TaskParams.get("default_value").toString();
-                                                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
                                                                                                     int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                                     byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                                                                     for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1214,7 +1369,7 @@ public class InstructionGeneration {
                                                                                         Document sequencemapping = (Document) MetaParamsChild.get("mapping");
                                                                                         if (sequencemapping.containsKey(SequenceParamsValue) && sequencemapping.get(SequenceParamsValue) != null && !sequencemapping.get(SequenceParamsValue).equals("")) {
                                                                                             MetaParamsCode = sequencemapping.get(SequenceParamsValue).toString();
-                                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
                                                                                             int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                             byte[] bytevalueHex = hexStringToBytes(MetaParamsCode);
                                                                                             for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1224,7 +1379,7 @@ public class InstructionGeneration {
                                                                                             }
                                                                                         }
                                                                                     } else {
-                                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
                                                                                         int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                         byte[] bytevalueHex = hexStringToBytes(SequenceParamsValue);
                                                                                         for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1297,62 +1452,112 @@ public class InstructionGeneration {
                                                                     //添加特殊指令
                                                                     String MetaHex = "";
                                                                     if (InstCode.equals("K4401")) {
-                                                                        MetaHex = "100280210118";
-                                                                        MetaHex = MetaHex + "AA180055";
-                                                                        ArrayList<double[]> MissionTargetArea_iList = MissionTargetAreaList.get(i);
-                                                                        double lonAll = 0;
-                                                                        double latAll = 0;
-                                                                        for (double[] lonlat : MissionTargetArea_iList) {
-                                                                            lonAll = lonAll + lonlat[0];
-                                                                            latAll = latAll + lonlat[1];
-                                                                        }
-                                                                        lonAll = lonAll / MissionTargetArea_iList.size();
-                                                                        latAll = latAll / MissionTargetArea_iList.size();
-                                                                        float t_theta = (float) timeVariable.T0;
-                                                                        float lon = (float) lonAll;
-                                                                        float lat = (float) latAll;
-                                                                        float H = 0;
-                                                                        float ddAng = (float) 0.2;
-                                                                        float dAng = (float) 1.0;
-                                                                        int it_theta = (new Float(t_theta)).intValue();
-                                                                        byte[] it_thetaByte = new byte[]{(byte) ((it_theta >> 8) & 0xFF), (byte) ((it_theta) & 0xFF)};
-                                                                        String st_thetaByte = bytesToHexString(it_thetaByte);
-                                                                        String strtemplon = Integer.toHexString(Float.floatToIntBits(lon));
-                                                                        if (strtemplon.length() < 8) {
-                                                                            for (int j = strtemplon.length() + 1; j <= 8; j++) {
-                                                                                strtemplon = "0" + strtemplon;
+                                                                        if (MissionImageModel.get(i).equals("凝视")) {
+                                                                            MetaHex = "100280210118";
+                                                                            MetaHex = MetaHex + "AA180055";
+                                                                            ArrayList<double[]> MissionTargetArea_iList = MissionTargetAreaList.get(i);
+                                                                            double lonAll = 0;
+                                                                            double latAll = 0;
+                                                                            for (double[] lonlat : MissionTargetArea_iList) {
+                                                                                lonAll = lonAll + lonlat[0];
+                                                                                latAll = latAll + lonlat[1];
                                                                             }
-                                                                        }
-                                                                        String strtemplat = Integer.toHexString(Float.floatToIntBits(lat));
-                                                                        if (strtemplat.length() < 8) {
-                                                                            for (int j = strtemplat.length() + 1; j <= 8; j++) {
-                                                                                strtemplat = "0" + strtemplat;
+                                                                            lonAll = lonAll / MissionTargetArea_iList.size();
+                                                                            latAll = latAll / MissionTargetArea_iList.size();
+                                                                            float t_theta = (float) timeVariable.T0;
+                                                                            float lon = (float) lonAll;
+                                                                            float lat = (float) latAll;
+                                                                            float H = 0;
+                                                                            float ddAng = (float) 0.2;
+                                                                            float dAng = (float) 1.0;
+                                                                            int it_theta = (new Float(t_theta)).intValue();
+                                                                            byte[] it_thetaByte = new byte[]{(byte) ((it_theta >> 8) & 0xFF), (byte) ((it_theta) & 0xFF)};
+                                                                            String st_thetaByte = bytesToHexString(it_thetaByte);
+                                                                            String strtemplon = Integer.toHexString(Float.floatToIntBits(lon));
+                                                                            if (strtemplon.length() < 8) {
+                                                                                for (int j = strtemplon.length() + 1; j <= 8; j++) {
+                                                                                    strtemplon = "0" + strtemplon;
+                                                                                }
                                                                             }
-                                                                        }
-                                                                        String strtempH = Integer.toHexString(Float.floatToIntBits(H));
-                                                                        if (strtempH.length() < 8) {
-                                                                            for (int j = strtempH.length() + 1; j <= 8; j++) {
-                                                                                strtempH = "0" + strtempH;
+                                                                            String strtemplat = Integer.toHexString(Float.floatToIntBits(lat));
+                                                                            if (strtemplat.length() < 8) {
+                                                                                for (int j = strtemplat.length() + 1; j <= 8; j++) {
+                                                                                    strtemplat = "0" + strtemplat;
+                                                                                }
                                                                             }
-                                                                        }
-                                                                        String strtempddAng = Integer.toHexString(Float.floatToIntBits(ddAng));
-                                                                        if (strtempddAng.length() < 8) {
-                                                                            for (int j = strtempddAng.length() + 1; j <= 8; j++) {
-                                                                                strtempddAng = "0" + strtempddAng;
+                                                                            String strtempH = Integer.toHexString(Float.floatToIntBits(H));
+                                                                            if (strtempH.length() < 8) {
+                                                                                for (int j = strtempH.length() + 1; j <= 8; j++) {
+                                                                                    strtempH = "0" + strtempH;
+                                                                                }
                                                                             }
-                                                                        }
-                                                                        String strtempdAng = Integer.toHexString(Float.floatToIntBits(dAng));
-                                                                        if (strtempdAng.length() < 8) {
-                                                                            for (int j = strtempdAng.length() + 1; j <= 8; j++) {
-                                                                                strtempdAng = "0" + strtempdAng;
+                                                                            String strtempddAng = Integer.toHexString(Float.floatToIntBits(ddAng));
+                                                                            if (strtempddAng.length() < 8) {
+                                                                                for (int j = strtempddAng.length() + 1; j <= 8; j++) {
+                                                                                    strtempddAng = "0" + strtempddAng;
+                                                                                }
                                                                             }
+                                                                            String strtempdAng = Integer.toHexString(Float.floatToIntBits(dAng));
+                                                                            if (strtempdAng.length() < 8) {
+                                                                                for (int j = strtempdAng.length() + 1; j <= 8; j++) {
+                                                                                    strtempdAng = "0" + strtempdAng;
+                                                                                }
+                                                                            }
+                                                                            MetaHex = MetaHex + st_thetaByte +
+                                                                                    strtemplon +
+                                                                                    strtemplat +
+                                                                                    strtempH +
+                                                                                    strtempddAng +
+                                                                                    strtempdAng;
+                                                                        }else {
+                                                                            MetaHex = "100280210118";
+                                                                            MetaHex = MetaHex + "AA1800AA";
+                                                                            float GDAtt= (float) FYGDAttitude[0];
+                                                                            float FYAtt= (float) FYGDAttitude[1];
+                                                                            float t_theta = (float) timeVariable.T4401;
+                                                                            float ddAng = (float) 0.08;
+                                                                            float dAng = (float) 0.12;
+                                                                            int it_theta = (new Float(t_theta)).intValue();
+                                                                            byte[] it_thetaByte = new byte[]{(byte) ((it_theta >> 8) & 0xFF), (byte) ((it_theta) & 0xFF)};
+                                                                            String st_thetaByte = bytesToHexString(it_thetaByte);
+                                                                            String strtempGD = Integer.toHexString(Float.floatToIntBits(GDAtt));
+                                                                            if (strtempGD.length() < 8) {
+                                                                                for (int j = strtempGD.length() + 1; j <= 8; j++) {
+                                                                                    strtempGD = "0" + strtempGD;
+                                                                                }
+                                                                            }else if (strtempGD.length() > 8) {
+                                                                                strtempGD=strtempGD.substring(strtempGD.length()-8);
+                                                                            }
+                                                                            String strtempFY = Integer.toHexString(Float.floatToIntBits(FYAtt));
+                                                                            if (strtempFY.length() < 8) {
+                                                                                for (int j = strtempFY.length() + 1; j <= 8; j++) {
+                                                                                    strtempFY = "0" + strtempFY;
+                                                                                }
+                                                                            }else if (strtempFY.length() > 8) {
+                                                                                strtempFY=strtempFY.substring(strtempFY.length()-8);
+                                                                            }
+                                                                            String strtempddAng = Integer.toHexString(Float.floatToIntBits(ddAng));
+                                                                            if (strtempddAng.length() < 8) {
+                                                                                for (int j = strtempddAng.length() + 1; j <= 8; j++) {
+                                                                                    strtempddAng = "0" + strtempddAng;
+                                                                                }
+                                                                            }else if (strtempddAng.length() > 8) {
+                                                                                strtempddAng=strtempddAng.substring(strtempddAng.length()-8);
+                                                                            }
+                                                                            String strtempdAng = Integer.toHexString(Float.floatToIntBits(dAng));
+                                                                            if (strtempdAng.length() < 8) {
+                                                                                for (int j = strtempdAng.length() + 1; j <= 8; j++) {
+                                                                                    strtempdAng = "0" + strtempdAng;
+                                                                                }
+                                                                            }else if (strtempdAng.length() > 8) {
+                                                                                strtempdAng=strtempdAng.substring(strtempdAng.length()-8);
+                                                                            }
+                                                                            MetaHex = MetaHex + st_thetaByte +
+                                                                                    strtempGD +
+                                                                                    strtempFY +
+                                                                                    strtempddAng +
+                                                                                    strtempdAng;
                                                                         }
-                                                                        MetaHex = MetaHex + st_thetaByte +
-                                                                                strtemplon +
-                                                                                strtemplat +
-                                                                                strtempH +
-                                                                                strtempddAng +
-                                                                                strtempdAng;
                                                                     } else if (InstCode.equals("K4402")) {
                                                                         MetaHex = "100280210118";
                                                                         MetaHex = MetaHex + "A002";
@@ -1417,10 +1622,10 @@ public class InstructionGeneration {
                                                                         MetaHex = "100280210118";
                                                                         MetaHex = MetaHex + "A102";
                                                                         MetaHex = MetaHex + "0707";
-                                                                        //} else if (InstCode.equals("K4418")) {
-                                                                        //    MetaHex = "100280210118";
-                                                                        //    MetaHex = MetaHex + "A102";
-                                                                        //    MetaHex = MetaHex + "0808";
+                                                                    //} else if (InstCode.equals("K4418")) {
+                                                                    //    MetaHex = "100280210118";
+                                                                    //    MetaHex = MetaHex + "A102";
+                                                                    //    MetaHex = MetaHex + "0808";
                                                                     } else if (InstCode.equals("K4419")) {
                                                                         MetaHex = "100280210118";
                                                                         MetaHex = MetaHex + "A200";
@@ -1587,14 +1792,8 @@ public class InstructionGeneration {
                     } else if (KaiShiShiJian.length() > 8) {
                         KaiShiShiJian = KaiShiShiJian.substring(KaiShiShiJian.length() - 8);
                     }
-//                    if (KaiShiShiJian.equals("040319B8"))
-//                        System.out.println();
-
                     String YingYongShuJuTemp = MissionInstructionHexChild.get(j);
-                    if (!MissionInstructionTimeUpdateStatus.contains(j)) {
-                        MissionInstructionHexChild.set(j, KaiShiShiJian + YingYongShuJuTemp);
-                        MissionInstructionTimeUpdateStatus.add(j);
-                    }
+                    MissionInstructionHexChild.set(j, KaiShiShiJian + YingYongShuJuTemp);
                     Instant time_ZhiXing = zerostart;
                     time_ZhiXing = time_ZhiXing.plusSeconds((long) (Integer.parseInt(KaiShiShiJian, 16)));
                     Date time_ZhixingDate = Date.from(time_ZhiXing);
@@ -1602,25 +1801,16 @@ public class InstructionGeneration {
                     System.out.println("序列号：" + MissionInstructionCodeChild.get(j));
                     System.out.println("执行时间：" + Integer.parseInt(KaiShiShiJian, 16));
 
-                    it.put(MissionInstructionCodeChild.get(j) + "_" + Instant.now().toEpochMilli(), time_ZhixingDate.toString() + " 十六进制：" + KaiShiShiJian + " 十进制：" + (long) (Integer.parseInt(KaiShiShiJian, 16)));
+                    it.put(MissionInstructionCodeChild.get(j) + "_" + Instant.now().toEpochMilli(), time_ZhixingDate.toString());
                 }
 
                 insTimeMap.put(i, it);
             }
 
-            MissionInstructionTimeUpdateStatus.clear();
-
             ArrayList<byte[]> InstructionArrayChild = new ArrayList<>();
             for (String ZhilingKuai_02 : MissionInstructionHexChild) {
                 //String YingYongShuJu = KaiShiShiJian + ZhiLingID + ZhiLingNum + YouXiaoData;
                 String ShuJuQuTou = "100B8021";
-//                String sub1 = ZhilingKuai_02.substring(0, 8);
-//                String sub2 = ZhilingKuai_02.substring(8, 16);
-//
-//                if (sub1.equals(sub2)) {
-//                    System.out.println("sub1:" + sub1 + " sub2:" + sub2);
-//                }
-
                 int BaoChang = (ShuJuQuTou + ZhilingKuai_02).length() / 2 + 2 - 1;
                 String BaoChangstr = String.format("%04X", BaoChang);
                 int BaoXuLieIDNum = SequenceID.PackageId;
@@ -1640,13 +1830,6 @@ public class InstructionGeneration {
                 BaoXuLieIDStr = Integer.toHexString(Integer.parseInt(BaoXuLieIDStr, 2)).toUpperCase();
                 String BaoZhuDaoTou = "1C11" + BaoXuLieIDStr + BaoChangstr;
                 String total = BaoZhuDaoTou + ShuJuQuTou + ZhilingKuai_02 + ISO(BaoZhuDaoTou + ShuJuQuTou + ZhilingKuai_02);
-
-//                String sub3 = total.substring(20, 28);
-//                String sub4 = total.substring(28, 36);
-//
-//                if (sub3.equals(sub4)) {
-//                    System.out.println("sub1:" + sub1 + " sub2:" + sub2);
-//                }
 
                 int fangshizi = -1;
                 //添加填充域
@@ -1897,7 +2080,7 @@ public class InstructionGeneration {
         ArrayList<ArrayList<String>> MissionInstructionCode = new ArrayList<>();
         ArrayList<ArrayList<Integer>> MissionInstructionId = new ArrayList<>();
         ArrayList<ArrayList<Date>> MissionInstructionTime = new ArrayList<>();
-        ArrayList<ArrayList<String>> MissionInstructionTimeString = new ArrayList<>();
+        ArrayList<ArrayList<String>> MissionInstructionTimeString=new ArrayList<>();
         ArrayList<ArrayList<String>> MissionInstructionHex = new ArrayList<>();
 
         Map<Integer, Map<String, String>> insTimeMap = new HashMap<>();
@@ -1960,7 +2143,7 @@ public class InstructionGeneration {
             ArrayList<String> MissionInstructionCodeChild = new ArrayList<>();
             ArrayList<Integer> MissionInstructionIdChild = new ArrayList<>();
             ArrayList<Date> MissionInstructionTimeChild = new ArrayList<>();
-            ArrayList<String> MissionInstructionTimeStringChild = new ArrayList<>();
+            ArrayList<String> MissionInstructionTimeStringChild=new ArrayList<>();
             ArrayList<String> MissionInstructionHexChild = new ArrayList<>();
             double InstDelta_tAll = 0;
             double InstDelta_tLastAll = 0;
@@ -2177,7 +2360,7 @@ public class InstructionGeneration {
                                                                                         if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
                                                                                             //System.out.println(MetaParamsId);
                                                                                             String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("value").toString();
-                                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
                                                                                             int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                             byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                                                             for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -2207,7 +2390,7 @@ public class InstructionGeneration {
                                                                                     Document sequencemapping = (Document) MetaParamsChild.get("mapping");
                                                                                     if (sequencemapping.containsKey(SequenceParamsValue) && sequencemapping.get(SequenceParamsValue) != null && !sequencemapping.get(SequenceParamsValue).equals("")) {
                                                                                         MetaParamsCode = sequencemapping.get(SequenceParamsValue).toString();
-                                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
                                                                                         int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                         byte[] bytevalueHex = hexStringToBytes(MetaParamsCode);
                                                                                         for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -2217,7 +2400,7 @@ public class InstructionGeneration {
                                                                                         }
                                                                                     }
                                                                                 } else {
-                                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
                                                                                     int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                     byte[] bytevalueHex = hexStringToBytes(SequenceParamsValue);
                                                                                     for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -2488,7 +2671,7 @@ public class InstructionGeneration {
                 time_ZhiXing = time_ZhiXing.plusSeconds((long) (Integer.parseInt(KaiShiShiJian, 16)));
                 Date time_ZhixingDate = Date.from(time_ZhiXing);
                 MissionInstructionTimeChild.set(j, time_ZhixingDate);
-                MissionInstructionTimeStringChild.add(j, KaiShiShiJian);
+                MissionInstructionTimeStringChild.add(j,KaiShiShiJian);
                 //System.out.println("序列号：" + MissionInstructionCodeChild.get(j));
                 //System.out.println("执行时间：" + Integer.parseInt(KaiShiShiJian, 16));
 
@@ -2574,7 +2757,7 @@ public class InstructionGeneration {
             MissionInstructionId.add(i, MissionInstructionIdChild);
             MissionInstructionTime.add(i, MissionInstructionTimeChild);
             MissionInstructionHex.add(i, MissionInstructionHexChild);
-            MissionInstructionTimeString.add(i, MissionInstructionTimeStringChild);
+            MissionInstructionTimeString.add(i,MissionInstructionTimeStringChild);
         }
 
         //指令输出
@@ -2614,12 +2797,11 @@ public class InstructionGeneration {
                 System.out.println("序列号：" + MissionInstructionCode.get(i).get(j));
                 System.out.println("执行时间：" + Integer.parseInt(MissionInstructionTimeString.get(i).get(j), 16));
 
-                it.put(MissionInstructionId.get(i).get(j) + "_" + MissionInstructionCode.get(i).get(j) + "_" + Instant.now().toEpochMilli(), MissionInstructionTime.get(i).get(j).toString() + "十六进制：" +
-                        MissionInstructionTimeString.get(i).get(j) + "十进制：" + (long) Integer.parseInt(MissionInstructionTimeString.get(i).get(j), 16));
+                it.put(MissionInstructionId.get(i).get(j)+"_"+MissionInstructionCode.get(i).get(j) + "_" + Instant.now().toEpochMilli(), MissionInstructionTime.get(i).get(j).toString());
             }
             insTimeMap.put(i, it);
 
-            String InsTimeFileName = "Ins-Time-" + i + ".txt";
+            String InsTimeFileName = "Ins-Time.txt";
             String InsTimeFileNameRealPath = FilePathUtil.getRealFilePath(FileFolder + "\\" + InsTimeFileName);
 
             StringToFile(insTimeMap.get(i), InsTimeFileNameRealPath);
@@ -3080,6 +3262,65 @@ public class InstructionGeneration {
         Time[5] = Double.parseDouble(StringTime.substring(17, 19));
 
         return Time;
+    }
+
+    //地固坐标系到卫星东南地坐标系
+    private static void ECEFToESD(double[] Satellite_LLA, double[] Target_LLA, double[] Target_ESD) {
+        double[] Satellite_ECEF = new double[3];
+        double[] Target_ECEF = new double[3];
+        LLAToECEF(Satellite_LLA, Satellite_ECEF);
+        LLAToECEF(Target_LLA, Target_ECEF);
+
+        double B = Satellite_LLA[1] * Math.PI / 180.0;//经度
+        double L = Satellite_LLA[0] * Math.PI / 180.0;//纬度
+        double[][] R_ECEFToNED = {{-sin(B) * cos(L), -sin(B) * sin(L), cos(B)},
+                {-sin(L), cos(L), 0},
+                {-cos(B) * cos(L), -cos(B) * sin(L), -sin(B)}};
+        double[][] Error_r = new double[3][1];
+        Error_r[0][0] = Target_ECEF[0] - Satellite_ECEF[0];
+        Error_r[1][0] = Target_ECEF[1] - Satellite_ECEF[1];
+        Error_r[2][0] = Target_ECEF[2] - Satellite_ECEF[2];
+        double[][] Target_NED_mid = new double[3][1];
+        Target_NED_mid = MatrixMultiplication(R_ECEFToNED, Error_r);
+        double Ang_z = -PI / 2;
+        double[][] R_NEDToESD = {{cos(Ang_z), -sin(Ang_z), 0},
+                {sin(Ang_z), cos(Ang_z), 0},
+                {0, 0, 1}};
+        double[][] Target_ESD_mid = new double[3][1];
+        Target_ESD_mid = MatrixMultiplication(R_NEDToESD, Target_NED_mid);
+        Target_ESD[0] = Target_ESD_mid[0][0];
+        Target_ESD[1] = Target_ESD_mid[1][0];
+        Target_ESD[2] = Target_ESD_mid[2][0];
+    }
+
+    //地固直角坐标系转换为地心地固坐标系
+    private static void LLAToECEF(double Position_LLA[], double Position_ECEF[]) {
+        double L = Position_LLA[0] * Math.PI / 180.0;
+        double B = Position_LLA[1] * Math.PI / 180.0;
+        double H = Position_LLA[2];
+
+        Position_ECEF[0] = (Re + H) * Math.cos(B) * Math.cos(L);
+        Position_ECEF[1] = (Re + H) * Math.cos(B) * Math.sin(L);
+        Position_ECEF[2] = (Re + H) * Math.sin(B);
+    }
+
+    //矩阵乘法
+    private static double[][] MatrixMultiplication(double A[][], double B[][]) {
+        int A_rowNum = A.length;
+        int A_columnNum = A[0].length;
+        int B_rowNum = B.length;
+        int B_columnNum = B[0].length;
+        if (A_columnNum != B_rowNum)
+            JOptionPane.showMessageDialog(null, "乘法矩阵维数不一致", "矩阵乘法错误", JOptionPane.ERROR_MESSAGE);
+        double[][] Result = new double[A_rowNum][B_columnNum];
+        for (int i = 0; i < A_rowNum; i++) {
+            for (int j = 0; j < B_columnNum; j++) {
+                Result[i][j] = 0;
+                for (int k = 0; k < A_columnNum; k++)
+                    Result[i][j] = Result[i][j] + A[i][k] * B[k][j];
+            }
+        }
+        return Result;
     }
 
     //控温阈值计算公式

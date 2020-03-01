@@ -68,4 +68,8 @@ public class ConfigManager {
         Boolean b = s.equals("");
         System.out.println(b);
     }
+
+    public String fetch502FilePath() {
+        return bundle.getString("502_PATH");
+    }
 }

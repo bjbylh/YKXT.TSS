@@ -26,7 +26,7 @@ public class RedisPublish {
 
     public static void newRTOrbitGorecastTask() {
         Jedis jedis = RedisConnector.getJedis();
-        jedis.publish(Topic.CMD_RECV, "{\"Head\":{\"id\":\"MAG@1576633544521\",\"time\":1576633544521,\"type\":\"TRANSMISSION_EXPORT\",\"from\":\"MAG\",\"to\":\"TSS\"},\"Data\":{\"content\":\"tn_1576577953868\"}}");//jedis.publish(Topic.CMD_RECV, RedisDataEntity.GenNewTask());
+        jedis.publish(Topic.CMD_RECV, "{\"Head\":{\"id\":\"MAG@1582527916630\",\"time\":1582527916630,\"type\":\"MANUAL_LOOP\",\"from\":\"MAG\",\"to\":\"TSS\"},\"Data\":{\"content\":\"20200224153648219\"}}");//jedis.publish(Topic.CMD_RECV, RedisDataEntity.GenNewTask());
         jedis.close();
     }
 
@@ -59,7 +59,7 @@ public class RedisPublish {
     }
 
     public static void main(String[] args) {
-        RedisPublish.newCronOrbitGorecastTask();
+        RedisPublish.newRTOrbitGorecastTask();
     }
 
 }

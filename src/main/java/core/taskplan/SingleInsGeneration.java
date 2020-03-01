@@ -24,12 +24,12 @@ import java.util.Date;
 public class SingleInsGeneration {
 
     private static double[] ZeroTime = {2018, 1, 1, 0, 0, 0};//参考时间
-    private static Instant ZeroTimeIns=Instant.parse("2018-01-01T00:00:00.00Z");
-    private static double TaskSelectTime=3600;//秒
+    private static Instant ZeroTimeIns = Instant.parse("2018-01-01T00:00:00.00Z");
+    private static double TaskSelectTime = 3600;//秒
     private static int TimeZone = -8;                     //北京时区到世界时-8
 
-    public static String SingleInsGeneration(Document Mission, String FilePath){
-        if (Mission.size() > 0 && Mission!=null) {
+    public static String SingleInsGeneration(Document Mission, String FilePath) {
+        if (Mission.size() > 0 && Mission != null) {
             //读入模板
             //连接数据库
             MongoClient mongoClient = MangoDBConnector.getClient();
@@ -51,42 +51,42 @@ public class SingleInsGeneration {
             }
             //读入基准时间
             //获取名为“satellite_resource”的表
-            MongoCollection<Document> sate_res=mongoDatabase.getCollection("satellite_resource");
+            MongoCollection<Document> sate_res = mongoDatabase.getCollection("satellite_resource");
             //获取的表存在Document中
-            Document first=sate_res.find().first();
+            Document first = sate_res.find().first();
             //将表中properties内容存入properties列表中
-            ArrayList<Document> properties=(ArrayList<Document>) first.get("properties");
-            Instant zerostart=ZeroTimeIns;
-            for (Document document:properties){
-                if (document.getString("key").equals("t0")){
-                    zerostart=document.getDate("value").toInstant();
-                    LocalDateTime zerostart0=LocalDateTime.ofInstant(zerostart, ZoneOffset.UTC);
-                    ZeroTime[0]=zerostart0.getYear();
-                    ZeroTime[1]=zerostart0.getMonthValue();
-                    ZeroTime[2]=zerostart0.getDayOfMonth();
-                    ZeroTime[3]=zerostart0.getHour();
-                    ZeroTime[4]=zerostart0.getMinute();
-                    ZeroTime[5]=zerostart0.getSecond();
+            ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
+            Instant zerostart = ZeroTimeIns;
+            for (Document document : properties) {
+                if (document.getString("key").equals("t0")) {
+                    zerostart = document.getDate("value").toInstant();
+                    LocalDateTime zerostart0 = LocalDateTime.ofInstant(zerostart, ZoneOffset.UTC);
+                    ZeroTime[0] = zerostart0.getYear();
+                    ZeroTime[1] = zerostart0.getMonthValue();
+                    ZeroTime[2] = zerostart0.getDayOfMonth();
+                    ZeroTime[3] = zerostart0.getHour();
+                    ZeroTime[4] = zerostart0.getMinute();
+                    ZeroTime[5] = zerostart0.getSecond();
                     break;
                 }
             }
 
             //指令生成
             ArrayList<byte[]> InstructionArray = new ArrayList<>();
-            ArrayList<String> MissionInstructionCode=new ArrayList<>();
-            ArrayList<Integer> MissionInstructionId=new ArrayList<>();
-            ArrayList<Date> MissionInstructionTime=new ArrayList<>();
-            ArrayList<String> MissionInstructionHex=new ArrayList<>();
-            boolean InsGenFlag=false;
-            if (Mission.containsKey("input_type") && Mission.get("input_type")!=null && Mission.get("input_type").toString().equals("META_INST")) {
-                InsGenFlag= SinglerMetaIns(zerostart, MetaInstrunctionjson, Mission, MissionInstructionCode, MissionInstructionId, MissionInstructionTime, MissionInstructionHex);
-            }else if (Mission.containsKey("input_type") && Mission.get("input_type")!=null && Mission.get("input_type").toString().equals("SEQUENCE")) {
-                InsGenFlag= SinglerSequenceIns(zerostart,SequenceInstructionjson,MetaInstrunctionjson,Mission,MissionInstructionCode,MissionInstructionId,MissionInstructionTime,MissionInstructionHex);
+            ArrayList<String> MissionInstructionCode = new ArrayList<>();
+            ArrayList<Integer> MissionInstructionId = new ArrayList<>();
+            ArrayList<Date> MissionInstructionTime = new ArrayList<>();
+            ArrayList<String> MissionInstructionHex = new ArrayList<>();
+            boolean InsGenFlag = false;
+            if (Mission.containsKey("input_type") && Mission.get("input_type") != null && Mission.get("input_type").toString().equals("META_INST")) {
+                InsGenFlag = SinglerMetaIns(zerostart, MetaInstrunctionjson, Mission, MissionInstructionCode, MissionInstructionId, MissionInstructionTime, MissionInstructionHex);
+            } else if (Mission.containsKey("input_type") && Mission.get("input_type") != null && Mission.get("input_type").toString().equals("SEQUENCE")) {
+                InsGenFlag = SinglerSequenceIns(zerostart, SequenceInstructionjson, MetaInstrunctionjson, Mission, MissionInstructionCode, MissionInstructionId, MissionInstructionTime, MissionInstructionHex);
             }
 
-            ArrayList<byte[]> InstructionArrayChild=new ArrayList<>();
+            ArrayList<byte[]> InstructionArrayChild = new ArrayList<>();
             if (InsGenFlag) {
-                for (String total:MissionInstructionHex) {
+                for (String total : MissionInstructionHex) {
                     //添加填充域
                     int fangshizi = -1;
                     //添加填充域
@@ -116,10 +116,10 @@ public class SingleInsGeneration {
 
                     byte[] MainBuff = hexStringToBytes(total);
                     int a = getCRC_0xFFFF(MainBuff, MainBuff.length);
-                    String CRCCode = String.format("%04X",a).toUpperCase();
+                    String CRCCode = String.format("%04X", a).toUpperCase();
                     if (CRCCode.length() > 4) {
-                        CRCCode=CRCCode.substring(CRCCode.length()-4);
-                    }else if (CRCCode.length() < 4) {
+                        CRCCode = CRCCode.substring(CRCCode.length() - 4);
+                    } else if (CRCCode.length() < 4) {
                         for (int j = CRCCode.length(); j < 4; j++) {
                             CRCCode = "0" + CRCCode;
                         }
@@ -135,15 +135,15 @@ public class SingleInsGeneration {
                     byte[] bytes = hexStringToBytes(total);
                     InstructionArrayChild.add(bytes);
                 }
-            }else {
+            } else {
                 return FilePath;
             }
 
             //指令输出
             //??????文件夹以任务编号，文件夹内文件：指令序列编号-时间-任务编号-序列ID
             //指令输出
-            String FileFolder = FilePath+ "\\" + Mission.get("mission_number").toString();
-            FileFolder=FilePathUtil.getRealFilePath(FileFolder);
+            String FileFolder = FilePath + "\\" + Mission.get("mission_number").toString();
+            FileFolder = FilePathUtil.getRealFilePath(FileFolder);
             File file = new File(FileFolder);
             if (!file.exists()) {
                 //如果文件夹不存在，新建
@@ -157,7 +157,7 @@ public class SingleInsGeneration {
                     }
                 }
             }
-            for (int j=0;j<MissionInstructionHex.size();j++) {
+            for (int j = 0; j < MissionInstructionHex.size(); j++) {
                 //指令文件命名
                 Date cal = new Date();
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -165,132 +165,194 @@ public class SingleInsGeneration {
 
                 String DateString = StringTime.substring(0, 4) + StringTime.substring(5, 7) + StringTime.substring(8, 10) + StringTime.substring(11, 13) + StringTime.substring(14, 16);
                 String FileName;
-                if (Mission.containsKey("output_type") && Mission.get("output_type")!=null && Mission.get("output_type").toString().equals("SEQUENCE")) {
-                    FileName = MissionInstructionId.get(j)+"-"+MissionInstructionCode.get(j)+"-"+DateString + "-"+Mission.get("mission_number").toString();
-                }else {
-                    FileName = j+"-"+MissionInstructionCode.get(j)+"-"+DateString + "-"+Mission.get("mission_number").toString();
+                if (Mission.containsKey("output_type") && Mission.get("output_type") != null && Mission.get("output_type").toString().equals("SEQUENCE")) {
+                    FileName = MissionInstructionId.get(j) + "-" + MissionInstructionCode.get(j) + "-" + DateString + "-" + Mission.get("mission_number").toString();
+                } else {
+                    FileName = j + "-" + MissionInstructionCode.get(j) + "-" + DateString + "-" + Mission.get("mission_number").toString();
                 }
-                String realPath = FilePathUtil.getRealFilePath(FileFolder+"\\" + FileName);
+                String realPath = FilePathUtil.getRealFilePath(FileFolder + "\\" + FileName);
                 bytesTotxt(InstructionArrayChild.get(j), realPath);
             }
 
             //数据库传出
             ArrayList<Document> InstructionInfojsonArry = new ArrayList<>();
-            if (MissionInstructionHex.size()>0) {
+            if (MissionInstructionHex.size() > 0) {
                 for (int j = 0; j < MissionInstructionHex.size(); j++) {
                     Document InstructionInfojsonObject = new Document();
-                    InstructionInfojsonObject.append("sequence_code",MissionInstructionCode.get(j));
-                    if (Mission.containsKey("output_type") && Mission.get("output_type")!=null && Mission.get("output_type").toString().equals("SEQUENCE")) {
+                    InstructionInfojsonObject.append("sequence_code", MissionInstructionCode.get(j));
+                    if (Mission.containsKey("output_type") && Mission.get("output_type") != null && Mission.get("output_type").toString().equals("SEQUENCE")) {
                         InstructionInfojsonObject.append("sequence_id", MissionInstructionId.get(j));
                         InstructionInfojsonObject.append("execution_time", MissionInstructionTime.get(j));
-                    }else {
+                    } else {
                         InstructionInfojsonObject.append("sequence_id", 0);
                         InstructionInfojsonObject.append("execution_time", Instant.now());
                     }
-                    InstructionInfojsonObject.append("valid",true);
+                    InstructionInfojsonObject.append("valid", true);
                     InstructionInfojsonArry.add(InstructionInfojsonObject);
                 }
-            }else {
+            } else {
                 Document InstructionInfojsonObject = new Document();
-                InstructionInfojsonObject.append("sequence_code","");
+                InstructionInfojsonObject.append("sequence_code", "");
                 InstructionInfojsonObject.append("sequence_id", "");
-                InstructionInfojsonObject.append("execution_time","");
-                InstructionInfojsonObject.append("valid","");
+                InstructionInfojsonObject.append("execution_time", "");
+                InstructionInfojsonObject.append("valid", "");
                 InstructionInfojsonArry.add(InstructionInfojsonObject);
             }
             Mission.append("instruction_info", InstructionInfojsonArry);
-            Mission.append("mission_state","待执行");
+            Mission.append("mission_state", "待执行");
             Document modifiers = new Document();
             modifiers.append("$set", Mission);
             MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
             image_mission.updateOne(new Document("mission_number", Mission.get("mission_number").toString()), modifiers, new UpdateOptions().upsert(true));
             mongoClient.close();
             return FileFolder;
-        }else {
+        } else {
             return FilePath;
         }
     }
 
     //单指令
-    private static boolean SinglerMetaIns(Instant zerostart,ArrayList<Document> MetaInstrunctionjson,Document Mission,ArrayList<String> MissionInstructionCode,ArrayList<Integer> MissionInstructionId,ArrayList<Date> MissionInstructionTime,ArrayList<String> MissionInstructionHex){
-        String str7="";
-        String APID="";
-        String Code="";
-        if (Mission.containsKey("code") && Mission.get("code")!=null && Mission.get("code").toString().equals("K4401")) {
-            APID="303";
-            Code="K4401";
-            str7="100280210118AA1400AA";
+    private static boolean SinglerMetaIns(Instant zerostart, ArrayList<Document> MetaInstrunctionjson, Document Mission, ArrayList<String> MissionInstructionCode, ArrayList<Integer> MissionInstructionId, ArrayList<Date> MissionInstructionTime, ArrayList<String> MissionInstructionHex) {
+        String str7 = "";
+        String APID = "";
+        String Code = "";
+        if (Mission.containsKey("code") && Mission.get("code") != null && Mission.get("code").toString().equals("K4401")) {
+            APID = "303";
+            Code = "K4401";
+            str7 = "100280210118AA1400AA";
             try {
-                if (Mission.containsKey("sepcial_params") && Mission.get("sepcial_params")!=null) {
-                    Document SepcialParams= (Document) Mission.get("sepcial_params");
-                    int time=Integer.parseInt(SepcialParams.get("maneuvering_time").toString());
-                    String strTemp=String.format("%04X",time);
+                if (Mission.containsKey("sepcial_params") && Mission.get("sepcial_params") != null) {
+                    Document SepcialParams = (Document) Mission.get("sepcial_params");
+                    int time = Integer.parseInt(SepcialParams.get("maneuvering_time").toString());
+                    String strTemp = String.format("%04X", time);
                     if (strTemp.length() > 4) {
-                        strTemp=strTemp.substring(strTemp.length()-4);
-                    }else if (strTemp.length() < 4) {
+                        strTemp = strTemp.substring(strTemp.length() - 4);
+                    } else if (strTemp.length() < 4) {
                         for (int i = strTemp.length(); i < 4; i++) {
-                            strTemp="0"+strTemp;
-                            strTemp="0"+strTemp;
+                            strTemp = "0" + strTemp;
+                            strTemp = "0" + strTemp;
                         }
                     }
-                    str7=str7+strTemp;
-                    float roll=Float.parseFloat(SepcialParams.get("roll_angle").toString());
-                    strTemp=Integer.toHexString(Float.floatToIntBits(roll));
-                    if (strTemp.length() > 8) {
-                        strTemp=strTemp.substring(strTemp.length()-8);
-                    }else if (strTemp.length() < 8) {
-                        for (int i = strTemp.length(); i < 8; i++) {
-                            strTemp="0"+strTemp;
+                    str7 = str7 + strTemp;
+
+                    if(SepcialParams.containsKey("type") && SepcialParams.getString("type").equals("1")) {
+
+                        float roll = Float.parseFloat(SepcialParams.get("roll_angle").toString());
+                        strTemp = Integer.toHexString(Float.floatToIntBits(roll));
+                        if (strTemp.length() > 8) {
+                            strTemp = strTemp.substring(strTemp.length() - 8);
+                        } else if (strTemp.length() < 8) {
+                            for (int i = strTemp.length(); i < 8; i++) {
+                                strTemp = "0" + strTemp;
+                            }
                         }
-                    }
-                    str7=str7+strTemp;
-                    float pitch=Float.parseFloat(SepcialParams.get("pitch_angle").toString());
-                    strTemp=Integer.toHexString(Float.floatToIntBits(pitch));
-                    if (strTemp.length() > 8) {
-                        strTemp=strTemp.substring(strTemp.length()-8);
-                    }else if (strTemp.length() < 8) {
-                        for (int i = strTemp.length(); i < 8; i++) {
-                            strTemp="0"+strTemp;
+                        str7 = str7 + strTemp;
+
+                        float pitch = Float.parseFloat(SepcialParams.get("pitch_angle").toString());
+                        strTemp = Integer.toHexString(Float.floatToIntBits(pitch));
+                        if (strTemp.length() > 8) {
+                            strTemp = strTemp.substring(strTemp.length() - 8);
+                        } else if (strTemp.length() < 8) {
+                            for (int i = strTemp.length(); i < 8; i++) {
+                                strTemp = "0" + strTemp;
+                            }
                         }
-                    }
-                    str7=str7+strTemp;
-                    float accAng=Float.parseFloat(SepcialParams.get("angular_acceleration").toString());
-                    strTemp=Integer.toHexString(Float.floatToIntBits(accAng));
-                    if (strTemp.length() > 8) {
-                        strTemp=strTemp.substring(strTemp.length()-8);
-                    }else if (strTemp.length() < 8) {
-                        for (int i = strTemp.length(); i < 8; i++) {
-                            strTemp="0"+strTemp;
+                        str7 = str7 + strTemp;
+
+                        float accAng = Float.parseFloat(SepcialParams.get("angular_acceleration").toString());
+                        strTemp = Integer.toHexString(Float.floatToIntBits(accAng));
+                        if (strTemp.length() > 8) {
+                            strTemp = strTemp.substring(strTemp.length() - 8);
+                        } else if (strTemp.length() < 8) {
+                            for (int i = strTemp.length(); i < 8; i++) {
+                                strTemp = "0" + strTemp;
+                            }
                         }
-                    }
-                    str7=str7+strTemp;
-                    float velAng=Float.parseFloat(SepcialParams.get("angular_velocity").toString());
-                    strTemp=Integer.toHexString(Float.floatToIntBits(velAng));
-                    if (strTemp.length() > 8) {
-                        strTemp=strTemp.substring(strTemp.length()-8);
-                    }else if (strTemp.length() < 8) {
-                        for (int i = strTemp.length(); i < 8; i++) {
-                            strTemp="0"+strTemp;
+                        str7 = str7 + strTemp;
+
+                        float velAng = Float.parseFloat(SepcialParams.get("angular_velocity").toString());
+                        strTemp = Integer.toHexString(Float.floatToIntBits(velAng));
+                        if (strTemp.length() > 8) {
+                            strTemp = strTemp.substring(strTemp.length() - 8);
+                        } else if (strTemp.length() < 8) {
+                            for (int i = strTemp.length(); i < 8; i++) {
+                                strTemp = "0" + strTemp;
+                            }
                         }
+                        str7 = str7 + strTemp;
+                    }else{
+                        float lon = Float.parseFloat(SepcialParams.get("lon").toString());
+                        strTemp = Integer.toHexString(Float.floatToIntBits(lon));
+                        if (strTemp.length() > 8) {
+                            strTemp = strTemp.substring(strTemp.length() - 8);
+                        } else if (strTemp.length() < 8) {
+                            for (int i = strTemp.length(); i < 8; i++) {
+                                strTemp = "0" + strTemp;
+                            }
+                        }
+                        str7 = str7 + strTemp;
+
+                        float lat = Float.parseFloat(SepcialParams.get("lat").toString());
+                        strTemp = Integer.toHexString(Float.floatToIntBits(lat));
+                        if (strTemp.length() > 8) {
+                            strTemp = strTemp.substring(strTemp.length() - 8);
+                        } else if (strTemp.length() < 8) {
+                            for (int i = strTemp.length(); i < 8; i++) {
+                                strTemp = "0" + strTemp;
+                            }
+                        }
+                        str7 = str7 + strTemp;
+
+                        float alt = Float.parseFloat(SepcialParams.get("alt").toString());
+                        strTemp = Integer.toHexString(Float.floatToIntBits(alt));
+                        if (strTemp.length() > 8) {
+                            strTemp = strTemp.substring(strTemp.length() - 8);
+                        } else if (strTemp.length() < 8) {
+                            for (int i = strTemp.length(); i < 8; i++) {
+                                strTemp = "0" + strTemp;
+                            }
+                        }
+                        str7 = str7 + strTemp;
+
+                        float accAng = Float.parseFloat(SepcialParams.get("angular_acceleration").toString());
+                        strTemp = Integer.toHexString(Float.floatToIntBits(accAng));
+                        if (strTemp.length() > 8) {
+                            strTemp = strTemp.substring(strTemp.length() - 8);
+                        } else if (strTemp.length() < 8) {
+                            for (int i = strTemp.length(); i < 8; i++) {
+                                strTemp = "0" + strTemp;
+                            }
+                        }
+                        str7 = str7 + strTemp;
+
+                        float velAng = Float.parseFloat(SepcialParams.get("angular_velocity").toString());
+                        strTemp = Integer.toHexString(Float.floatToIntBits(velAng));
+                        if (strTemp.length() > 8) {
+                            strTemp = strTemp.substring(strTemp.length() - 8);
+                        } else if (strTemp.length() < 8) {
+                            for (int i = strTemp.length(); i < 8; i++) {
+                                strTemp = "0" + strTemp;
+                            }
+                        }
+                        str7 = str7 + strTemp;
                     }
-                    str7=str7+strTemp;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
                 return false;
             }
-        }else if (Mission.containsKey("code") && Mission.get("code")!=null && !Mission.get("code").toString().equals("")) {
-            Code=Mission.get("code").toString();
+        } else if (Mission.containsKey("code") && Mission.get("code") != null && !Mission.get("code").toString().equals("")) {
+            Code = Mission.get("code").toString();
             try {
-                ArrayList<Document> MissionInstructionArrayChild= (ArrayList<Document>) Mission.get("mission_params");
-                ArrayList<Document> MissionInstructionDefautArrayChild= (ArrayList<Document>) Mission.get("default_mission_params");
+                ArrayList<Document> MissionInstructionArrayChild = (ArrayList<Document>) Mission.get("mission_params");
+                ArrayList<Document> MissionInstructionDefautArrayChild = (ArrayList<Document>) Mission.get("default_mission_params");
                 for (Document document4 : MetaInstrunctionjson) {
                     if (document4.get("code").toString().equals(Code)) {
                         if (Code.contains("NTCY200")) {
                             String MetaHex = document4.get("hex").toString();
-                            APID=document4.get("apid").toString();
+                            APID = document4.get("apid").toString();
                             byte[] byteMetaHex = hexStringToBytes(MetaHex);
-                            if (document4.containsKey("params") && document4.get("params")!=null) {
+                            if (document4.containsKey("params") && document4.get("params") != null) {
                                 ArrayList<Document> MetaParams = (ArrayList<Document>) document4.get("params");
                                 if (MetaParams.size() != 0) {
                                     for (Document MetaParamsChild : MetaParams) {
@@ -302,7 +364,7 @@ public class SingleInsGeneration {
                                                 if (MissionMetaParamsChildParamsChild.containsKey("code") && MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsId)) {
                                                     if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
                                                         //System.out.println(MetaParamsId);
-                                                        float temeratureFloat=Float.parseFloat(MissionMetaParamsChildParamsChild.get("value").toString());
+                                                        float temeratureFloat = Float.parseFloat(MissionMetaParamsChildParamsChild.get("value").toString());
                                                         String MetaParamsIdValue = TemperatureFlotToStr(temeratureFloat);
                                                         int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                         int byteLength = MetaParamsChild.getInteger("byte_length");
@@ -320,11 +382,11 @@ public class SingleInsGeneration {
                                     }
                                 }
                             }
-                        }else if (document4.containsKey("hex")) {
+                        } else if (document4.containsKey("hex")) {
                             String MetaHex = document4.get("hex").toString();
-                            APID=document4.get("apid").toString();
+                            APID = document4.get("apid").toString();
                             byte[] byteMetaHex = hexStringToBytes(MetaHex);
-                            if (document4.containsKey("params") && document4.get("params")!=null) {
+                            if (document4.containsKey("params") && document4.get("params") != null) {
                                 ArrayList<Document> MetaParams = (ArrayList<Document>) document4.get("params");
                                 if (MetaParams.size() != 0) {
                                     for (Document MetaParamsChild : MetaParams) {
@@ -332,7 +394,7 @@ public class SingleInsGeneration {
                                         if (MetaParamsChild.containsKey("id")) {
                                             String MetaParamsId = MetaParamsChild.get("id").toString();
                                             //搜索任务中相应的id值
-                                            Boolean RelatedIdFindFlag=true;
+                                            Boolean RelatedIdFindFlag = true;
                                             for (Document MissionMetaParamsChildParamsChild : MissionInstructionArrayChild) {
                                                 if (MissionMetaParamsChildParamsChild.containsKey("code") && MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsId)) {
                                                     if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
@@ -346,7 +408,7 @@ public class SingleInsGeneration {
                                                                 byteMetaHex[j] = bytevalueHex[j - byteIndex];
                                                             }
                                                         }
-                                                        RelatedIdFindFlag=false;
+                                                        RelatedIdFindFlag = false;
                                                         break;
                                                     }
                                                 }
@@ -354,7 +416,7 @@ public class SingleInsGeneration {
                                             if (RelatedIdFindFlag) {
                                                 for (Document TaskParams : MissionInstructionDefautArrayChild) {
                                                     if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals(MetaParamsId)) {
-                                                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value")!=null && !TaskParams.get("default_value").equals("")) {
+                                                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value") != null && !TaskParams.get("default_value").equals("")) {
                                                             //System.out.println(MetaParamsId);
                                                             String MetaParamsIdValue = TaskParams.get("default_value").toString();
                                                             int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
@@ -365,24 +427,24 @@ public class SingleInsGeneration {
                                                                     byteMetaHex[j] = bytevalueHex[j - byteIndex];
                                                                 }
                                                             }
-                                                            RelatedIdFindFlag=false;
+                                                            RelatedIdFindFlag = false;
                                                             break;
                                                         }
                                                     }
                                                 }
                                             }
-                                        }else if (MetaParamsChild.containsKey("related_param_id")) {
-                                            String MetaParamsCode="";
+                                        } else if (MetaParamsChild.containsKey("related_param_id")) {
+                                            String MetaParamsCode = "";
                                             //列表选择执行种类
                                             String MetaRelated_id = MetaParamsChild.get("related_param_id").toString();
                                             //搜索任务中相应id的值
                                             String SequenceParamsValue = "";
-                                            Boolean RelatedIdFindFlag=true;
+                                            Boolean RelatedIdFindFlag = true;
                                             for (Document SequenceParams : MissionInstructionArrayChild) {
                                                 if (SequenceParams.containsKey("code") && SequenceParams.get("code").toString().equals(MetaRelated_id)) {
                                                     if (SequenceParams.containsKey("value") && !SequenceParams.get("value").equals("")) {
                                                         SequenceParamsValue = SequenceParams.get("value").toString();
-                                                        RelatedIdFindFlag=false;
+                                                        RelatedIdFindFlag = false;
                                                     }
                                                     break;
                                                 }
@@ -390,17 +452,17 @@ public class SingleInsGeneration {
                                             if (RelatedIdFindFlag) {
                                                 for (Document TaskParams : MissionInstructionDefautArrayChild) {
                                                     if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals(MetaRelated_id)) {
-                                                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value")!=null && !TaskParams.get("default_value").equals("")) {
+                                                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value") != null && !TaskParams.get("default_value").equals("")) {
                                                             SequenceParamsValue = TaskParams.get("default_value").toString();
-                                                            RelatedIdFindFlag=false;
+                                                            RelatedIdFindFlag = false;
                                                         }
                                                         break;
                                                     }
                                                 }
                                             }
                                             if (MetaParamsChild.containsKey("mapping")) {
-                                                Document sequencemapping= (Document) MetaParamsChild.get("mapping");
-                                                if (sequencemapping.containsKey(SequenceParamsValue) && sequencemapping.get(SequenceParamsValue)!=null && !sequencemapping.get(SequenceParamsValue).equals("")) {
+                                                Document sequencemapping = (Document) MetaParamsChild.get("mapping");
+                                                if (sequencemapping.containsKey(SequenceParamsValue) && sequencemapping.get(SequenceParamsValue) != null && !sequencemapping.get(SequenceParamsValue).equals("")) {
                                                     MetaParamsCode = sequencemapping.get(SequenceParamsValue).toString();
                                                     int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                     int byteLength = MetaParamsChild.getInteger("byte_length");
@@ -411,7 +473,7 @@ public class SingleInsGeneration {
                                                         }
                                                     }
                                                 }
-                                            }else {
+                                            } else {
                                                 int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                 int byteLength = MetaParamsChild.getInteger("byte_length");
                                                 byte[] bytevalueHex = hexStringToBytes(SequenceParamsValue);
@@ -421,14 +483,14 @@ public class SingleInsGeneration {
                                                     }
                                                 }
                                             }
-                                        }else {
+                                        } else {
                                             String MetaParamsCode = MetaParamsChild.get("code").toString();
                                             //搜索任务中相应的code值
-                                            Boolean RelatedIdFindFlag=true;
+                                            Boolean RelatedIdFindFlag = true;
                                             for (Document MissionMetaParamsChildParamsChild : MissionInstructionArrayChild) {
                                                 if (MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsCode)) {
                                                     String MetaParamsCodeValue = MissionMetaParamsChildParamsChild.get("value").toString();
-                                                    int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
+                                                    int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                     int byteLength = MetaParamsChild.getInteger("byte_length");
                                                     byte[] bytevalueHex = hexStringToBytes(MetaParamsCodeValue);
                                                     for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -442,9 +504,9 @@ public class SingleInsGeneration {
                                             if (RelatedIdFindFlag) {
                                                 for (Document TaskParams : MissionInstructionDefautArrayChild) {
                                                     if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals(MetaParamsCode)) {
-                                                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value")!=null && !TaskParams.get("default_value").equals("")) {
+                                                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value") != null && !TaskParams.get("default_value").equals("")) {
                                                             String MetaParamsCodeValue = TaskParams.get("default_value").toString();
-                                                            int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
+                                                            int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                             int byteLength = MetaParamsChild.getInteger("byte_length");
                                                             byte[] bytevalueHex = hexStringToBytes(MetaParamsCodeValue);
                                                             for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -452,7 +514,7 @@ public class SingleInsGeneration {
                                                                     byteMetaHex[j] = bytevalueHex[j - byteIndex];
                                                                 }
                                                             }
-                                                            RelatedIdFindFlag=false;
+                                                            RelatedIdFindFlag = false;
                                                         }
                                                         break;
                                                     }
@@ -463,8 +525,8 @@ public class SingleInsGeneration {
                                 }
                             }
                             MetaHex = bytesToHexString(byteMetaHex);
-                            str7=MetaHex;
-                        }else {
+                            str7 = MetaHex;
+                        } else {
                             return false;
                         }
                         break;
@@ -474,84 +536,84 @@ public class SingleInsGeneration {
                 e.printStackTrace();
                 return false;
             }
-        }else {
+        } else {
             return false;
         }
 
         //输出序列
-        if (Mission.containsKey("output_type") && Mission.get("output_type")!=null && Mission.get("output_type").toString().equals("SEQUENCE")){
-            APID="0"+APID;
+        if (Mission.containsKey("output_type") && Mission.get("output_type") != null && Mission.get("output_type").toString().equals("SEQUENCE")) {
+            APID = "0" + APID;
             //有效长度
             byte[] byteMetaHex = hexStringToBytes(str7);
             byte[] YouXiaoChangDuByte = new byte[]{(byte) (byteMetaHex.length)};
             String YouXiaoChangDuString = bytesToHexString(YouXiaoChangDuByte);
             //指令序列ID
             int ZhiLingIDNum = SequenceID.SequenceId;
-            SequenceID.SequenceId=SequenceID.SequenceId+1;
+            SequenceID.SequenceId = SequenceID.SequenceId + 1;
             if (SequenceID.SequenceId > 255) {
-                SequenceID.SequenceId=0;
+                SequenceID.SequenceId = 0;
             }
             byte[] ZhiLingXuLieIDByte = new byte[]{(byte) ((ZhiLingIDNum) & 0xFF)};
             String ZhiLingXuLieIDString = bytesToHexString(ZhiLingXuLieIDByte);
-            ZhiLingXuLieIDString="00"+ZhiLingXuLieIDString;
+            ZhiLingXuLieIDString = "00" + ZhiLingXuLieIDString;
             //指令个数
             String ZhiLingGeShuString = "01";
             //起始执行时间
-            Date ZhixingTimeDate= (Date) Mission.get("executione_time");
-            int NSTimeTemp= (int) (Duration.between(zerostart,ZhixingTimeDate.toInstant()).getSeconds());
-            String ZhixingTimeStr=String.format("%08X",NSTimeTemp);
+            Date ZhixingTimeDate = (Date) Mission.get("executione_time");
+            int NSTimeTemp = (int) (Duration.between(zerostart, ZhixingTimeDate.toInstant()).getSeconds());
+            String ZhixingTimeStr = String.format("%08X", NSTimeTemp);
             //数据区头/副导头
-            String ShujuQuTou="100B8021";
-            str7=ZhixingTimeStr+ZhiLingXuLieIDString+ZhiLingGeShuString+APID + YouXiaoChangDuString + str7;
-            str7=ShujuQuTou+str7;
+            String ShujuQuTou = "100B8021";
+            str7 = ZhixingTimeStr + ZhiLingXuLieIDString + ZhiLingGeShuString + APID + YouXiaoChangDuString + str7;
+            str7 = ShujuQuTou + str7;
 
             //包序列控制
             int BaoXuLieIDNum = SequenceID.PackageId;
-            SequenceID.PackageId=SequenceID.PackageId+1;
+            SequenceID.PackageId = SequenceID.PackageId + 1;
             if (SequenceID.PackageId > 16383) {
-                SequenceID.PackageId=0;
+                SequenceID.PackageId = 0;
             }
-            String BaoXuLieIDStr=Integer.toBinaryString(BaoXuLieIDNum);
+            String BaoXuLieIDStr = Integer.toBinaryString(BaoXuLieIDNum);
             if (BaoXuLieIDStr.length() < 14) {
                 for (int i_id = BaoXuLieIDStr.length(); i_id < 14; i_id++) {
-                    BaoXuLieIDStr="0"+BaoXuLieIDStr;
+                    BaoXuLieIDStr = "0" + BaoXuLieIDStr;
                 }
-            }else {
-                BaoXuLieIDStr=BaoXuLieIDStr.substring(BaoXuLieIDStr.length()-14);
+            } else {
+                BaoXuLieIDStr = BaoXuLieIDStr.substring(BaoXuLieIDStr.length() - 14);
             }
-            BaoXuLieIDStr="11"+BaoXuLieIDStr;
-            BaoXuLieIDStr=Integer.toHexString(Integer.parseInt(BaoXuLieIDStr,2)).toUpperCase();
+            BaoXuLieIDStr = "11" + BaoXuLieIDStr;
+            BaoXuLieIDStr = Integer.toHexString(Integer.parseInt(BaoXuLieIDStr, 2)).toUpperCase();
             //包长
-            int BaoChang = str7.length() / 2+2-1;
-            String BaoChangstr = String.format("%04X",BaoChang);
-            String BaoZhuDaoTou = "1C11" +BaoXuLieIDStr+ BaoChangstr;
+            int BaoChang = str7.length() / 2 + 2 - 1;
+            String BaoChangstr = String.format("%04X", BaoChang);
+            String BaoZhuDaoTou = "1C11" + BaoXuLieIDStr + BaoChangstr;
             String total = BaoZhuDaoTou + str7 + ISO(BaoZhuDaoTou + str7);
-            total=total.toUpperCase();
+            total = total.toUpperCase();
             MissionInstructionCode.add(Code);
             MissionInstructionHex.add(total);
             MissionInstructionId.add(ZhiLingIDNum);
             MissionInstructionTime.add(ZhixingTimeDate);
-        }else {
-            int BaoChang = str7.length() / 2 + 2-1;
-            String BaoChangstr = String.format("%04X",BaoChang);
+        } else {
+            int BaoChang = str7.length() / 2 + 2 - 1;
+            String BaoChangstr = String.format("%04X", BaoChang);
             int BaoXuLieIDNum = SequenceID.PackageId;
-            SequenceID.PackageId=SequenceID.PackageId+1;
+            SequenceID.PackageId = SequenceID.PackageId + 1;
             if (SequenceID.PackageId > 16383) {
-                SequenceID.PackageId=0;
+                SequenceID.PackageId = 0;
             }
-            String BaoXuLieIDStr=Integer.toBinaryString(BaoXuLieIDNum);
+            String BaoXuLieIDStr = Integer.toBinaryString(BaoXuLieIDNum);
             if (BaoXuLieIDStr.length() < 14) {
                 for (int i_id = BaoXuLieIDStr.length(); i_id < 14; i_id++) {
-                    BaoXuLieIDStr="0"+BaoXuLieIDStr;
+                    BaoXuLieIDStr = "0" + BaoXuLieIDStr;
                 }
-            }else {
-                BaoXuLieIDStr=BaoXuLieIDStr.substring(BaoXuLieIDStr.length()-14);
+            } else {
+                BaoXuLieIDStr = BaoXuLieIDStr.substring(BaoXuLieIDStr.length() - 14);
             }
-            BaoXuLieIDStr="11"+BaoXuLieIDStr;
-            BaoXuLieIDStr=Integer.toHexString(Integer.parseInt(BaoXuLieIDStr,2)).toUpperCase();
-            String BaoZhuDaoTou = "1B03" +BaoXuLieIDStr+ BaoChangstr;
+            BaoXuLieIDStr = "11" + BaoXuLieIDStr;
+            BaoXuLieIDStr = Integer.toHexString(Integer.parseInt(BaoXuLieIDStr, 2)).toUpperCase();
+            String BaoZhuDaoTou = "1B03" + BaoXuLieIDStr + BaoChangstr;
             String total = BaoZhuDaoTou + str7 + ISO(BaoZhuDaoTou + str7);
-            total=total.toUpperCase();
+            total = total.toUpperCase();
             MissionInstructionCode.add(Code);
             MissionInstructionHex.add(total);
         }
@@ -559,20 +621,20 @@ public class SingleInsGeneration {
     }
 
     //序列
-    private static boolean SinglerSequenceIns(Instant zerostart,ArrayList<Document> SequenceInstructionjson,ArrayList<Document> MetaInstrunctionjson,Document Mission,ArrayList<String> MissionInstructionCode,ArrayList<Integer> MissionInstructionId,ArrayList<Date> MissionInstructionTime,ArrayList<String> MissionInstructionHex){
-        String sequencecode="";
+    private static boolean SinglerSequenceIns(Instant zerostart, ArrayList<Document> SequenceInstructionjson, ArrayList<Document> MetaInstrunctionjson, Document Mission, ArrayList<String> MissionInstructionCode, ArrayList<Integer> MissionInstructionId, ArrayList<Date> MissionInstructionTime, ArrayList<String> MissionInstructionHex) {
+        String sequencecode = "";
         byte ZhilingNum = 0;
         String YouXiaoData = "";
-        boolean MoreThanFlag=false;
-        ArrayList<String> YouXiaoshujuList=new ArrayList<>();
-        ArrayList<Byte> ZhiLingGeshuList=new ArrayList<>();
-        if (Mission.containsKey("code") && Mission.get("code")!=null) {
-            sequencecode=Mission.get("code").toString();
+        boolean MoreThanFlag = false;
+        ArrayList<String> YouXiaoshujuList = new ArrayList<>();
+        ArrayList<Byte> ZhiLingGeshuList = new ArrayList<>();
+        if (Mission.containsKey("code") && Mission.get("code") != null) {
+            sequencecode = Mission.get("code").toString();
             for (Document document2 : SequenceInstructionjson) {
                 try {
                     if (document2.get("code").equals(sequencecode)) {
-                        ArrayList<Document> MissionInstructionArrayChild= (ArrayList<Document>) Mission.get("mission_params");
-                        ArrayList<Document> MissionInstructionDefautArrayChild= (ArrayList<Document>) Mission.get("default_mission_params");
+                        ArrayList<Document> MissionInstructionArrayChild = (ArrayList<Document>) Mission.get("mission_params");
+                        ArrayList<Document> MissionInstructionDefautArrayChild = (ArrayList<Document>) Mission.get("default_mission_params");
                         ArrayList<Document> InstsArray = (ArrayList<Document>) document2.get("inst");
                         for (Document document3 : InstsArray) {
                             String InstCode = "";
@@ -582,21 +644,21 @@ public class SingleInsGeneration {
                                 String MetaRelated_id = document3.get("related_param_id").toString();
                                 //搜索任务中相应id的值
                                 String SequenceParamsValue = "";
-                                Boolean RelatedIdFindFlag=true;
+                                Boolean RelatedIdFindFlag = true;
                                 for (Document TaskParams : MissionInstructionArrayChild) {
                                     if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals(MetaRelated_id)) {
                                         if (MetaRelated_id.equals("P07")) {
-                                            if (TaskParams.containsKey("value") && TaskParams.get("value")!=null && !TaskParams.get("value").equals("")) {
+                                            if (TaskParams.containsKey("value") && TaskParams.get("value") != null && !TaskParams.get("value").equals("")) {
                                                 ArrayList<String> TaskParamsValueTemp = (ArrayList<String>) TaskParams.get("value");
-                                                for (String TaskParamsValueChildTemp:TaskParamsValueTemp) {
-                                                    SequenceParamsValue = SequenceParamsValue+TaskParamsValueChildTemp;
+                                                for (String TaskParamsValueChildTemp : TaskParamsValueTemp) {
+                                                    SequenceParamsValue = SequenceParamsValue + TaskParamsValueChildTemp;
                                                 }
-                                                RelatedIdFindFlag=false;
+                                                RelatedIdFindFlag = false;
                                             }
-                                        }else {
-                                            if (TaskParams.containsKey("value") && TaskParams.get("value")!=null && !TaskParams.get("value").equals("")) {
+                                        } else {
+                                            if (TaskParams.containsKey("value") && TaskParams.get("value") != null && !TaskParams.get("value").equals("")) {
                                                 SequenceParamsValue = TaskParams.get("value").toString();
-                                                RelatedIdFindFlag=false;
+                                                RelatedIdFindFlag = false;
                                             }
                                         }
                                         break;
@@ -606,17 +668,17 @@ public class SingleInsGeneration {
                                     for (Document TaskParams : MissionInstructionDefautArrayChild) {
                                         if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals(MetaRelated_id)) {
                                             if (MetaRelated_id.equals("P07")) {
-                                                if (TaskParams.containsKey("default_value") && TaskParams.get("default_value")!=null && !TaskParams.get("default_value").equals("")) {
+                                                if (TaskParams.containsKey("default_value") && TaskParams.get("default_value") != null && !TaskParams.get("default_value").equals("")) {
                                                     ArrayList<String> TaskParamsValueTemp = (ArrayList<String>) TaskParams.get("default_value");
-                                                    for (String TaskParamsValueChildTemp:TaskParamsValueTemp) {
-                                                        SequenceParamsValue = SequenceParamsValue+TaskParamsValueChildTemp;
+                                                    for (String TaskParamsValueChildTemp : TaskParamsValueTemp) {
+                                                        SequenceParamsValue = SequenceParamsValue + TaskParamsValueChildTemp;
                                                     }
-                                                    RelatedIdFindFlag=false;
+                                                    RelatedIdFindFlag = false;
                                                 }
-                                            }else {
-                                                if (TaskParams.containsKey("default_value") && TaskParams.get("default_value")!=null && !TaskParams.get("default_value").equals("")) {
+                                            } else {
+                                                if (TaskParams.containsKey("default_value") && TaskParams.get("default_value") != null && !TaskParams.get("default_value").equals("")) {
                                                     SequenceParamsValue = TaskParams.get("default_value").toString();
-                                                    RelatedIdFindFlag=false;
+                                                    RelatedIdFindFlag = false;
                                                 }
                                             }
                                             break;
@@ -624,35 +686,35 @@ public class SingleInsGeneration {
                                     }
                                 }
                                 if (MetaRelated_id.equals("P07")) {
-                                    if ( document3.containsKey("when")) {
+                                    if (document3.containsKey("when")) {
                                         for (int j = 0; j < SequenceParamsValue.length(); j++) {
-                                            String TaskParamsValueChild=SequenceParamsValue.substring(j,j+1);
+                                            String TaskParamsValueChild = SequenceParamsValue.substring(j, j + 1);
                                             if (document3.get("when").toString().equals(TaskParamsValueChild)) {
                                                 InstCode = document3.get("inst_code").toString();
                                             }
                                         }
-                                    }else if (document3.containsKey("when_or")) {
-                                        ArrayList<String> MissionSequenceWhenOr= (ArrayList<String>) document3.get("when_or");
-                                        String MissionSequenceWhenOrAll="";
-                                        for (String MissionSequenceWhenOrChild:MissionSequenceWhenOr) {
-                                            MissionSequenceWhenOrAll=MissionSequenceWhenOrAll+MissionSequenceWhenOrChild;
+                                    } else if (document3.containsKey("when_or")) {
+                                        ArrayList<String> MissionSequenceWhenOr = (ArrayList<String>) document3.get("when_or");
+                                        String MissionSequenceWhenOrAll = "";
+                                        for (String MissionSequenceWhenOrChild : MissionSequenceWhenOr) {
+                                            MissionSequenceWhenOrAll = MissionSequenceWhenOrAll + MissionSequenceWhenOrChild;
                                         }
                                         for (int j = 0; j < SequenceParamsValue.length(); j++) {
-                                            String TaskParamsValueChild=SequenceParamsValue.substring(j,j+1);
+                                            String TaskParamsValueChild = SequenceParamsValue.substring(j, j + 1);
                                             if (MissionSequenceWhenOrAll.contains(TaskParamsValueChild)) {
                                                 InstCode = document3.get("inst_code").toString();
                                                 break;
                                             }
                                         }
                                     }
-                                }else {
-                                    if ( document3.containsKey("when")) {
+                                } else {
+                                    if (document3.containsKey("when")) {
                                         if (document3.get("when").toString().equals(SequenceParamsValue)) {
                                             InstCode = document3.get("inst_code").toString();
                                         }
-                                    }else if (document3.containsKey("when_or")) {
-                                        ArrayList<String> MissionCodeWhenOr= (ArrayList<String>) document3.get("when_or");
-                                        for (String MissionCodeWhenOrChild:MissionCodeWhenOr) {
+                                    } else if (document3.containsKey("when_or")) {
+                                        ArrayList<String> MissionCodeWhenOr = (ArrayList<String>) document3.get("when_or");
+                                        for (String MissionCodeWhenOrChild : MissionCodeWhenOr) {
                                             if (MissionCodeWhenOrChild.equals(SequenceParamsValue)) {
                                                 InstCode = document3.get("inst_code").toString();
                                                 break;
@@ -665,12 +727,12 @@ public class SingleInsGeneration {
                                 String MetaRelated_id = document3.get("related_param_id").toString();
                                 //搜索任务中相应id的值
                                 String SequenceParamsValue = "";
-                                Boolean RelatedIdFindFlag=true;
+                                Boolean RelatedIdFindFlag = true;
                                 for (Document SequenceParams : MissionInstructionArrayChild) {
                                     if (SequenceParams.containsKey("code") && SequenceParams.get("code").toString().equals(MetaRelated_id)) {
                                         if (SequenceParams.containsKey("value") && !SequenceParams.get("value").equals("")) {
                                             SequenceParamsValue = SequenceParams.get("value").toString();
-                                            RelatedIdFindFlag=false;
+                                            RelatedIdFindFlag = false;
                                         }
                                         break;
                                     }
@@ -678,16 +740,16 @@ public class SingleInsGeneration {
                                 if (RelatedIdFindFlag) {
                                     for (Document TaskParams : MissionInstructionDefautArrayChild) {
                                         if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals(MetaRelated_id)) {
-                                            if (TaskParams.containsKey("default_value") && TaskParams.get("default_value")!=null && !TaskParams.get("default_value").equals("")) {
+                                            if (TaskParams.containsKey("default_value") && TaskParams.get("default_value") != null && !TaskParams.get("default_value").equals("")) {
                                                 SequenceParamsValue = TaskParams.get("default_value").toString();
-                                                RelatedIdFindFlag=false;
+                                                RelatedIdFindFlag = false;
                                             }
                                             break;
                                         }
                                     }
                                 }
-                                Document sequencemapping= (Document) document3.get("mapping");
-                                if (sequencemapping.containsKey(SequenceParamsValue) && sequencemapping.get(SequenceParamsValue)!=null && !sequencemapping.get(SequenceParamsValue).equals("")) {
+                                Document sequencemapping = (Document) document3.get("mapping");
+                                if (sequencemapping.containsKey(SequenceParamsValue) && sequencemapping.get(SequenceParamsValue) != null && !sequencemapping.get(SequenceParamsValue).equals("")) {
                                     InstCode = sequencemapping.get(SequenceParamsValue).toString();
                                 }
                             } else {
@@ -695,21 +757,21 @@ public class SingleInsGeneration {
                                 InstCode = document3.get("inst_code").toString();
                             }
                             //执行间隔
-                            String InstDelta_t="0";
+                            String InstDelta_t = "0";
                             if (document3.get("delta_t").getClass().toString().equals("class java.lang.String")) {
                                 InstDelta_t = document3.get("delta_t").toString();
-                            }else {
-                                Document delta_tDocument= (Document) document3.get("delta_t");
+                            } else {
+                                Document delta_tDocument = (Document) document3.get("delta_t");
                                 if (delta_tDocument.containsKey("related_param_id")) {
-                                    String delta_tId=delta_tDocument.get("related_param_id").toString();
+                                    String delta_tId = delta_tDocument.get("related_param_id").toString();
                                     //搜索任务中相应id的值
                                     String DeltaParamsValue = "";
-                                    Boolean RelatedIdFindFlag=true;
+                                    Boolean RelatedIdFindFlag = true;
                                     for (Document SequenceParams : MissionInstructionArrayChild) {
                                         if (SequenceParams.containsKey("code") && SequenceParams.get("code").toString().equals(delta_tId)) {
                                             if (SequenceParams.containsKey("value") && !SequenceParams.get("value").equals("")) {
                                                 DeltaParamsValue = SequenceParams.get("value").toString();
-                                                RelatedIdFindFlag=false;
+                                                RelatedIdFindFlag = false;
                                             }
                                             break;
                                         }
@@ -717,21 +779,21 @@ public class SingleInsGeneration {
                                     if (RelatedIdFindFlag) {
                                         for (Document TaskParams : MissionInstructionDefautArrayChild) {
                                             if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals(delta_tId)) {
-                                                if (TaskParams.containsKey("default_value") && TaskParams.get("default_value")!=null && !TaskParams.get("default_value").equals("")) {
+                                                if (TaskParams.containsKey("default_value") && TaskParams.get("default_value") != null && !TaskParams.get("default_value").equals("")) {
                                                     DeltaParamsValue = TaskParams.get("default_value").toString();
-                                                    RelatedIdFindFlag=false;
+                                                    RelatedIdFindFlag = false;
                                                 }
                                                 break;
                                             }
                                         }
                                     }
                                     if (delta_tDocument.containsKey("mapping")) {
-                                        Document delta_tMappingDocument= (Document) delta_tDocument.get("mapping");
+                                        Document delta_tMappingDocument = (Document) delta_tDocument.get("mapping");
                                         if (delta_tMappingDocument.containsKey(DeltaParamsValue)) {
-                                            InstDelta_t=delta_tMappingDocument.get(DeltaParamsValue).toString();
+                                            InstDelta_t = delta_tMappingDocument.get(DeltaParamsValue).toString();
                                         }
                                     }
-                                }else {
+                                } else {
                                     InstDelta_t = document3.get("delta_t").toString();
                                 }
                             }
@@ -743,7 +805,7 @@ public class SingleInsGeneration {
                                         if (InstCode.contains("NTCY200")) {
                                             String MetaHex = document4.get("hex").toString();
                                             byte[] byteMetaHex = hexStringToBytes(MetaHex);
-                                            if (document4.containsKey("params") && document4.get("params")!=null) {
+                                            if (document4.containsKey("params") && document4.get("params") != null) {
                                                 ArrayList<Document> MetaParams = (ArrayList<Document>) document4.get("params");
                                                 if (MetaParams.size() != 0) {
                                                     for (Document MetaParamsChild : MetaParams) {
@@ -755,7 +817,7 @@ public class SingleInsGeneration {
                                                                 if (MissionMetaParamsChildParamsChild.containsKey("code") && MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsId)) {
                                                                     if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
                                                                         //System.out.println(MetaParamsId);
-                                                                        float temeratureFloat=Float.parseFloat(MissionMetaParamsChildParamsChild.get("value").toString());
+                                                                        float temeratureFloat = Float.parseFloat(MissionMetaParamsChildParamsChild.get("value").toString());
                                                                         String MetaParamsIdValue = TemperatureFlotToStr(temeratureFloat);
                                                                         int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                         int byteLength = MetaParamsChild.getInteger("byte_length");
@@ -776,26 +838,26 @@ public class SingleInsGeneration {
                                             MetaHex = bytesToHexString(byteMetaHex);
                                             byte[] YouXiaoChangDuByte = new byte[]{(byte) (byteMetaHex.length)};
                                             String YouXiaoChangDuString = bytesToHexString(YouXiaoChangDuByte);
-                                            int ZhiXingJianGeInt = (new Double(Double.parseDouble(InstDelta_t)/0.125)).intValue();
-                                            byte[] ZhiXingJianGeByte = new byte[]{(byte) ((ZhiXingJianGeInt >> 8) & 0xFF),(byte) ((ZhiXingJianGeInt) & 0xFF)};
+                                            int ZhiXingJianGeInt = (new Double(Double.parseDouble(InstDelta_t) / 0.125)).intValue();
+                                            byte[] ZhiXingJianGeByte = new byte[]{(byte) ((ZhiXingJianGeInt >> 8) & 0xFF), (byte) ((ZhiXingJianGeInt) & 0xFF)};
                                             String ZhiXingJianGeString = bytesToHexString(ZhiXingJianGeByte);
                                             //String APIDString = "FFFF";//????????????
-                                            String APIDString = "0"+document4.get("apid").toString();
-                                            if ((YouXiaoData + APIDString + YouXiaoChangDuString + MetaHex + ZhiXingJianGeString).length()>1000) {
-                                                String youxiaoDataTemp=YouXiaoData;
+                                            String APIDString = "0" + document4.get("apid").toString();
+                                            if ((YouXiaoData + APIDString + YouXiaoChangDuString + MetaHex + ZhiXingJianGeString).length() > 1000) {
+                                                String youxiaoDataTemp = YouXiaoData;
                                                 YouXiaoshujuList.add(youxiaoDataTemp);
-                                                Byte ZhilingNumTemp=ZhilingNum;
+                                                Byte ZhilingNumTemp = ZhilingNum;
                                                 ZhiLingGeshuList.add(ZhilingNumTemp);
-                                                MoreThanFlag=true;
-                                                YouXiaoData="";
-                                                ZhilingNum=0;
+                                                MoreThanFlag = true;
+                                                YouXiaoData = "";
+                                                ZhilingNum = 0;
                                             }
                                             YouXiaoData = YouXiaoData + APIDString + YouXiaoChangDuString + MetaHex + ZhiXingJianGeString;
                                             ZhilingNum = (byte) (ZhilingNum + 1);
-                                        }else if (document4.containsKey("hex")) {
+                                        } else if (document4.containsKey("hex")) {
                                             String MetaHex = document4.get("hex").toString();
                                             byte[] byteMetaHex = hexStringToBytes(MetaHex);
-                                            if (document4.containsKey("params") && document4.get("params")!=null) {
+                                            if (document4.containsKey("params") && document4.get("params") != null) {
                                                 ArrayList<Document> MetaParams = (ArrayList<Document>) document4.get("params");
                                                 if (MetaParams.size() != 0) {
                                                     for (Document MetaParamsChild : MetaParams) {
@@ -803,7 +865,7 @@ public class SingleInsGeneration {
                                                         if (MetaParamsChild.containsKey("id")) {
                                                             String MetaParamsId = MetaParamsChild.get("id").toString();
                                                             //搜索任务中相应的id值
-                                                            Boolean RelatedIdFindFlag=true;
+                                                            Boolean RelatedIdFindFlag = true;
                                                             for (Document MissionMetaParamsChildParamsChild : MissionInstructionArrayChild) {
                                                                 if (MissionMetaParamsChildParamsChild.containsKey("code") && MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsId)) {
                                                                     if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
@@ -817,7 +879,7 @@ public class SingleInsGeneration {
                                                                                 byteMetaHex[j] = bytevalueHex[j - byteIndex];
                                                                             }
                                                                         }
-                                                                        RelatedIdFindFlag=false;
+                                                                        RelatedIdFindFlag = false;
                                                                         break;
                                                                     }
                                                                 }
@@ -825,7 +887,7 @@ public class SingleInsGeneration {
                                                             if (RelatedIdFindFlag) {
                                                                 for (Document TaskParams : MissionInstructionDefautArrayChild) {
                                                                     if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals(MetaParamsId)) {
-                                                                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value")!=null && !TaskParams.get("default_value").equals("")) {
+                                                                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value") != null && !TaskParams.get("default_value").equals("")) {
                                                                             //System.out.println(MetaParamsId);
                                                                             String MetaParamsIdValue = TaskParams.get("default_value").toString();
                                                                             int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
@@ -836,24 +898,24 @@ public class SingleInsGeneration {
                                                                                     byteMetaHex[j] = bytevalueHex[j - byteIndex];
                                                                                 }
                                                                             }
-                                                                            RelatedIdFindFlag=false;
+                                                                            RelatedIdFindFlag = false;
                                                                             break;
                                                                         }
                                                                     }
                                                                 }
                                                             }
-                                                        }else if (MetaParamsChild.containsKey("related_param_id")) {
-                                                            String MetaParamsCode="";
+                                                        } else if (MetaParamsChild.containsKey("related_param_id")) {
+                                                            String MetaParamsCode = "";
                                                             //列表选择执行种类
                                                             String MetaRelated_id = MetaParamsChild.get("related_param_id").toString();
                                                             //搜索任务中相应id的值
                                                             String SequenceParamsValue = "";
-                                                            Boolean RelatedIdFindFlag=true;
+                                                            Boolean RelatedIdFindFlag = true;
                                                             for (Document SequenceParams : MissionInstructionArrayChild) {
                                                                 if (SequenceParams.containsKey("code") && SequenceParams.get("code").toString().equals(MetaRelated_id)) {
                                                                     if (SequenceParams.containsKey("value") && !SequenceParams.get("value").equals("")) {
                                                                         SequenceParamsValue = SequenceParams.get("value").toString();
-                                                                        RelatedIdFindFlag=false;
+                                                                        RelatedIdFindFlag = false;
                                                                     }
                                                                     break;
                                                                 }
@@ -861,17 +923,17 @@ public class SingleInsGeneration {
                                                             if (RelatedIdFindFlag) {
                                                                 for (Document TaskParams : MissionInstructionDefautArrayChild) {
                                                                     if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals(MetaRelated_id)) {
-                                                                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value")!=null && !TaskParams.get("default_value").equals("")) {
+                                                                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value") != null && !TaskParams.get("default_value").equals("")) {
                                                                             SequenceParamsValue = TaskParams.get("default_value").toString();
-                                                                            RelatedIdFindFlag=false;
+                                                                            RelatedIdFindFlag = false;
                                                                         }
                                                                         break;
                                                                     }
                                                                 }
                                                             }
                                                             if (MetaParamsChild.containsKey("mapping")) {
-                                                                Document sequencemapping= (Document) MetaParamsChild.get("mapping");
-                                                                if (sequencemapping.containsKey(SequenceParamsValue) && sequencemapping.get(SequenceParamsValue)!=null && !sequencemapping.get(SequenceParamsValue).equals("")) {
+                                                                Document sequencemapping = (Document) MetaParamsChild.get("mapping");
+                                                                if (sequencemapping.containsKey(SequenceParamsValue) && sequencemapping.get(SequenceParamsValue) != null && !sequencemapping.get(SequenceParamsValue).equals("")) {
                                                                     MetaParamsCode = sequencemapping.get(SequenceParamsValue).toString();
                                                                     int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                     int byteLength = MetaParamsChild.getInteger("byte_length");
@@ -882,7 +944,7 @@ public class SingleInsGeneration {
                                                                         }
                                                                     }
                                                                 }
-                                                            }else {
+                                                            } else {
                                                                 int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                 int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                 byte[] bytevalueHex = hexStringToBytes(SequenceParamsValue);
@@ -892,14 +954,14 @@ public class SingleInsGeneration {
                                                                     }
                                                                 }
                                                             }
-                                                        }else {
+                                                        } else {
                                                             String MetaParamsCode = MetaParamsChild.get("code").toString();
                                                             //搜索任务中相应的code值
-                                                            Boolean RelatedIdFindFlag=true;
+                                                            Boolean RelatedIdFindFlag = true;
                                                             for (Document MissionMetaParamsChildParamsChild : MissionInstructionArrayChild) {
                                                                 if (MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsCode)) {
                                                                     String MetaParamsCodeValue = MissionMetaParamsChildParamsChild.get("value").toString();
-                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
+                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                     int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                     byte[] bytevalueHex = hexStringToBytes(MetaParamsCodeValue);
                                                                     for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -913,9 +975,9 @@ public class SingleInsGeneration {
                                                             if (RelatedIdFindFlag) {
                                                                 for (Document TaskParams : MissionInstructionDefautArrayChild) {
                                                                     if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals(MetaParamsCode)) {
-                                                                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value")!=null && !TaskParams.get("default_value").equals("")) {
+                                                                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value") != null && !TaskParams.get("default_value").equals("")) {
                                                                             String MetaParamsCodeValue = TaskParams.get("default_value").toString();
-                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
+                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                             int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                             byte[] bytevalueHex = hexStringToBytes(MetaParamsCodeValue);
                                                                             for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -923,7 +985,7 @@ public class SingleInsGeneration {
                                                                                     byteMetaHex[j] = bytevalueHex[j - byteIndex];
                                                                                 }
                                                                             }
-                                                                            RelatedIdFindFlag=false;
+                                                                            RelatedIdFindFlag = false;
                                                                         }
                                                                         break;
                                                                     }
@@ -936,151 +998,151 @@ public class SingleInsGeneration {
                                             MetaHex = bytesToHexString(byteMetaHex);
                                             byte[] YouXiaoChangDuByte = new byte[]{(byte) (byteMetaHex.length)};
                                             String YouXiaoChangDuString = bytesToHexString(YouXiaoChangDuByte);
-                                            int ZhiXingJianGeInt = (new Double(Double.parseDouble(InstDelta_t)/0.125)).intValue();
-                                            byte[] ZhiXingJianGeByte = new byte[]{(byte) ((ZhiXingJianGeInt >> 8) & 0xFF),(byte) ((ZhiXingJianGeInt) & 0xFF)};
+                                            int ZhiXingJianGeInt = (new Double(Double.parseDouble(InstDelta_t) / 0.125)).intValue();
+                                            byte[] ZhiXingJianGeByte = new byte[]{(byte) ((ZhiXingJianGeInt >> 8) & 0xFF), (byte) ((ZhiXingJianGeInt) & 0xFF)};
                                             String ZhiXingJianGeString = bytesToHexString(ZhiXingJianGeByte);
                                             //String APIDString = "FFFF";//????????????
-                                            String APIDString = "0"+document4.get("apid").toString();
-                                            if ((YouXiaoData + APIDString + YouXiaoChangDuString + MetaHex + ZhiXingJianGeString).length()>1000) {
-                                                String youxiaoDataTemp=YouXiaoData;
+                                            String APIDString = "0" + document4.get("apid").toString();
+                                            if ((YouXiaoData + APIDString + YouXiaoChangDuString + MetaHex + ZhiXingJianGeString).length() > 1000) {
+                                                String youxiaoDataTemp = YouXiaoData;
                                                 YouXiaoshujuList.add(youxiaoDataTemp);
-                                                Byte ZhilingNumTemp=ZhilingNum;
+                                                Byte ZhilingNumTemp = ZhilingNum;
                                                 ZhiLingGeshuList.add(ZhilingNumTemp);
-                                                MoreThanFlag=true;
-                                                YouXiaoData="";
-                                                ZhilingNum=0;
+                                                MoreThanFlag = true;
+                                                YouXiaoData = "";
+                                                ZhilingNum = 0;
                                             }
                                             YouXiaoData = YouXiaoData + APIDString + YouXiaoChangDuString + MetaHex + ZhiXingJianGeString;
                                             ZhilingNum = (byte) (ZhilingNum + 1);
-                                        }else {
+                                        } else {
                                             //添加特殊指令
-                                            String MetaHex="";
+                                            String MetaHex = "";
                                             if (InstCode.equals("K4401")) {
-                                                MetaHex="100280210114";
-                                                MetaHex=MetaHex+"AA1800AA";
+                                                MetaHex = "100280210114";
+                                                MetaHex = MetaHex + "AA1800AA";
                                                 try {
-                                                    if (Mission.containsKey("sepcial_params") && Mission.get("sepcial_params")!=null) {
-                                                        Document SepcialParams= (Document) Mission.get("sepcial_params");
-                                                        int time=Integer.parseInt(SepcialParams.get("maneuvering_time").toString());
-                                                        String strTemp=String.format("%04X",time);
+                                                    if (Mission.containsKey("sepcial_params") && Mission.get("sepcial_params") != null) {
+                                                        Document SepcialParams = (Document) Mission.get("sepcial_params");
+                                                        int time = Integer.parseInt(SepcialParams.get("maneuvering_time").toString());
+                                                        String strTemp = String.format("%04X", time);
                                                         if (strTemp.length() > 4) {
-                                                            strTemp=strTemp.substring(strTemp.length()-4);
-                                                        }else if (strTemp.length() < 4) {
+                                                            strTemp = strTemp.substring(strTemp.length() - 4);
+                                                        } else if (strTemp.length() < 4) {
                                                             for (int i = strTemp.length(); i < 4; i++) {
-                                                                strTemp="0"+strTemp;
-                                                                strTemp="0"+strTemp;
+                                                                strTemp = "0" + strTemp;
+                                                                strTemp = "0" + strTemp;
                                                             }
                                                         }
-                                                        MetaHex=MetaHex+strTemp;
-                                                        float roll=Float.parseFloat(SepcialParams.get("roll_angle").toString());
-                                                        strTemp=Integer.toHexString(Float.floatToIntBits(roll));
+                                                        MetaHex = MetaHex + strTemp;
+                                                        float roll = Float.parseFloat(SepcialParams.get("roll_angle").toString());
+                                                        strTemp = Integer.toHexString(Float.floatToIntBits(roll));
                                                         if (strTemp.length() > 8) {
-                                                            strTemp=strTemp.substring(strTemp.length()-8);
-                                                        }else if (strTemp.length() < 8) {
+                                                            strTemp = strTemp.substring(strTemp.length() - 8);
+                                                        } else if (strTemp.length() < 8) {
                                                             for (int i = strTemp.length(); i < 8; i++) {
-                                                                strTemp="0"+strTemp;
+                                                                strTemp = "0" + strTemp;
                                                             }
                                                         }
-                                                        MetaHex=MetaHex+strTemp;
-                                                        float pitch=Float.parseFloat(SepcialParams.get("pitch_angle").toString());
-                                                        strTemp=Integer.toHexString(Float.floatToIntBits(pitch));
+                                                        MetaHex = MetaHex + strTemp;
+                                                        float pitch = Float.parseFloat(SepcialParams.get("pitch_angle").toString());
+                                                        strTemp = Integer.toHexString(Float.floatToIntBits(pitch));
                                                         if (strTemp.length() > 8) {
-                                                            strTemp=strTemp.substring(strTemp.length()-8);
-                                                        }else if (strTemp.length() < 8) {
+                                                            strTemp = strTemp.substring(strTemp.length() - 8);
+                                                        } else if (strTemp.length() < 8) {
                                                             for (int i = strTemp.length(); i < 8; i++) {
-                                                                strTemp="0"+strTemp;
+                                                                strTemp = "0" + strTemp;
                                                             }
                                                         }
-                                                        MetaHex=MetaHex+strTemp;
-                                                        float accAng=Float.parseFloat(SepcialParams.get("angular_acceleration").toString());
-                                                        strTemp=Integer.toHexString(Float.floatToIntBits(accAng));
+                                                        MetaHex = MetaHex + strTemp;
+                                                        float accAng = Float.parseFloat(SepcialParams.get("angular_acceleration").toString());
+                                                        strTemp = Integer.toHexString(Float.floatToIntBits(accAng));
                                                         if (strTemp.length() > 8) {
-                                                            strTemp=strTemp.substring(strTemp.length()-8);
-                                                        }else if (strTemp.length() < 8) {
+                                                            strTemp = strTemp.substring(strTemp.length() - 8);
+                                                        } else if (strTemp.length() < 8) {
                                                             for (int i = strTemp.length(); i < 8; i++) {
-                                                                strTemp="0"+strTemp;
+                                                                strTemp = "0" + strTemp;
                                                             }
                                                         }
-                                                        MetaHex=MetaHex+strTemp;
-                                                        float velAng=Float.parseFloat(SepcialParams.get("angular_velocity").toString());
-                                                        strTemp=Integer.toHexString(Float.floatToIntBits(velAng));
+                                                        MetaHex = MetaHex + strTemp;
+                                                        float velAng = Float.parseFloat(SepcialParams.get("angular_velocity").toString());
+                                                        strTemp = Integer.toHexString(Float.floatToIntBits(velAng));
                                                         if (strTemp.length() > 8) {
-                                                            strTemp=strTemp.substring(strTemp.length()-8);
-                                                        }else if (strTemp.length() < 8) {
+                                                            strTemp = strTemp.substring(strTemp.length() - 8);
+                                                        } else if (strTemp.length() < 8) {
                                                             for (int i = strTemp.length(); i < 8; i++) {
-                                                                strTemp="0"+strTemp;
+                                                                strTemp = "0" + strTemp;
                                                             }
                                                         }
-                                                        MetaHex=MetaHex+strTemp;
+                                                        MetaHex = MetaHex + strTemp;
                                                     }
                                                 } catch (Exception e) {
                                                     e.printStackTrace();
                                                     continue;
                                                 }
-                                            }else if (InstCode.equals("K4402")) {
-                                                MetaHex="100280210118";
-                                                MetaHex=MetaHex+"A002";
-                                                MetaHex=MetaHex+"0101";
-                                            }else if (InstCode.equals("K4403")) {
-                                                MetaHex="100280210118";
-                                                MetaHex=MetaHex+"A002";
-                                                MetaHex=MetaHex+"0202";
-                                            }else if (InstCode.equals("K4404")) {
-                                                MetaHex="100280210118";
-                                                MetaHex=MetaHex+"A002";
-                                                MetaHex=MetaHex+"0303";
-                                            }else if (InstCode.equals("K4404")) {
-                                                MetaHex="100280210118";
-                                                MetaHex=MetaHex+"A002";
-                                                MetaHex=MetaHex+"0303";
-                                            }else if (InstCode.equals("K4405")) {
-                                                MetaHex="100280210118";
-                                                MetaHex=MetaHex+"A002";
-                                                MetaHex=MetaHex+"0404";
-                                            }else if (InstCode.equals("K4406")) {
-                                                MetaHex="100280210118";
-                                                MetaHex=MetaHex+"A002";
-                                                MetaHex=MetaHex+"0505";
-                                            }else if (InstCode.equals("K4407")) {
-                                                MetaHex="100280210118";
-                                                MetaHex=MetaHex+"A002";
-                                                MetaHex=MetaHex+"0606";
-                                            }else if (InstCode.equals("K4408")) {
-                                                MetaHex="100280210118";
-                                                MetaHex=MetaHex+"A002";
-                                                MetaHex=MetaHex+"0707";
-                                            }else if (InstCode.equals("K4409")) {
-                                                MetaHex="100280210118";
-                                                MetaHex=MetaHex+"A002";
-                                                MetaHex=MetaHex+"0808";
-                                            }else if (InstCode.equals("K4410")) {
-                                                MetaHex="100280210118";
-                                                MetaHex=MetaHex+"A102";
-                                                MetaHex=MetaHex+"0101";
-                                            }else if (InstCode.equals("K4411")) {
-                                                MetaHex="100280210118";
-                                                MetaHex=MetaHex+"A102";
-                                                MetaHex=MetaHex+"0202";
-                                            }else if (InstCode.equals("K4412")) {
-                                                MetaHex="100280210118";
-                                                MetaHex=MetaHex+"A102";
-                                                MetaHex=MetaHex+"0303";
-                                            }else if (InstCode.equals("K4413")) {
-                                                MetaHex="100280210118";
-                                                MetaHex=MetaHex+"A102";
-                                                MetaHex=MetaHex+"0404";
-                                            }else if (InstCode.equals("K4414")) {
-                                                MetaHex="100280210118";
-                                                MetaHex=MetaHex+"A102";
-                                                MetaHex=MetaHex+"0505";
-                                            }else if (InstCode.equals("K4415")) {
-                                                MetaHex="100280210118";
-                                                MetaHex=MetaHex+"A102";
-                                                MetaHex=MetaHex+"0606";
-                                            }else if (InstCode.equals("K4416")) {
-                                                MetaHex="100280210118";
-                                                MetaHex=MetaHex+"A102";
-                                                MetaHex=MetaHex+"0707";
+                                            } else if (InstCode.equals("K4402")) {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A002";
+                                                MetaHex = MetaHex + "0101";
+                                            } else if (InstCode.equals("K4403")) {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A002";
+                                                MetaHex = MetaHex + "0202";
+                                            } else if (InstCode.equals("K4404")) {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A002";
+                                                MetaHex = MetaHex + "0303";
+                                            } else if (InstCode.equals("K4404")) {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A002";
+                                                MetaHex = MetaHex + "0303";
+                                            } else if (InstCode.equals("K4405")) {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A002";
+                                                MetaHex = MetaHex + "0404";
+                                            } else if (InstCode.equals("K4406")) {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A002";
+                                                MetaHex = MetaHex + "0505";
+                                            } else if (InstCode.equals("K4407")) {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A002";
+                                                MetaHex = MetaHex + "0606";
+                                            } else if (InstCode.equals("K4408")) {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A002";
+                                                MetaHex = MetaHex + "0707";
+                                            } else if (InstCode.equals("K4409")) {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A002";
+                                                MetaHex = MetaHex + "0808";
+                                            } else if (InstCode.equals("K4410")) {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A102";
+                                                MetaHex = MetaHex + "0101";
+                                            } else if (InstCode.equals("K4411")) {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A102";
+                                                MetaHex = MetaHex + "0202";
+                                            } else if (InstCode.equals("K4412")) {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A102";
+                                                MetaHex = MetaHex + "0303";
+                                            } else if (InstCode.equals("K4413")) {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A102";
+                                                MetaHex = MetaHex + "0404";
+                                            } else if (InstCode.equals("K4414")) {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A102";
+                                                MetaHex = MetaHex + "0505";
+                                            } else if (InstCode.equals("K4415")) {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A102";
+                                                MetaHex = MetaHex + "0606";
+                                            } else if (InstCode.equals("K4416")) {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A102";
+                                                MetaHex = MetaHex + "0707";
                                             }
 //                                            else if (InstCode.equals("K4418")) {
 //                                                MetaHex="100280210118";
@@ -1088,33 +1150,33 @@ public class SingleInsGeneration {
 //                                                MetaHex=MetaHex+"0808";
 //                                            }
                                             else if (InstCode.equals("K4419")) {
-                                                MetaHex="100280210118";
-                                                MetaHex=MetaHex+"A200";
-                                            }else if (InstCode.equals("K4420")) {
-                                                MetaHex="100280210118";
-                                                MetaHex=MetaHex+"A400";
-                                            }else if (InstCode.equals("K4425")) {
-                                                MetaHex="100280210118";
-                                                MetaHex=MetaHex+"A81C";
-                                            }else {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A200";
+                                            } else if (InstCode.equals("K4420")) {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A400";
+                                            } else if (InstCode.equals("K4425")) {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A81C";
+                                            } else {
                                                 break;
                                             }
                                             byte[] byteMetaHex = hexStringToBytes(MetaHex);
                                             byte[] YouXiaoChangDuByte = new byte[]{(byte) (byteMetaHex.length)};
                                             String YouXiaoChangDuString = bytesToHexString(YouXiaoChangDuByte);
-                                            int ZhiXingJianGeInt = (new Double(Double.parseDouble(InstDelta_t)/0.125)).intValue();
-                                            byte[] ZhiXingJianGeByte = new byte[]{(byte) ((ZhiXingJianGeInt >> 8) & 0xFF),(byte) ((ZhiXingJianGeInt) & 0xFF)};
+                                            int ZhiXingJianGeInt = (new Double(Double.parseDouble(InstDelta_t) / 0.125)).intValue();
+                                            byte[] ZhiXingJianGeByte = new byte[]{(byte) ((ZhiXingJianGeInt >> 8) & 0xFF), (byte) ((ZhiXingJianGeInt) & 0xFF)};
                                             String ZhiXingJianGeString = bytesToHexString(ZhiXingJianGeByte);
                                             //String APIDString = "FFFF";//????????????
-                                            String APIDString = "0"+document4.get("apid").toString();
-                                            if ((YouXiaoData + APIDString + YouXiaoChangDuString + MetaHex + ZhiXingJianGeString).length()>1000) {
-                                                String youxiaoDataTemp=YouXiaoData;
+                                            String APIDString = "0" + document4.get("apid").toString();
+                                            if ((YouXiaoData + APIDString + YouXiaoChangDuString + MetaHex + ZhiXingJianGeString).length() > 1000) {
+                                                String youxiaoDataTemp = YouXiaoData;
                                                 YouXiaoshujuList.add(youxiaoDataTemp);
-                                                Byte ZhilingNumTemp=ZhilingNum;
+                                                Byte ZhilingNumTemp = ZhilingNum;
                                                 ZhiLingGeshuList.add(ZhilingNumTemp);
-                                                MoreThanFlag=true;
-                                                YouXiaoData="";
-                                                ZhilingNum=0;
+                                                MoreThanFlag = true;
+                                                YouXiaoData = "";
+                                                ZhilingNum = 0;
                                             }
                                             YouXiaoData = YouXiaoData + APIDString + YouXiaoChangDuString + MetaHex + ZhiXingJianGeString;
                                             ZhilingNum = (byte) (ZhilingNum + 1);
@@ -1137,49 +1199,49 @@ public class SingleInsGeneration {
                         continue;
                     }
                     int ZhiLingIDNum = SequenceID.SequenceId;
-                    SequenceID.SequenceId=SequenceID.SequenceId+1;
+                    SequenceID.SequenceId = SequenceID.SequenceId + 1;
                     if (SequenceID.SequenceId > 255) {
-                        SequenceID.SequenceId=0;
+                        SequenceID.SequenceId = 0;
                     }
                     byte[] ZhiLingXuLieIDByte = new byte[]{(byte) ((ZhiLingIDNum) & 0xFF)};
                     String ZhiLingXuLieIDString = bytesToHexString(ZhiLingXuLieIDByte);
-                    ZhiLingXuLieIDString="00"+ZhiLingXuLieIDString;
+                    ZhiLingXuLieIDString = "00" + ZhiLingXuLieIDString;
                     byte[] ZhiLingGeShu = new byte[]{ZhiLingGeshuList.get(j)};
                     String ZhiLingGeShuString = bytesToHexString(ZhiLingGeShu);
                     //最后一条指令时间间隔
                     String YouXiaoDataTemp;
                     if (YouXiaoshujuList.get(j).length() <= 4) {
                         continue;
-                    }else {
-                        YouXiaoDataTemp=YouXiaoshujuList.get(j).substring(0,YouXiaoshujuList.get(j).length()-4);
+                    } else {
+                        YouXiaoDataTemp = YouXiaoshujuList.get(j).substring(0, YouXiaoshujuList.get(j).length() - 4);
                     }
                     //起始执行时间
-                    Date ZhixingTimeDate= (Date) Mission.get("executione_time");
-                    int NSTimeTemp= (int) (Duration.between(zerostart,ZhixingTimeDate.toInstant()).getSeconds());
-                    String ZhixingTimeStr=String.format("%08X",NSTimeTemp);
-                    String YingYongShuJu = ZhixingTimeStr+ZhiLingXuLieIDString + ZhiLingGeShuString + YouXiaoDataTemp;
+                    Date ZhixingTimeDate = (Date) Mission.get("executione_time");
+                    int NSTimeTemp = (int) (Duration.between(zerostart, ZhixingTimeDate.toInstant()).getSeconds());
+                    String ZhixingTimeStr = String.format("%08X", NSTimeTemp);
+                    String YingYongShuJu = ZhixingTimeStr + ZhiLingXuLieIDString + ZhiLingGeShuString + YouXiaoDataTemp;
                     //数据区头
                     String ShuJuQuTou = "100B8021";
                     //包主导头，包数据长度
-                    int BaoChang = (ShuJuQuTou + YingYongShuJu).length() / 2 + 2-1;
-                    String BaoChangstr = String.format("%04X",BaoChang);
+                    int BaoChang = (ShuJuQuTou + YingYongShuJu).length() / 2 + 2 - 1;
+                    String BaoChangstr = String.format("%04X", BaoChang);
                     //包序列控制
                     int BaoXuLieIDNum = SequenceID.PackageId;
-                    SequenceID.PackageId=SequenceID.PackageId+1;
+                    SequenceID.PackageId = SequenceID.PackageId + 1;
                     if (SequenceID.PackageId > 16383) {
-                        SequenceID.PackageId=0;
+                        SequenceID.PackageId = 0;
                     }
-                    String BaoXuLieIDStr=Integer.toBinaryString(BaoXuLieIDNum);
+                    String BaoXuLieIDStr = Integer.toBinaryString(BaoXuLieIDNum);
                     if (BaoXuLieIDStr.length() < 14) {
                         for (int i_id = BaoXuLieIDStr.length(); i_id < 14; i_id++) {
-                            BaoXuLieIDStr="0"+BaoXuLieIDStr;
+                            BaoXuLieIDStr = "0" + BaoXuLieIDStr;
                         }
-                    }else {
-                        BaoXuLieIDStr=BaoXuLieIDStr.substring(BaoXuLieIDStr.length()-14);
+                    } else {
+                        BaoXuLieIDStr = BaoXuLieIDStr.substring(BaoXuLieIDStr.length() - 14);
                     }
-                    BaoXuLieIDStr="11"+BaoXuLieIDStr;
-                    BaoXuLieIDStr=Integer.toHexString(Integer.parseInt(BaoXuLieIDStr,2)).toUpperCase();
-                    String BaoZhuDaoTou = "1C11" +BaoXuLieIDStr+ BaoChangstr;
+                    BaoXuLieIDStr = "11" + BaoXuLieIDStr;
+                    BaoXuLieIDStr = Integer.toHexString(Integer.parseInt(BaoXuLieIDStr, 2)).toUpperCase();
+                    String BaoZhuDaoTou = "1C11" + BaoXuLieIDStr + BaoChangstr;
                     String total = BaoZhuDaoTou + ShuJuQuTou + YingYongShuJu + ISO(BaoZhuDaoTou + ShuJuQuTou + YingYongShuJu);
                     MissionInstructionCode.add(sequencecode);
                     MissionInstructionHex.add(total);
@@ -1190,55 +1252,55 @@ public class SingleInsGeneration {
             if (YouXiaoData.length() <= 4) {
                 if (MoreThanFlag) {
                     return true;
-                }else {
+                } else {
                     return false;
                 }
             }
             int ZhiLingIDNum = SequenceID.SequenceId;
-            SequenceID.SequenceId=SequenceID.SequenceId+1;
+            SequenceID.SequenceId = SequenceID.SequenceId + 1;
             if (SequenceID.SequenceId > 255) {
-                SequenceID.SequenceId=0;
+                SequenceID.SequenceId = 0;
             }
             byte[] ZhiLingXuLieIDByte = new byte[]{(byte) ((ZhiLingIDNum) & 0xFF)};
             String ZhiLingXuLieIDString = bytesToHexString(ZhiLingXuLieIDByte);
-            ZhiLingXuLieIDString="00"+ZhiLingXuLieIDString;
+            ZhiLingXuLieIDString = "00" + ZhiLingXuLieIDString;
             byte[] ZhiLingGeShu = new byte[]{ZhilingNum};
             String ZhiLingGeShuString = bytesToHexString(ZhiLingGeShu);
             //最后一条指令时间间隔
-            String YouXiaoDataTemp=YouXiaoData.substring(0,YouXiaoData.length()-4);
+            String YouXiaoDataTemp = YouXiaoData.substring(0, YouXiaoData.length() - 4);
             //起始执行时间
-            Date ZhixingTimeDate= (Date) Mission.get("executione_time");
-            int NSTimeTemp= (int) (Duration.between(zerostart,ZhixingTimeDate.toInstant()).getSeconds());
-            String ZhixingTimeStr=String.format("%08X",NSTimeTemp);
-            String YingYongShuJu = ZhixingTimeStr+ZhiLingXuLieIDString + ZhiLingGeShuString + YouXiaoDataTemp;
+            Date ZhixingTimeDate = (Date) Mission.get("executione_time");
+            int NSTimeTemp = (int) (Duration.between(zerostart, ZhixingTimeDate.toInstant()).getSeconds());
+            String ZhixingTimeStr = String.format("%08X", NSTimeTemp);
+            String YingYongShuJu = ZhixingTimeStr + ZhiLingXuLieIDString + ZhiLingGeShuString + YouXiaoDataTemp;
             //数据区头
             String ShuJuQuTou = "100B8021";
             //包主导头，包数据长度
-            int BaoChang = (ShuJuQuTou + YingYongShuJu).length() / 2 + 2-1;
-            String BaoChangstr = String.format("%04X",BaoChang);
+            int BaoChang = (ShuJuQuTou + YingYongShuJu).length() / 2 + 2 - 1;
+            String BaoChangstr = String.format("%04X", BaoChang);
             //包序列控制
             int BaoXuLieIDNum = SequenceID.PackageId;
-            SequenceID.PackageId=SequenceID.PackageId+1;
+            SequenceID.PackageId = SequenceID.PackageId + 1;
             if (SequenceID.PackageId > 16383) {
-                SequenceID.PackageId=0;
+                SequenceID.PackageId = 0;
             }
-            String BaoXuLieIDStr=Integer.toBinaryString(BaoXuLieIDNum);
+            String BaoXuLieIDStr = Integer.toBinaryString(BaoXuLieIDNum);
             if (BaoXuLieIDStr.length() < 14) {
                 for (int i_id = BaoXuLieIDStr.length(); i_id < 14; i_id++) {
-                    BaoXuLieIDStr="0"+BaoXuLieIDStr;
+                    BaoXuLieIDStr = "0" + BaoXuLieIDStr;
                 }
-            }else {
-                BaoXuLieIDStr=BaoXuLieIDStr.substring(BaoXuLieIDStr.length()-14);
+            } else {
+                BaoXuLieIDStr = BaoXuLieIDStr.substring(BaoXuLieIDStr.length() - 14);
             }
-            BaoXuLieIDStr="11"+BaoXuLieIDStr;
-            BaoXuLieIDStr=Integer.toHexString(Integer.parseInt(BaoXuLieIDStr,2)).toUpperCase();
-            String BaoZhuDaoTou = "1C11" +BaoXuLieIDStr+ BaoChangstr;
+            BaoXuLieIDStr = "11" + BaoXuLieIDStr;
+            BaoXuLieIDStr = Integer.toHexString(Integer.parseInt(BaoXuLieIDStr, 2)).toUpperCase();
+            String BaoZhuDaoTou = "1C11" + BaoXuLieIDStr + BaoChangstr;
             String total = BaoZhuDaoTou + ShuJuQuTou + YingYongShuJu + ISO(BaoZhuDaoTou + ShuJuQuTou + YingYongShuJu);
             MissionInstructionCode.add(sequencecode);
             MissionInstructionHex.add(total);
             MissionInstructionId.add(ZhiLingIDNum);
             MissionInstructionTime.add(ZhixingTimeDate);
-        }else {
+        } else {
             return false;
         }
         return true;
@@ -1303,18 +1365,18 @@ public class SingleInsGeneration {
         int C1 = 0;
         for (int i = 0; i < Frame.length(); i = i + 2) {
             int B = Integer.parseInt(Frame.substring(i, i + 2), 16);
-            C0 = (C0 + B)%255;
-            C1 = (C1 + C0)%255;
+            C0 = (C0 + B) % 255;
+            C1 = (C1 + C0) % 255;
         }
-        int CK1 = (-(C0 + C1))%255;
+        int CK1 = (-(C0 + C1)) % 255;
         if (CK1 < 0) {
-            CK1=CK1+255;
+            CK1 = CK1 + 255;
         }
         int CK2 = C1;
-        String CK1tot = String.format("%02X",CK1).toUpperCase();
-        String CK2tot = String.format("%02X",CK2).toUpperCase();
-        String CK1str=CK1tot;
-        String CK2str=CK2tot;
+        String CK1tot = String.format("%02X", CK1).toUpperCase();
+        String CK2tot = String.format("%02X", CK2).toUpperCase();
+        String CK1str = CK1tot;
+        String CK2str = CK2tot;
         if (CK1tot.length() > 2) {
             CK1str = CK1tot.substring(CK1tot.length() - 2);
         }
@@ -1373,14 +1435,14 @@ public class SingleInsGeneration {
     }
 
     //控温阈值计算公式
-    private static String TemperatureFlotToStr(float tem){
-        String temstr=Integer.toHexString(Float.floatToIntBits(tem));
+    private static String TemperatureFlotToStr(float tem) {
+        String temstr = Integer.toHexString(Float.floatToIntBits(tem));
         if (temstr.length() < 4) {
-            for (int j = temstr.length()+1; j <= 4; j++) {
-                temstr="0"+temstr;
+            for (int j = temstr.length() + 1; j <= 4; j++) {
+                temstr = "0" + temstr;
             }
-        }else if (temstr.length() > 4) {
-            temstr=temstr.substring(temstr.length()-4);
+        } else if (temstr.length() > 4) {
+            temstr = temstr.substring(temstr.length() - 4);
         }
         return temstr;
     }
