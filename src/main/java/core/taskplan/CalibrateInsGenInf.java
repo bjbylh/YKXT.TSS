@@ -792,10 +792,6 @@ public class CalibrateInsGenInf {
                                                                         MetaHex = "100280010118";
                                                                         MetaHex = MetaHex + "A002";
                                                                         MetaHex = MetaHex + "0303";
-                                                                    } else if (InstCode.equals("K4404")) {
-                                                                        MetaHex = "100280010118";
-                                                                        MetaHex = MetaHex + "A002";
-                                                                        MetaHex = MetaHex + "0303";
                                                                     } else if (InstCode.equals("K4405")) {
                                                                         MetaHex = "100280010118";
                                                                         MetaHex = MetaHex + "A002";
@@ -844,16 +840,14 @@ public class CalibrateInsGenInf {
                                                                         MetaHex = "100280010118";
                                                                         MetaHex = MetaHex + "A102";
                                                                         MetaHex = MetaHex + "0707";
-                                                                    }
-//                                                                    else if (InstCode.equals("K4418")) {
-//                                                                        MetaHex="100280010118";
-//                                                                        MetaHex=MetaHex+"A102";
-//                                                                        MetaHex=MetaHex+"0808";
-//                                                                    }
-                                                                    else if (InstCode.equals("K4419")) {
+                                                                    } else if (InstCode.equals("K4417")) {
+                                                                        MetaHex = "100280010118";
+                                                                        MetaHex = MetaHex + "A102";
+                                                                        MetaHex = MetaHex + "0808";
+                                                                    } else if (InstCode.equals("K4419")) {//todo
                                                                         MetaHex = "100280010118";
                                                                         MetaHex = MetaHex + "A200";
-                                                                    } else if (InstCode.equals("K4420")) {
+                                                                    } else if (InstCode.equals("K4420")) {//todo
                                                                         MetaHex = "100280010118";
                                                                         MetaHex = MetaHex + "A400";
                                                                     } else if (InstCode.equals("K4425")) {

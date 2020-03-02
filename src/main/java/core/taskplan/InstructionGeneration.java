@@ -32,7 +32,7 @@ public class InstructionGeneration {
     private static int TimeZone = -8;                     //北京时区到世界时-8
     private static double Re = 6371393;                  //地球半径，单位为：米
 
-    public static void InstructionGenerationII(ArrayList<Document> ImageMissionjson, Document TransmissionMissionJson, ArrayList<Document> StationMissionjson, FindIterable<Document> Attitudejson, long AttitudeDataCount, String FilePath,Document CamStatus) {
+    public static void InstructionGenerationII(ArrayList<Document> ImageMissionjson, Document TransmissionMissionJson, ArrayList<Document> StationMissionjson, FindIterable<Document> Attitudejson, long AttitudeDataCount, String FilePath, Document CamStatus) {
         //序列时间设置
         TimeVariable timeVariable = new TimeVariable();
         timeVariable.TSC = 6 + 0.25 + 0.125 + 0.125 + 0.125 + 0.125 + 240 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 +
@@ -172,44 +172,44 @@ public class InstructionGeneration {
                             MissionTargetArea_iList.add(new double[]{0, 0});
                             MissionTargetAreaList.add(MissionNum, MissionTargetArea_iList);
                         }
-                        int[] MissionLoadType_iList = new int[]{0,0,0,0};
-                        Boolean MissionLoadTypeFlag=true;
-                        if (document.containsKey("mission_params") && document.get("mission_params")!=null) {
-                            ArrayList<Document> MissionParamsTemp= (ArrayList<Document>) document.get("mission_params");
-                            for (Document document1:MissionParamsTemp) {
-                                if (document1.containsKey("code") && document1.get("code")!=null && document1.get("code").equals("P_SATELLITE_USE")) {
-                                    if (document1.containsKey("value") && document1.get("value")!=null && !document1.get("value").equals("")) {
+                        int[] MissionLoadType_iList = new int[]{0, 0, 0, 0};
+                        Boolean MissionLoadTypeFlag = true;
+                        if (document.containsKey("mission_params") && document.get("mission_params") != null) {
+                            ArrayList<Document> MissionParamsTemp = (ArrayList<Document>) document.get("mission_params");
+                            for (Document document1 : MissionParamsTemp) {
+                                if (document1.containsKey("code") && document1.get("code") != null && document1.get("code").equals("P_SATELLITE_USE")) {
+                                    if (document1.containsKey("value") && document1.get("value") != null && !document1.get("value").equals("")) {
                                         if (document1.get("value").equals("1")) {
-                                            MissionLoadType_iList[0]=1;
-                                            MissionLoadTypeFlag=false;
-                                        }else if (document1.get("value").equals("2")) {
-                                            MissionLoadType_iList[1]=1;
-                                            MissionLoadTypeFlag=false;
-                                        }else if (document1.get("value").equals("3")) {
-                                            MissionLoadType_iList[2]=1;
-                                            MissionLoadTypeFlag=false;
-                                        }else if (document1.get("value").equals("4")) {
-                                            MissionLoadType_iList[3]=1;
-                                            MissionLoadTypeFlag=false;
+                                            MissionLoadType_iList[0] = 1;
+                                            MissionLoadTypeFlag = false;
+                                        } else if (document1.get("value").equals("2")) {
+                                            MissionLoadType_iList[1] = 1;
+                                            MissionLoadTypeFlag = false;
+                                        } else if (document1.get("value").equals("3")) {
+                                            MissionLoadType_iList[2] = 1;
+                                            MissionLoadTypeFlag = false;
+                                        } else if (document1.get("value").equals("4")) {
+                                            MissionLoadType_iList[3] = 1;
+                                            MissionLoadTypeFlag = false;
                                         }
                                     }
                                 }
                             }
                         }
                         if (MissionLoadTypeFlag) {
-                            if (document.containsKey("default_mission_params") && document.get("default_mission_params")!=null) {
-                                ArrayList<Document> MissionParamsTemp= (ArrayList<Document>) document.get("default_mission_params");
-                                for (Document document1:MissionParamsTemp) {
-                                    if (document1.containsKey("code") && document1.get("code")!=null && document1.get("code").equals("P_SATELLITE_USE")) {
-                                        if (document1.containsKey("default_value") && document1.get("default_value")!=null && !document1.get("default_value").equals("")) {
+                            if (document.containsKey("default_mission_params") && document.get("default_mission_params") != null) {
+                                ArrayList<Document> MissionParamsTemp = (ArrayList<Document>) document.get("default_mission_params");
+                                for (Document document1 : MissionParamsTemp) {
+                                    if (document1.containsKey("code") && document1.get("code") != null && document1.get("code").equals("P_SATELLITE_USE")) {
+                                        if (document1.containsKey("default_value") && document1.get("default_value") != null && !document1.get("default_value").equals("")) {
                                             if (document1.get("default_value").equals("1")) {
-                                                MissionLoadType_iList[0]=1;
-                                            }else if (document1.get("default_value").equals("2")) {
-                                                MissionLoadType_iList[1]=1;
-                                            }else if (document1.get("default_value").equals("3")) {
-                                                MissionLoadType_iList[2]=1;
-                                            }else if (document1.get("default_value").equals("4")) {
-                                                MissionLoadType_iList[3]=1;
+                                                MissionLoadType_iList[0] = 1;
+                                            } else if (document1.get("default_value").equals("2")) {
+                                                MissionLoadType_iList[1] = 1;
+                                            } else if (document1.get("default_value").equals("3")) {
+                                                MissionLoadType_iList[2] = 1;
+                                            } else if (document1.get("default_value").equals("4")) {
+                                                MissionLoadType_iList[3] = 1;
                                             }
                                         }
                                     }
@@ -237,13 +237,13 @@ public class InstructionGeneration {
                 for (int i = 0; i < 4; i++) {
                     ArrayList<Integer> sortResult = new ArrayList<>();
                     for (int j = 0; j < MissionStarTimeArray.size(); j++) {
-                        if (MissionLoadTypeList.get(j)[i]==1) {
+                        if (MissionLoadTypeList.get(j)[i] == 1) {
                             sortResult.add(j);
                         }
                     }
                     if (sortResult.size() > 1) {
-                        for (int j = 0; j < sortResult.size()-1; j++) {
-                            for (int k = 0; k < sortResult.size()-1-j; k++) {
+                        for (int j = 0; j < sortResult.size() - 1; j++) {
+                            for (int k = 0; k < sortResult.size() - 1 - j; k++) {
                                 if (MissionStarTimeArray.get(sortResult.get(k)).after(MissionStarTimeArray.get(sortResult.get(k + 1)))) {
                                     Integer temp = sortResult.get(k);
                                     Integer tempJ = sortResult.get(k + 1);
@@ -256,21 +256,21 @@ public class InstructionGeneration {
                             if (j == 0) {
                                 ArrayList<String> MissionTaskModelChild = new ArrayList<>();
                                 double error = MissionStarTimeArray.get(sortResult.get(j + 1)).getTime() / 1000 - MissionEndTimeArray.get(sortResult.get(j)).getTime() / 1000;
-                                String CamGFAStatus_num="CamGFAStatus";
+                                String CamGFAStatus_num = "CamGFAStatus";
                                 if (i == 0) {
-                                    CamGFAStatus_num="CamGFAStatus";
-                                }else if (i == 1) {
-                                    CamGFAStatus_num="CamGFBStatus";
-                                }else if (i == 2) {
-                                    CamGFAStatus_num="CamDGAStatus";
-                                }else if (i == 3) {
-                                    CamGFAStatus_num="CamDGBStatus";
+                                    CamGFAStatus_num = "CamGFAStatus";
+                                } else if (i == 1) {
+                                    CamGFAStatus_num = "CamGFBStatus";
+                                } else if (i == 2) {
+                                    CamGFAStatus_num = "CamDGAStatus";
+                                } else if (i == 3) {
+                                    CamGFAStatus_num = "CamDGBStatus";
                                 }
                                 if (error < TaskSelectTime) {
                                     if (CamStatus.get(CamGFAStatus_num).toString().equals("ON")) {
                                         MissionTaskModelChild.add("TASK10");//任务恢复
                                         MissionTaskModelChild.add("TASK09");//任务暂停
-                                    }else {
+                                    } else {
                                         MissionTaskModelChild.add("TASK02");//开机
                                         MissionTaskModelChild.add("TASK09");//任务暂停
                                     }
@@ -278,12 +278,12 @@ public class InstructionGeneration {
                                     if (CamStatus.get(CamGFAStatus_num).toString().equals("ON")) {
                                         MissionTaskModelChild.add("TASK10");//任务恢复
                                         MissionTaskModelChild.add("TASK03");//关机
-                                    }else {
+                                    } else {
                                         MissionTaskModelChild.add("TASK01");//常规成像
                                     }
                                 }
                                 MissionTaskModel.put(sortResult.get(j), MissionTaskModelChild);
-                            }else if (j == sortResult.size()-1) {
+                            } else if (j == sortResult.size() - 1) {
                                 ArrayList<String> MissionTaskModelChild = new ArrayList<>();
                                 double error = MissionStarTimeArray.get(sortResult.get(j)).getTime() / 1000 - MissionEndTimeArray.get(sortResult.get(j - 1)).getTime() / 1000;
                                 if (error < TaskSelectTime) {
@@ -293,7 +293,7 @@ public class InstructionGeneration {
                                     MissionTaskModelChild.add("TASK01");//常规成像
                                 }
                                 MissionTaskModel.put(sortResult.get(j), MissionTaskModelChild);
-                            }else {
+                            } else {
                                 ArrayList<String> MissionTaskModelChild = new ArrayList<>();
                                 double error = MissionStarTimeArray.get(sortResult.get(j)).getTime() / 1000 - MissionEndTimeArray.get(sortResult.get(j - 1)).getTime() / 1000;
                                 double error2 = MissionStarTimeArray.get(sortResult.get(j + 1)).getTime() / 1000 - MissionEndTimeArray.get(sortResult.get(j)).getTime() / 1000;
@@ -312,22 +312,22 @@ public class InstructionGeneration {
                                 MissionTaskModel.put(sortResult.get(j), MissionTaskModelChild);
                             }
                         }
-                    }else if (sortResult.size() == 1) {
+                    } else if (sortResult.size() == 1) {
                         ArrayList<String> MissionTaskModelChild = new ArrayList<>();
-                        String CamGFAStatus_num="CamGFAStatus";
+                        String CamGFAStatus_num = "CamGFAStatus";
                         if (i == 0) {
-                            CamGFAStatus_num="CamGFAStatus";
-                        }else if (i == 1) {
-                            CamGFAStatus_num="CamGFBStatus";
-                        }else if (i == 2) {
-                            CamGFAStatus_num="CamDGAStatus";
-                        }else if (i == 3) {
-                            CamGFAStatus_num="CamDGBStatus";
+                            CamGFAStatus_num = "CamGFAStatus";
+                        } else if (i == 1) {
+                            CamGFAStatus_num = "CamGFBStatus";
+                        } else if (i == 2) {
+                            CamGFAStatus_num = "CamDGAStatus";
+                        } else if (i == 3) {
+                            CamGFAStatus_num = "CamDGBStatus";
                         }
                         if (CamStatus.get(CamGFAStatus_num).toString().equals("ON")) {
                             MissionTaskModelChild.add("TASK10");//任务恢复
                             MissionTaskModelChild.add("TASK03");//关机
-                        }else {
+                        } else {
                             MissionTaskModelChild.add("TASK01");//常规成像
                         }
                         MissionTaskModel.put(sortResult.get(0), MissionTaskModelChild);
@@ -335,32 +335,32 @@ public class InstructionGeneration {
                 }
             } else {
                 ArrayList<String> MissionTaskModelChild = new ArrayList<>();
-                if (MissionLoadTypeList.get(0)[0]==1){
+                if (MissionLoadTypeList.get(0)[0] == 1) {
                     if (CamStatus.get("CamGFAStatus").toString().equals("ON")) {
                         MissionTaskModelChild.add("TASK10");//任务恢复
                         MissionTaskModelChild.add("TASK03");//关机
-                    }else {
+                    } else {
                         MissionTaskModelChild.add("TASK01");//常规成像
                     }
-                }else if (MissionLoadTypeList.get(0)[1]==1){
+                } else if (MissionLoadTypeList.get(0)[1] == 1) {
                     if (CamStatus.get("CamGFBStatus").toString().equals("ON")) {
                         MissionTaskModelChild.add("TASK10");//任务恢复
                         MissionTaskModelChild.add("TASK03");//关机
-                    }else {
+                    } else {
                         MissionTaskModelChild.add("TASK01");//常规成像
                     }
-                }else if (MissionLoadTypeList.get(0)[2]==1){
+                } else if (MissionLoadTypeList.get(0)[2] == 1) {
                     if (CamStatus.get("CamDGAStatus").toString().equals("ON")) {
                         MissionTaskModelChild.add("TASK10");//任务恢复
                         MissionTaskModelChild.add("TASK03");//关机
-                    }else {
+                    } else {
                         MissionTaskModelChild.add("TASK01");//常规成像
                     }
-                }else if (MissionLoadTypeList.get(0)[3]==1){
+                } else if (MissionLoadTypeList.get(0)[3] == 1) {
                     if (CamStatus.get("CamDGBStatus").toString().equals("ON")) {
                         MissionTaskModelChild.add("TASK10");//任务恢复
                         MissionTaskModelChild.add("TASK03");//关机
-                    }else {
+                    } else {
                         MissionTaskModelChild.add("TASK01");//常规成像
                     }
                 }
@@ -370,35 +370,35 @@ public class InstructionGeneration {
             for (int i = 0; i < MissionStarTimeArray.size(); i++) {
                 int j = i;
                 ArrayList<String> MissionTaskModelChild = new ArrayList<>();
-                if (MissionLoadTypeList.get(j)[0]==1){
+                if (MissionLoadTypeList.get(j)[0] == 1) {
                     if (CamStatus.get("CamGFAStatus").toString().equals("ON")) {
                         MissionTaskModelChild.add("TASK10");//任务恢复
                         MissionTaskModelChild.add("TASK09");//任务暂停
-                    }else {
+                    } else {
                         MissionTaskModelChild.add("TASK02");//开机不关机
                         MissionTaskModelChild.add("TASK09");//任务暂停
                     }
-                }else if (MissionLoadTypeList.get(j)[1]==1){
+                } else if (MissionLoadTypeList.get(j)[1] == 1) {
                     if (CamStatus.get("CamGFBStatus").toString().equals("ON")) {
                         MissionTaskModelChild.add("TASK10");//任务恢复
                         MissionTaskModelChild.add("TASK09");//任务暂停
-                    }else {
+                    } else {
                         MissionTaskModelChild.add("TASK02");//开机不关机
                         MissionTaskModelChild.add("TASK09");//任务暂停
                     }
-                }else if (MissionLoadTypeList.get(j)[2]==1){
+                } else if (MissionLoadTypeList.get(j)[2] == 1) {
                     if (CamStatus.get("CamDGAStatus").toString().equals("ON")) {
                         MissionTaskModelChild.add("TASK10");//任务恢复
                         MissionTaskModelChild.add("TASK09");//任务暂停
-                    }else {
+                    } else {
                         MissionTaskModelChild.add("TASK02");//开机不关机
                         MissionTaskModelChild.add("TASK09");//任务暂停
                     }
-                }else if (MissionLoadTypeList.get(j)[3]==1){
+                } else if (MissionLoadTypeList.get(j)[3] == 1) {
                     if (CamStatus.get("CamDGBStatus").toString().equals("ON")) {
                         MissionTaskModelChild.add("TASK10");//任务恢复
                         MissionTaskModelChild.add("TASK09");//任务暂停
-                    }else {
+                    } else {
                         MissionTaskModelChild.add("TASK02");//开机不关机
                         MissionTaskModelChild.add("TASK09");//任务暂停
                     }
@@ -458,7 +458,7 @@ public class InstructionGeneration {
 
         for (int i = 0; i < MissionNum; i++) {
             //姿态机动角
-            double[] FYGDAttitude=new double[]{0,0};
+            double[] FYGDAttitude = new double[]{0, 0};
             //添加指令参数
             ArrayList<Document> MissionInstructionArrayChildTemp = (ArrayList<Document>) MissionInstructionArray.get(i);
             ArrayList<Document> MissionInstructionArrayChild = new ArrayList<>();
@@ -522,7 +522,7 @@ public class InstructionGeneration {
                             break;
                         }
                     }
-                    FYGDAttitude[1]=FYAttitudeTemp;
+                    FYGDAttitude[1] = FYAttitudeTemp;
                     String strtemp = Integer.toHexString(Float.floatToIntBits(FYAttitudeTemp));
                     if (strtemp.length() < 8) {
                         for (int j = strtemp.length() + 1; j <= 8; j++) {
@@ -543,7 +543,7 @@ public class InstructionGeneration {
                             break;
                         }
                     }
-                    FYGDAttitude[0]=GDAttitudeTemp;
+                    FYGDAttitude[0] = GDAttitudeTemp;
                     String strtemp = Integer.toHexString(Float.floatToIntBits(GDAttitudeTemp));
                     if (strtemp.length() < 8) {
                         for (int j = strtemp.length() + 1; j <= 8; j++) {
@@ -722,7 +722,7 @@ public class InstructionGeneration {
                         break;
                     }
                 }
-                FYGDAttitude[1]=FYAttitudeTemp;
+                FYGDAttitude[1] = FYAttitudeTemp;
                 String strtemp = Integer.toHexString(Float.floatToIntBits(FYAttitudeTemp));
                 if (strtemp.length() < 8) {
                     for (int j = strtemp.length() + 1; j <= 8; j++) {
@@ -747,7 +747,7 @@ public class InstructionGeneration {
                         break;
                     }
                 }
-                FYGDAttitude[0]=GDAttitudeTemp;
+                FYGDAttitude[0] = GDAttitudeTemp;
                 String strtemp = Integer.toHexString(Float.floatToIntBits(GDAttitudeTemp));
                 if (strtemp.length() < 8) {
                     for (int j = strtemp.length() + 1; j <= 8; j++) {
@@ -906,6 +906,9 @@ public class InstructionGeneration {
             ArrayList<Date> MissionInstructionTimeChild = new ArrayList<>();
             ArrayList<String> MissionInstructionHexChild = new ArrayList<>();
             ArrayList<String> MissionInstructionWorkCode = new ArrayList<>();
+            ArrayList<Integer> MissionInstructionTimeUpdateStatus = new ArrayList<>();
+
+
             double InstDelta_tAll = 0;
             double InstDelta_tLastAll = 0;
             Date time_point = MissionStarTimeArray.get(i);
@@ -1253,7 +1256,7 @@ public class InstructionGeneration {
                                                                                                 //System.out.println(MetaParamsId);
                                                                                                 float temeratureFloat = Float.parseFloat(MissionMetaParamsChildParamsChild.get("value").toString());
                                                                                                 String MetaParamsIdValue = TemperatureFlotToStr(temeratureFloat);
-                                                                                                int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
+                                                                                                int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                                                 int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                                 byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                                                                 for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1305,7 +1308,7 @@ public class InstructionGeneration {
                                                                                             if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
                                                                                                 //System.out.println(MetaParamsId);
                                                                                                 String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("value").toString();
-                                                                                                int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
+                                                                                                int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                                                 int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                                 byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                                                                 for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1324,7 +1327,7 @@ public class InstructionGeneration {
                                                                                                 if (TaskParams.containsKey("default_value") && TaskParams.get("default_value") != null && !TaskParams.get("default_value").equals("")) {
                                                                                                     //System.out.println(MetaParamsId);
                                                                                                     String MetaParamsIdValue = TaskParams.get("default_value").toString();
-                                                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
+                                                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                                                     int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                                     byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                                                                     for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1369,7 +1372,7 @@ public class InstructionGeneration {
                                                                                         Document sequencemapping = (Document) MetaParamsChild.get("mapping");
                                                                                         if (sequencemapping.containsKey(SequenceParamsValue) && sequencemapping.get(SequenceParamsValue) != null && !sequencemapping.get(SequenceParamsValue).equals("")) {
                                                                                             MetaParamsCode = sequencemapping.get(SequenceParamsValue).toString();
-                                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
+                                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                                             int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                             byte[] bytevalueHex = hexStringToBytes(MetaParamsCode);
                                                                                             for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1379,7 +1382,7 @@ public class InstructionGeneration {
                                                                                             }
                                                                                         }
                                                                                     } else {
-                                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
+                                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                                         int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                         byte[] bytevalueHex = hexStringToBytes(SequenceParamsValue);
                                                                                         for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -1509,11 +1512,11 @@ public class InstructionGeneration {
                                                                                     strtempH +
                                                                                     strtempddAng +
                                                                                     strtempdAng;
-                                                                        }else {
+                                                                        } else {
                                                                             MetaHex = "100280210118";
                                                                             MetaHex = MetaHex + "AA1800AA";
-                                                                            float GDAtt= (float) FYGDAttitude[0];
-                                                                            float FYAtt= (float) FYGDAttitude[1];
+                                                                            float GDAtt = (float) FYGDAttitude[0];
+                                                                            float FYAtt = (float) FYGDAttitude[1];
                                                                             float t_theta = (float) timeVariable.T4401;
                                                                             float ddAng = (float) 0.08;
                                                                             float dAng = (float) 0.12;
@@ -1525,32 +1528,32 @@ public class InstructionGeneration {
                                                                                 for (int j = strtempGD.length() + 1; j <= 8; j++) {
                                                                                     strtempGD = "0" + strtempGD;
                                                                                 }
-                                                                            }else if (strtempGD.length() > 8) {
-                                                                                strtempGD=strtempGD.substring(strtempGD.length()-8);
+                                                                            } else if (strtempGD.length() > 8) {
+                                                                                strtempGD = strtempGD.substring(strtempGD.length() - 8);
                                                                             }
                                                                             String strtempFY = Integer.toHexString(Float.floatToIntBits(FYAtt));
                                                                             if (strtempFY.length() < 8) {
                                                                                 for (int j = strtempFY.length() + 1; j <= 8; j++) {
                                                                                     strtempFY = "0" + strtempFY;
                                                                                 }
-                                                                            }else if (strtempFY.length() > 8) {
-                                                                                strtempFY=strtempFY.substring(strtempFY.length()-8);
+                                                                            } else if (strtempFY.length() > 8) {
+                                                                                strtempFY = strtempFY.substring(strtempFY.length() - 8);
                                                                             }
                                                                             String strtempddAng = Integer.toHexString(Float.floatToIntBits(ddAng));
                                                                             if (strtempddAng.length() < 8) {
                                                                                 for (int j = strtempddAng.length() + 1; j <= 8; j++) {
                                                                                     strtempddAng = "0" + strtempddAng;
                                                                                 }
-                                                                            }else if (strtempddAng.length() > 8) {
-                                                                                strtempddAng=strtempddAng.substring(strtempddAng.length()-8);
+                                                                            } else if (strtempddAng.length() > 8) {
+                                                                                strtempddAng = strtempddAng.substring(strtempddAng.length() - 8);
                                                                             }
                                                                             String strtempdAng = Integer.toHexString(Float.floatToIntBits(dAng));
                                                                             if (strtempdAng.length() < 8) {
                                                                                 for (int j = strtempdAng.length() + 1; j <= 8; j++) {
                                                                                     strtempdAng = "0" + strtempdAng;
                                                                                 }
-                                                                            }else if (strtempdAng.length() > 8) {
-                                                                                strtempdAng=strtempdAng.substring(strtempdAng.length()-8);
+                                                                            } else if (strtempdAng.length() > 8) {
+                                                                                strtempdAng = strtempdAng.substring(strtempdAng.length() - 8);
                                                                             }
                                                                             MetaHex = MetaHex + st_thetaByte +
                                                                                     strtempGD +
@@ -1622,10 +1625,10 @@ public class InstructionGeneration {
                                                                         MetaHex = "100280210118";
                                                                         MetaHex = MetaHex + "A102";
                                                                         MetaHex = MetaHex + "0707";
-                                                                    //} else if (InstCode.equals("K4418")) {
-                                                                    //    MetaHex = "100280210118";
-                                                                    //    MetaHex = MetaHex + "A102";
-                                                                    //    MetaHex = MetaHex + "0808";
+                                                                        //} else if (InstCode.equals("K4418")) {
+                                                                        //    MetaHex = "100280210118";
+                                                                        //    MetaHex = MetaHex + "A102";
+                                                                        //    MetaHex = MetaHex + "0808";
                                                                     } else if (InstCode.equals("K4419")) {
                                                                         MetaHex = "100280210118";
                                                                         MetaHex = MetaHex + "A200";
@@ -1784,28 +1787,35 @@ public class InstructionGeneration {
 
                 //更新执行时间
                 for (int j = 0; j < MissionInstructionHexChild.size(); j++) {
-                    String KaiShiShiJian = timeHashMap.get(MissionInstructionCodeChild.get(j)).ExecutionTime(timeVariable, MissionInstructionWorkCode.get(j)).toUpperCase();
-                    if (KaiShiShiJian.length() < 8) {
-                        for (int i_id = KaiShiShiJian.length(); i_id < 8; i_id++) {
-                            KaiShiShiJian = "0" + KaiShiShiJian;
-                        }
-                    } else if (KaiShiShiJian.length() > 8) {
-                        KaiShiShiJian = KaiShiShiJian.substring(KaiShiShiJian.length() - 8);
-                    }
-                    String YingYongShuJuTemp = MissionInstructionHexChild.get(j);
-                    MissionInstructionHexChild.set(j, KaiShiShiJian + YingYongShuJuTemp);
-                    Instant time_ZhiXing = zerostart;
-                    time_ZhiXing = time_ZhiXing.plusSeconds((long) (Integer.parseInt(KaiShiShiJian, 16)));
-                    Date time_ZhixingDate = Date.from(time_ZhiXing);
-                    MissionInstructionTimeChild.set(j, time_ZhixingDate);
-                    System.out.println("序列号：" + MissionInstructionCodeChild.get(j));
-                    System.out.println("执行时间：" + Integer.parseInt(KaiShiShiJian, 16));
 
-                    it.put(MissionInstructionCodeChild.get(j) + "_" + Instant.now().toEpochMilli(), time_ZhixingDate.toString());
+                    String YingYongShuJuTemp = MissionInstructionHexChild.get(j);
+                    if (!MissionInstructionTimeUpdateStatus.contains(j)) {
+                        String KaiShiShiJian = timeHashMap.get(MissionInstructionCodeChild.get(j)).ExecutionTime(timeVariable, MissionInstructionWorkCode.get(j)).toUpperCase();
+                        if (KaiShiShiJian.length() < 8) {
+                            for (int i_id = KaiShiShiJian.length(); i_id < 8; i_id++) {
+                                KaiShiShiJian = "0" + KaiShiShiJian;
+                            }
+                        } else if (KaiShiShiJian.length() > 8) {
+                            KaiShiShiJian = KaiShiShiJian.substring(KaiShiShiJian.length() - 8);
+                        }
+                        MissionInstructionHexChild.set(j, KaiShiShiJian + YingYongShuJuTemp);
+                        Instant time_ZhiXing = zerostart;
+                        time_ZhiXing = time_ZhiXing.plusSeconds((long) (Integer.parseInt(KaiShiShiJian, 16)));
+                        Date time_ZhixingDate = Date.from(time_ZhiXing);
+                        MissionInstructionTimeChild.set(j, time_ZhixingDate);
+                        System.out.println("序列号：" + MissionInstructionCodeChild.get(j));
+                        System.out.println("执行时间：" + Integer.parseInt(KaiShiShiJian, 16));
+
+                        it.put(MissionInstructionCodeChild.get(j) + "_" + Instant.now().toEpochMilli(), time_ZhixingDate.toString());
+                        MissionInstructionTimeUpdateStatus.add(j);
+                    }
+
                 }
 
                 insTimeMap.put(i, it);
             }
+
+            MissionInstructionTimeUpdateStatus.clear();
 
             ArrayList<byte[]> InstructionArrayChild = new ArrayList<>();
             for (String ZhilingKuai_02 : MissionInstructionHexChild) {
@@ -2014,6 +2024,9 @@ public class InstructionGeneration {
         ArrayList<Date> TransMissionEndTimeArray = new ArrayList<>();
         ArrayList<String> TransForStationMissionNumber = new ArrayList<>();
         ArrayList<String> TransMissionNumbers = new ArrayList<>();
+
+        ArrayList<Object> MissionInstructionDefautArray = new ArrayList<>();
+
         if (TransmissionMissionJson != null) {
             try {
                 if (TransmissionMissionJson.get("fail_reason").equals("不可见")) {
@@ -2038,6 +2051,7 @@ public class InstructionGeneration {
                             }
                         }
                     }
+
                 }
 
             } catch (Exception e) {
@@ -2058,6 +2072,9 @@ public class InstructionGeneration {
                             }
                             if (document.containsKey("mission_params") && document.get("mission_params") != null) {
                                 MissionInstructionArray.add(document.get("mission_params"));
+                            }
+                            if (document.containsKey("default_mission_params") && document.get("default_mission_params") != null) {
+                                MissionInstructionDefautArray.add(document.get("default_mission_params"));
                             }
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -2080,8 +2097,10 @@ public class InstructionGeneration {
         ArrayList<ArrayList<String>> MissionInstructionCode = new ArrayList<>();
         ArrayList<ArrayList<Integer>> MissionInstructionId = new ArrayList<>();
         ArrayList<ArrayList<Date>> MissionInstructionTime = new ArrayList<>();
-        ArrayList<ArrayList<String>> MissionInstructionTimeString=new ArrayList<>();
+        ArrayList<ArrayList<String>> MissionInstructionTimeString = new ArrayList<>();
         ArrayList<ArrayList<String>> MissionInstructionHex = new ArrayList<>();
+
+        ArrayList<Document> MissionInstructionDefautArrayChild = (ArrayList<Document>) MissionInstructionDefautArray.get(0);
 
         Map<Integer, Map<String, String>> insTimeMap = new HashMap<>();
 
@@ -2092,6 +2111,7 @@ public class InstructionGeneration {
             for (Document document : MissionInstructionArrayChildTemp) {
                 MissionInstructionArrayChild.add(document);
             }
+
             ArrayList<Document> MissionInstructionAfterPara = new ArrayList<>();
             boolean ChildIdFlagP33_1 = true;
             boolean ChildIdFlagP33_2 = true;
@@ -2114,6 +2134,7 @@ public class InstructionGeneration {
                     MissionInstructionAfterPara.add(MissionInstructionAfterParaChild);
                 }
             }
+
             if (ChildIdFlagP33_1) {
                 Document TaskParamsTemp = new Document();
                 TaskParamsTemp.append("code", "P33_1");
@@ -2143,7 +2164,7 @@ public class InstructionGeneration {
             ArrayList<String> MissionInstructionCodeChild = new ArrayList<>();
             ArrayList<Integer> MissionInstructionIdChild = new ArrayList<>();
             ArrayList<Date> MissionInstructionTimeChild = new ArrayList<>();
-            ArrayList<String> MissionInstructionTimeStringChild=new ArrayList<>();
+            ArrayList<String> MissionInstructionTimeStringChild = new ArrayList<>();
             ArrayList<String> MissionInstructionHexChild = new ArrayList<>();
             double InstDelta_tAll = 0;
             double InstDelta_tLastAll = 0;
@@ -2172,12 +2193,25 @@ public class InstructionGeneration {
                                 String TaskParamsValue = "";
                                 ArrayList<String> TaskParamsValueP07 = new ArrayList<>();
                                 if (Related_id.equals("P07")) {
+                                    boolean findP07 = false;
                                     for (Document TaskParams : MissionInstructionArrayChild) {
                                         if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals(Related_id)) {
                                             if (TaskParams.containsKey("value") && TaskParams.get("value") != null && !TaskParams.get("value").equals("")) {
                                                 TaskParamsValueP07 = (ArrayList<String>) TaskParams.get("value");
+                                                findP07 = true;
                                             }
                                             break;
+                                        }
+                                    }
+
+                                    if (!findP07) {
+                                        for (Document TaskParams : MissionInstructionDefautArrayChild) {
+                                            if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals(Related_id)) {
+                                                if (TaskParams.containsKey("default_value") && TaskParams.get("default_value") != null && !TaskParams.get("value").equals("")) {
+                                                    TaskParamsValueP07 = (ArrayList<String>) TaskParams.get("default_value");
+                                                }
+                                                break;
+                                            }
                                         }
                                     }
                                     //判定是否执行该序列
@@ -2200,12 +2234,26 @@ public class InstructionGeneration {
                                         }
                                     }
                                 } else {
+
+                                    boolean findInsArray = false;
                                     for (Document TaskParams : MissionInstructionArrayChild) {
                                         if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals(Related_id)) {
                                             if (TaskParams.containsKey("value") && TaskParams.get("value") != null && !TaskParams.get("value").equals("")) {
                                                 TaskParamsValue = TaskParams.get("value").toString();
+                                                findInsArray = true;
                                             }
                                             break;
+                                        }
+                                    }
+                                    if (!findInsArray) {
+                                        for (Document TaskParams : MissionInstructionDefautArrayChild) {
+                                            if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals(Related_id)) {
+                                                if (TaskParams.containsKey("default_value") && TaskParams.get("default_value") != null && !TaskParams.get("default_value").equals("")) {
+                                                    TaskParamsValue = TaskParams.get("default_value").toString();
+                                                    findInsArray = true;
+                                                }
+                                                break;
+                                            }
                                         }
                                     }
                                     //判定是否执行该序列
@@ -2238,12 +2286,25 @@ public class InstructionGeneration {
                                     String Related_id = document1.get("related_param_id").toString();
                                     //搜索任务中相应id的值
                                     String TaskParamsValue = "";
+                                    boolean findInsArray = false;
                                     for (Document TaskParams : MissionInstructionArrayChild) {
                                         if (TaskParams.containsKey("code") && TaskParams.get("code") != null && TaskParams.get("code").toString().equals(Related_id)) {
                                             if (TaskParams.containsKey("value") && !TaskParams.get("value").equals("")) {
                                                 TaskParamsValue = TaskParams.get("value").toString();
+                                                findInsArray = true;
                                             }
                                             break;
+                                        }
+                                    }
+                                    if (!findInsArray) {
+                                        for (Document TaskParams : MissionInstructionDefautArrayChild) {
+                                            if (TaskParams.containsKey("code") && TaskParams.get("code") != null && TaskParams.get("code").toString().equals(Related_id)) {
+                                                if (TaskParams.containsKey("default_value") && !TaskParams.get("default_value").equals("")) {
+                                                    TaskParamsValue = TaskParams.get("default_value").toString();
+                                                    findInsArray = true;
+                                                }
+                                                break;
+                                            }
                                         }
                                     }
                                     Document sequencemapping = (Document) document1.get("mapping");
@@ -2265,14 +2326,27 @@ public class InstructionGeneration {
                                                 if (document3.containsKey("alternative")) {
                                                     //是否执行种类
                                                     String MetaRelated_id = document3.get("related_param_id").toString();
+                                                    boolean findInsArray = false;
                                                     //搜索任务中相应id的值
                                                     String SequenceParamsValue = "";
                                                     for (Document SequenceParams : MissionInstructionArrayChild) {
                                                         if (SequenceParams.containsKey("code") && SequenceParams.get("code") != null && SequenceParams.get("code").toString().equals(MetaRelated_id)) {
                                                             if (SequenceParams.containsKey("value") && !SequenceParams.get("value").equals("")) {
                                                                 SequenceParamsValue = SequenceParams.get("value").toString();
+                                                                findInsArray = true;
                                                             }
                                                             break;
+                                                        }
+                                                    }
+                                                    if (!findInsArray) {
+                                                        for (Document SequenceParams : MissionInstructionArrayChild) {
+                                                            if (SequenceParams.containsKey("code") && SequenceParams.get("code") != null && SequenceParams.get("code").toString().equals(MetaRelated_id)) {
+                                                                if (SequenceParams.containsKey("default_value") && !SequenceParams.get("default_value").equals("")) {
+                                                                    SequenceParamsValue = SequenceParams.get("default_value").toString();
+                                                                    findInsArray = true;
+                                                                }
+                                                                break;
+                                                            }
                                                         }
                                                     }
                                                     if (document3.containsKey("when")) {
@@ -2293,12 +2367,23 @@ public class InstructionGeneration {
                                                     String MetaRelated_id = document3.get("related_param_id").toString();
                                                     //搜索任务中相应id的值
                                                     String SequenceParamsValue = "";
+                                                    boolean findInsArray = false;
                                                     for (Document SequenceParams : MissionInstructionArrayChild) {
                                                         if (SequenceParams.containsKey("code") && SequenceParams.get("code").toString().equals(MetaRelated_id)) {
                                                             if (SequenceParams.containsKey("value") && !SequenceParams.get("value").equals("")) {
                                                                 SequenceParamsValue = SequenceParams.get("value").toString();
                                                             }
                                                             break;
+                                                        }
+                                                    }
+                                                    if (!findInsArray) {
+                                                        for (Document SequenceParams : MissionInstructionDefautArrayChild) {
+                                                            if (SequenceParams.containsKey("code") && SequenceParams.get("code").toString().equals(MetaRelated_id)) {
+                                                                if (SequenceParams.containsKey("default_value") && !SequenceParams.get("default_value").equals("")) {
+                                                                    SequenceParamsValue = SequenceParams.get("default_value").toString();
+                                                                }
+                                                                break;
+                                                            }
                                                         }
                                                     }
                                                     Document sequencemapping = (Document) document3.get("mapping");
@@ -2319,12 +2404,23 @@ public class InstructionGeneration {
                                                         String delta_tId = delta_tDocument.get("related_param_id").toString();
                                                         //搜索任务中相应id的值
                                                         String DeltaParamsValue = "";
+                                                        boolean findInsArray = false;
                                                         for (Document SequenceParams : MissionInstructionArrayChild) {
                                                             if (SequenceParams.containsKey("code") && SequenceParams.get("code").toString().equals(delta_tId)) {
                                                                 if (SequenceParams.containsKey("value") && !SequenceParams.get("value").equals("")) {
                                                                     DeltaParamsValue = SequenceParams.get("value").toString();
                                                                 }
                                                                 break;
+                                                            }
+                                                        }
+                                                        if (!findInsArray) {//todo
+                                                            for (Document SequenceParams : MissionInstructionDefautArrayChild) {
+                                                                if (SequenceParams.containsKey("code") && SequenceParams.get("code").toString().equals(delta_tId)) {
+                                                                    if (SequenceParams.containsKey("default_value") && !SequenceParams.get("default_value").equals("")) {
+                                                                        DeltaParamsValue = SequenceParams.get("default_value").toString();
+                                                                    }
+                                                                    break;
+                                                                }
                                                             }
                                                         }
                                                         if (delta_tDocument.containsKey("mapping")) {
@@ -2355,12 +2451,14 @@ public class InstructionGeneration {
                                                                             if (MetaParamsChild.containsKey("id")) {
                                                                                 String MetaParamsId = MetaParamsChild.get("id").toString();
                                                                                 //搜索任务中相应的id值
+                                                                                boolean findInsArray = false;
                                                                                 for (Document MissionMetaParamsChildParamsChild : MissionInstructionArrayChild) {
                                                                                     if (MissionMetaParamsChildParamsChild.containsKey("code") && MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsId)) {
                                                                                         if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
+                                                                                            findInsArray = true;
                                                                                             //System.out.println(MetaParamsId);
                                                                                             String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("value").toString();
-                                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
+                                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                                             int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                             byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
                                                                                             for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -2372,8 +2470,31 @@ public class InstructionGeneration {
                                                                                         }
                                                                                     }
                                                                                 }
+
+                                                                                if (!findInsArray) {
+                                                                                    for (Document MissionMetaParamsChildParamsChild : MissionInstructionDefautArrayChild) {
+                                                                                        if (MissionMetaParamsChildParamsChild.containsKey("code") && MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsId)) {
+                                                                                            if (MissionMetaParamsChildParamsChild.containsKey("default_value") && !MissionMetaParamsChildParamsChild.get("default_value").equals("")) {
+                                                                                                findInsArray = true;
+                                                                                                //System.out.println(MetaParamsId);
+                                                                                                String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("default_value").toString();
+                                                                                                int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                                int byteLength = MetaParamsChild.getInteger("byte_length");
+                                                                                                byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
+                                                                                                for (int j = byteIndex; j < byteIndex + byteLength; j++) {
+                                                                                                    if (j < byteMetaHex.length && j - byteIndex < bytevalueHex.length) {
+                                                                                                        byteMetaHex[j] = bytevalueHex[j - byteIndex];
+                                                                                                    }
+                                                                                                }
+                                                                                                break;
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
                                                                             } else if (MetaParamsChild.containsKey("related_param_id")) {
                                                                                 String MetaParamsCode = "";
+                                                                                boolean findInsArray = false;
+
                                                                                 //列表选择执行种类
                                                                                 String MetaRelated_id = MetaParamsChild.get("related_param_id").toString();
                                                                                 //搜索任务中相应id的值
@@ -2382,15 +2503,27 @@ public class InstructionGeneration {
                                                                                     if (SequenceParams.containsKey("code") && SequenceParams.get("code").toString().equals(MetaRelated_id)) {
                                                                                         if (SequenceParams.containsKey("value") && !SequenceParams.get("value").equals("")) {
                                                                                             SequenceParamsValue = SequenceParams.get("value").toString();
+                                                                                            findInsArray = true;
                                                                                         }
                                                                                         break;
+                                                                                    }
+                                                                                }
+                                                                                if (!findInsArray) {
+                                                                                    for (Document SequenceParams : MissionInstructionDefautArrayChild) {
+                                                                                        if (SequenceParams.containsKey("code") && SequenceParams.get("code").toString().equals(MetaRelated_id)) {
+                                                                                            if (SequenceParams.containsKey("default_value") && !SequenceParams.get("default_value").equals("")) {
+                                                                                                SequenceParamsValue = SequenceParams.get("default_value").toString();
+                                                                                                findInsArray = true;
+                                                                                            }
+                                                                                            break;
+                                                                                        }
                                                                                     }
                                                                                 }
                                                                                 if (MetaParamsChild.containsKey("mapping")) {
                                                                                     Document sequencemapping = (Document) MetaParamsChild.get("mapping");
                                                                                     if (sequencemapping.containsKey(SequenceParamsValue) && sequencemapping.get(SequenceParamsValue) != null && !sequencemapping.get(SequenceParamsValue).equals("")) {
                                                                                         MetaParamsCode = sequencemapping.get(SequenceParamsValue).toString();
-                                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
+                                                                                        int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                                         int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                         byte[] bytevalueHex = hexStringToBytes(MetaParamsCode);
                                                                                         for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -2400,7 +2533,7 @@ public class InstructionGeneration {
                                                                                         }
                                                                                     }
                                                                                 } else {
-                                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
+                                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                                     int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                     byte[] bytevalueHex = hexStringToBytes(SequenceParamsValue);
                                                                                     for (int j = byteIndex; j < byteIndex + byteLength; j++) {
@@ -2411,10 +2544,13 @@ public class InstructionGeneration {
                                                                                 }
                                                                             } else {
                                                                                 String MetaParamsCode = MetaParamsChild.get("code").toString();
+                                                                                boolean findInsArray = false;
+
                                                                                 //搜索任务中相应的code值
                                                                                 for (Document MissionMetaParamsChildParamsChild : MissionInstructionArrayChild) {
                                                                                     if (MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsCode)) {
                                                                                         String MetaParamsCodeValue = MissionMetaParamsChildParamsChild.get("value").toString();
+                                                                                        findInsArray = true;
                                                                                         int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                                         int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                         byte[] bytevalueHex = hexStringToBytes(MetaParamsCodeValue);
@@ -2424,6 +2560,24 @@ public class InstructionGeneration {
                                                                                             }
                                                                                         }
                                                                                         break;
+                                                                                    }
+                                                                                }
+
+                                                                                if (!findInsArray) {
+                                                                                    for (Document MissionMetaParamsChildParamsChild : MissionInstructionDefautArrayChild) {
+                                                                                        if (MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsCode)) {
+                                                                                            String MetaParamsCodeValue = MissionMetaParamsChildParamsChild.get("default_value").toString();
+                                                                                            findInsArray = true;
+                                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                            int byteLength = MetaParamsChild.getInteger("byte_length");
+                                                                                            byte[] bytevalueHex = hexStringToBytes(MetaParamsCodeValue);
+                                                                                            for (int j = byteIndex; j < byteIndex + byteLength; j++) {
+                                                                                                if (j < byteMetaHex.length && j - byteIndex < bytevalueHex.length) {
+                                                                                                    byteMetaHex[j] = bytevalueHex[j - byteIndex];
+                                                                                                }
+                                                                                            }
+                                                                                            break;
+                                                                                        }
                                                                                     }
                                                                                 }
                                                                             }
@@ -2460,10 +2614,6 @@ public class InstructionGeneration {
                                                                     MetaHex = "100280210118";
                                                                     MetaHex = MetaHex + "A002";
                                                                     MetaHex = MetaHex + "0202";
-                                                                } else if (InstCode.equals("K4404")) {
-                                                                    MetaHex = "100280210118";
-                                                                    MetaHex = MetaHex + "A002";
-                                                                    MetaHex = MetaHex + "0303";
                                                                 } else if (InstCode.equals("K4404")) {
                                                                     MetaHex = "100280210118";
                                                                     MetaHex = MetaHex + "A002";
@@ -2516,13 +2666,11 @@ public class InstructionGeneration {
                                                                     MetaHex = "100280210118";
                                                                     MetaHex = MetaHex + "A102";
                                                                     MetaHex = MetaHex + "0707";
-                                                                }
-//                                                                else if (InstCode.equals("K4418")) {
-//                                                                    MetaHex = "100280210118";
-//                                                                    MetaHex = MetaHex + "A102";
-//                                                                    MetaHex = MetaHex + "0808";
-//                                                                }
-                                                                else if (InstCode.equals("K4419")) {
+                                                                } else if (InstCode.equals("K4417")) {
+                                                                    MetaHex = "100280210118";
+                                                                    MetaHex = MetaHex + "A102";
+                                                                    MetaHex = MetaHex + "0808";
+                                                                } else if (InstCode.equals("K4419")) {
                                                                     MetaHex = "100280210118";
                                                                     MetaHex = MetaHex + "A200";
                                                                 } else if (InstCode.equals("K4420")) {
@@ -2671,7 +2819,7 @@ public class InstructionGeneration {
                 time_ZhiXing = time_ZhiXing.plusSeconds((long) (Integer.parseInt(KaiShiShiJian, 16)));
                 Date time_ZhixingDate = Date.from(time_ZhiXing);
                 MissionInstructionTimeChild.set(j, time_ZhixingDate);
-                MissionInstructionTimeStringChild.add(j,KaiShiShiJian);
+                MissionInstructionTimeStringChild.add(j, KaiShiShiJian);
                 //System.out.println("序列号：" + MissionInstructionCodeChild.get(j));
                 //System.out.println("执行时间：" + Integer.parseInt(KaiShiShiJian, 16));
 
@@ -2757,7 +2905,7 @@ public class InstructionGeneration {
             MissionInstructionId.add(i, MissionInstructionIdChild);
             MissionInstructionTime.add(i, MissionInstructionTimeChild);
             MissionInstructionHex.add(i, MissionInstructionHexChild);
-            MissionInstructionTimeString.add(i,MissionInstructionTimeStringChild);
+            MissionInstructionTimeString.add(i, MissionInstructionTimeStringChild);
         }
 
         //指令输出
@@ -2797,7 +2945,7 @@ public class InstructionGeneration {
                 System.out.println("序列号：" + MissionInstructionCode.get(i).get(j));
                 System.out.println("执行时间：" + Integer.parseInt(MissionInstructionTimeString.get(i).get(j), 16));
 
-                it.put(MissionInstructionId.get(i).get(j)+"_"+MissionInstructionCode.get(i).get(j) + "_" + Instant.now().toEpochMilli(), MissionInstructionTime.get(i).get(j).toString());
+                it.put(MissionInstructionId.get(i).get(j) + "_" + MissionInstructionCode.get(i).get(j) + "_" + Instant.now().toEpochMilli(), MissionInstructionTime.get(i).get(j).toString());
             }
             insTimeMap.put(i, it);
 

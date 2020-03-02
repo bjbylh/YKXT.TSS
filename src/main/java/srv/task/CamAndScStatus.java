@@ -4,6 +4,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import common.mongo.CommUtils;
 import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
@@ -69,7 +70,7 @@ public class CamAndScStatus {
 
                     ArrayList<Document> instruction_info = (ArrayList<Document>) document.get("instruction_info");
 
-                    if (!checkInstructionInfo(instruction_info))
+                    if (!CommUtils.checkInstructionInfo(instruction_info))
                         continue;
 
                     if (instruction_info.size() > 0) {
@@ -104,7 +105,7 @@ public class CamAndScStatus {
 
                     ArrayList<Document> default_mission_params = (ArrayList<Document>) document.get("default_mission_params");
 
-                    if (!checkInstructionInfo(instruction_info))
+                    if (!CommUtils.checkInstructionInfo(instruction_info))
                         continue;
 
                     if (instruction_info.size() > 0 && mission_params.size() > 0 && default_mission_params.size() > 0) {
@@ -449,27 +450,6 @@ public class CamAndScStatus {
             }
         }
         return ret;
-    }
-
-    private boolean checkInstructionInfo(ArrayList<Document> instruction_info) {
-        if (instruction_info == null)
-            return false;
-
-        for (Document document : instruction_info) {
-
-            if (!document.containsKey("valid") || !Objects.equals(document.get("valid").getClass().getName(), "java.lang.Boolean"))
-                return false;
-
-            if (!document.containsKey("sequence_code") || !Objects.equals(document.get("sequence_code").getClass().getName(), "java.lang.String"))
-                return false;
-
-
-//                System.out.println(document.get("execution_time").getClass().getName());
-            if (!document.containsKey("execution_time") || !Objects.equals(document.get("execution_time").getClass().getName(), "java.util.Date"))
-                return false;
-        }
-
-        return true;
     }
 
     public static void main(String[] args) {

@@ -130,11 +130,11 @@ public class RedisTaskSubscriber extends JedisPubSub {
             if (isTimeSpan != 2)
                 content = json.get("content").getAsString().split(",");
 
-            String exeStartTime = json.get("exe_time").getAsString();
-
-            LocalDateTime exeStartTime_r = LocalDateTime.parse(exeStartTime, sf);
-
-            Instant exeStartTime_i = exeStartTime_r.toInstant(zoneOffset);
+//            String exeStartTime = json.get("exe_time").getAsString();
+//
+//            LocalDateTime exeStartTime_r = LocalDateTime.parse(exeStartTime, sf);
+//
+//            Instant exeStartTime_i = exeStartTime_r.toInstant(zoneOffset);
             int type = -1;
             Instant start_i = Instant.now();
             Instant end_i = Instant.now();
@@ -169,7 +169,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
             }
 
-            String rst = InsClearInsGenInf.InsClearInsGenInfII(isTimeSpan, type, exeStartTime_i, start_i, end_i, insnos, ConfigManager.getInstance().fetchInsFilePath());
+            String rst = InsClearInsGenInf.InsClearInsGenInfII(isTimeSpan, type, Instant.now(), start_i, end_i, insnos, ConfigManager.getInstance().fetchInsFilePath());
 
             RedisPublish.CommonReturn(id, true, rst, MsgType.INS_CLEAR_FINISHED);
 
@@ -449,7 +449,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
                             fileHeaderType.setMessageType("TRTASK");
                             fileHeaderType.setMessageID(String.format("%06d", message_ser));
                             fileHeaderType.setOriginatorAddress("MPSS");
-                            fileHeaderType.setRecipientAddress("TRGS-JD-11");
+                            fileHeaderType.setRecipientAddress("YGJD-01");
                             fileHeaderType.setCreationTime(localDateTime.toString());
 
                             interFaceFileType.setFileHeader(fileHeaderType);

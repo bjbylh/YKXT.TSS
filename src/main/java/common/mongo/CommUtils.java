@@ -14,6 +14,8 @@ import org.bson.types.ObjectId;
 
 import java.sql.Date;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Objects;
 
 /**
  * Created by lihan on 2019/8/28.
@@ -88,5 +90,27 @@ public class CommUtils {
         tasks.updateOne(Filters.eq("_id", new ObjectId(id)), new Document("$set", new Document("status", mainTaskStatus.name())));
 
         mongoClient.close();
+    }
+
+
+    public static boolean checkInstructionInfo(ArrayList<Document> instruction_info) {
+        if (instruction_info == null)
+            return false;
+
+        for (Document document : instruction_info) {
+
+            if (!document.containsKey("valid") || !Objects.equals(document.get("valid").getClass().getName(), "java.lang.Boolean"))
+                return false;
+
+            if (!document.containsKey("sequence_code") || !Objects.equals(document.get("sequence_code").getClass().getName(), "java.lang.String"))
+                return false;
+
+
+//                System.out.println(document.get("execution_time").getClass().getName());
+            if (!document.containsKey("execution_time") || !Objects.equals(document.get("execution_time").getClass().getName(), "java.util.Date"))
+                return false;
+        }
+
+        return true;
     }
 }

@@ -235,7 +235,7 @@ public class SingleInsGeneration {
                     }
                     str7 = str7 + strTemp;
 
-                    if(SepcialParams.containsKey("type") && SepcialParams.getString("type").equals("1")) {
+                    if (SepcialParams.containsKey("type") && SepcialParams.getString("type").equals("1")) {
 
                         float roll = Float.parseFloat(SepcialParams.get("roll_angle").toString());
                         strTemp = Integer.toHexString(Float.floatToIntBits(roll));
@@ -280,7 +280,7 @@ public class SingleInsGeneration {
                             }
                         }
                         str7 = str7 + strTemp;
-                    }else{
+                    } else {
                         float lon = Float.parseFloat(SepcialParams.get("lon").toString());
                         strTemp = Integer.toHexString(Float.floatToIntBits(lon));
                         if (strTemp.length() > 8) {
@@ -1091,10 +1091,6 @@ public class SingleInsGeneration {
                                                 MetaHex = "100280210118";
                                                 MetaHex = MetaHex + "A002";
                                                 MetaHex = MetaHex + "0303";
-                                            } else if (InstCode.equals("K4404")) {
-                                                MetaHex = "100280210118";
-                                                MetaHex = MetaHex + "A002";
-                                                MetaHex = MetaHex + "0303";
                                             } else if (InstCode.equals("K4405")) {
                                                 MetaHex = "100280210118";
                                                 MetaHex = MetaHex + "A002";
@@ -1143,13 +1139,11 @@ public class SingleInsGeneration {
                                                 MetaHex = "100280210118";
                                                 MetaHex = MetaHex + "A102";
                                                 MetaHex = MetaHex + "0707";
-                                            }
-//                                            else if (InstCode.equals("K4418")) {
-//                                                MetaHex="100280210118";
-//                                                MetaHex=MetaHex+"A102";
-//                                                MetaHex=MetaHex+"0808";
-//                                            }
-                                            else if (InstCode.equals("K4419")) {
+                                            } else if (InstCode.equals("K4417")) {
+                                                MetaHex = "100280210118";
+                                                MetaHex = MetaHex + "A102";
+                                                MetaHex = MetaHex + "0808";
+                                            } else if (InstCode.equals("K4419")) {
                                                 MetaHex = "100280210118";
                                                 MetaHex = MetaHex + "A200";
                                             } else if (InstCode.equals("K4420")) {

@@ -5,6 +5,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import common.mongo.CommUtils;
 import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
@@ -12,7 +13,6 @@ import org.bson.Document;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Created by lihan on 2020/3/1.
@@ -46,7 +46,7 @@ public class EnergyCalc {
 
                 ArrayList<Document> instruction_info = (ArrayList<Document>) document.get("instruction_info");
 
-                if (!checkInstructionInfo(instruction_info))
+                if (!CommUtils.checkInstructionInfo(instruction_info))
                     continue;
 
                 if (!document.containsKey("image_window"))
@@ -55,7 +55,7 @@ public class EnergyCalc {
                 ArrayList<Document> image_window = (ArrayList<Document>) document.get("image_window");
 
                 if (instruction_info.size() > 0 && image_window.size() > 0) {
-//pool.put()
+
                 }
             }
         }
@@ -70,7 +70,7 @@ public class EnergyCalc {
 
                 ArrayList<Document> instruction_info = (ArrayList<Document>) document.get("instruction_info");
 
-                if (!checkInstructionInfo(instruction_info))
+                if (!CommUtils.checkInstructionInfo(instruction_info))
                     continue;
 
                 if (instruction_info != null && instruction_info.size() > 0) {
@@ -85,24 +85,5 @@ public class EnergyCalc {
         return 0.0;
     }
 
-    private boolean checkInstructionInfo(ArrayList<Document> instruction_info) {
-        if (instruction_info == null)
-            return false;
 
-        for (Document document : instruction_info) {
-
-            if (!document.containsKey("valid") || !Objects.equals(document.get("valid").getClass().getName(), "java.lang.Boolean"))
-                return false;
-
-            if (!document.containsKey("sequence_code") || !Objects.equals(document.get("sequence_code").getClass().getName(), "java.lang.String"))
-                return false;
-
-
-//                System.out.println(document.get("execution_time").getClass().getName());
-            if (!document.containsKey("execution_time") || !Objects.equals(document.get("execution_time").getClass().getName(), "java.util.Date"))
-                return false;
-        }
-
-        return true;
-    }
 }

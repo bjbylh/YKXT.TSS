@@ -731,6 +731,9 @@ public class InsGenWithoutTaskPlanInf {
             ArrayList<Integer> MissionInstructionIdChild=new ArrayList<>();
             ArrayList<Date> MissionInstructionTimeChild=new ArrayList<>();
             ArrayList<String> MissionInstructionHexChild=new ArrayList<>();
+
+            ArrayList<Integer> MissionInstructionTimeUpdateStatus = new ArrayList<>();
+
             double InstDelta_tAll=0;
             double InstDelta_tLastAll=0;
             Date time_point = MissionStarTimeArray.get(i);
@@ -1537,13 +1540,25 @@ public class InsGenWithoutTaskPlanInf {
                 }
                 //更新执行时间
                 for (int j = 0; j < MissionInstructionHexChild.size(); j++) {
-                    String KaiShiShiJian=timeHashMap.get(MissionInstructionCodeChild.get(j)).ExecutionTime(timeVariable,workcode).toUpperCase();
-                    String YingYongShuJuTemp=MissionInstructionHexChild.get(j);
-                    MissionInstructionHexChild.set(j,KaiShiShiJian+YingYongShuJuTemp);
-                    Instant time_ZhiXing= zerostart;
-                    time_ZhiXing=time_ZhiXing.plusSeconds((long)(Integer.parseInt(KaiShiShiJian,16)));
-                    Date time_ZhixingDate=Date.from(time_ZhiXing);
-                    MissionInstructionTimeChild.set(j,time_ZhixingDate);
+//                    MissionInstructionHexChild.set(j,KaiShiShiJian+YingYongShuJuTemp);
+                    if (!MissionInstructionTimeUpdateStatus.contains(j)) {
+                        String KaiShiShiJian=timeHashMap.get(MissionInstructionCodeChild.get(j)).ExecutionTime(timeVariable,workcode).toUpperCase();
+
+                        if (KaiShiShiJian.length() < 8) {
+                            for (int i_id = KaiShiShiJian.length(); i_id < 8; i_id++) {
+                                KaiShiShiJian = "0" + KaiShiShiJian;
+                            }
+                        } else if (KaiShiShiJian.length() > 8) {
+                            KaiShiShiJian = KaiShiShiJian.substring(KaiShiShiJian.length() - 8);
+                        }
+                        String YingYongShuJuTemp=MissionInstructionHexChild.get(j);
+                        MissionInstructionHexChild.set(j, KaiShiShiJian + YingYongShuJuTemp);
+                        Instant time_ZhiXing= zerostart;
+                        time_ZhiXing=time_ZhiXing.plusSeconds((long)(Integer.parseInt(KaiShiShiJian,16)));
+                        Date time_ZhixingDate=Date.from(time_ZhiXing);
+                        MissionInstructionTimeChild.set(j,time_ZhixingDate);
+                        MissionInstructionTimeUpdateStatus.add(j);
+                    }
                 }
             }
 
@@ -1757,6 +1772,7 @@ public class InsGenWithoutTaskPlanInf {
         ArrayList<Date> TransMissionEndTimeArray = new ArrayList<>();
         ArrayList<String> TransForStationMissionNumber=new ArrayList<>();
         ArrayList<String> TransMissionNumbers=new ArrayList<>();
+        ArrayList<Object> MissionInstructionDefautArray = new ArrayList<>();
         if (StationMissionjson != null) {
             try {
                 if (StationMissionjson.containsKey("record_file_no")) {
@@ -1765,7 +1781,9 @@ public class InsGenWithoutTaskPlanInf {
                 if (StationMissionjson.containsKey("mission_params") && StationMissionjson.get("mission_params")!=null) {
                     MissionInstructionArray.add(StationMissionjson.get("mission_params"));
                 }
-
+                if (StationMissionjson.containsKey("default_mission_params") && StationMissionjson.get("default_mission_params") != null) {
+                    MissionInstructionDefautArray.add(StationMissionjson.get("default_mission_params"));
+                }
                 TransMissionStationNameArray.add(StationMissionjson.get("station_number").toString());
                 TransMissionStarTimeArray.add((Date) StationMissionjson.get("expected_start_time"));
                 TransMissionEndTimeArray.add((Date) StationMissionjson.get("expected_end_time"));
@@ -1834,6 +1852,9 @@ public class InsGenWithoutTaskPlanInf {
         ArrayList<ArrayList<Integer>> MissionInstructionId=new ArrayList<>();
         ArrayList<ArrayList<Date>> MissionInstructionTime=new ArrayList<>();
         ArrayList<ArrayList<String>> MissionInstructionHex=new ArrayList<>();
+
+        ArrayList<Document> MissionInstructionDefautArrayChild = (ArrayList<Document>) MissionInstructionDefautArray.get(0);
+
         for (int i = 0; i < TransMissionStarTimeArray.size(); i++) {
             //添加指令参数
             ArrayList<Document> MissionInstructionArrayChildTemp= (ArrayList<Document>) MissionInstructionArray.get(0);
@@ -1919,15 +1940,28 @@ public class InsGenWithoutTaskPlanInf {
                                 ArrayList<String> TaskParamsValueP07= new ArrayList<>();
                                 ArrayList<Document> MissionSequenceParams = (ArrayList<Document>) MissionInstructionArray.get(0);
                                 if (Related_id.equals("P07")) {
+                                    boolean findP07 = false;
                                     for (Document TaskParams : MissionSequenceParams) {
                                         if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals(Related_id)) {
                                             if (TaskParams.containsKey("value") && TaskParams.get("value")!=null && !TaskParams.get("value").equals("")) {
                                                 TaskParamsValueP07= (ArrayList<String>) TaskParams.get("value");
+                                                findP07 = true;
                                             }
                                             break;
                                         }
                                     }
                                     //判定是否执行该序列
+                                    if (!findP07) {
+                                        for (Document TaskParams : MissionInstructionDefautArrayChild) {
+                                            if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals(Related_id)) {
+                                                if (TaskParams.containsKey("default_value") && TaskParams.get("default_value") != null && !TaskParams.get("value").equals("")) {
+                                                    TaskParamsValueP07 = (ArrayList<String>) TaskParams.get("default_value");
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    }
+
                                     if ( document1.containsKey("when")) {
                                         for (int j = 0; j < TaskParamsValueP07.size(); j++) {
                                             if (document1.get("when").toString().equals(TaskParamsValueP07.get(j))) {
@@ -1947,12 +1981,26 @@ public class InsGenWithoutTaskPlanInf {
                                         }
                                     }
                                 }else {
+                                    boolean findInsArray = false;
+
                                     for (Document TaskParams : MissionSequenceParams) {
                                         if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals(Related_id)) {
                                             if (TaskParams.containsKey("value") && TaskParams.get("value")!=null && !TaskParams.get("value").equals("")) {
                                                 TaskParamsValue = TaskParams.get("value").toString();
+                                                findInsArray = true;
                                             }
                                             break;
+                                        }
+                                    }
+                                    if (!findInsArray) {
+                                        for (Document TaskParams : MissionInstructionDefautArrayChild) {
+                                            if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals(Related_id)) {
+                                                if (TaskParams.containsKey("default_value") && TaskParams.get("default_value") != null && !TaskParams.get("default_value").equals("")) {
+                                                    TaskParamsValue = TaskParams.get("default_value").toString();
+                                                    findInsArray = true;
+                                                }
+                                                break;
+                                            }
                                         }
                                     }
                                     //判定是否执行该序列
@@ -1985,13 +2033,26 @@ public class InsGenWithoutTaskPlanInf {
                                     String Related_id = document1.get("related_param_id").toString();
                                     //搜索任务中相应id的值
                                     String TaskParamsValue = "";
+                                    boolean findInsArray = false;
                                     ArrayList<Document> MissionSequenceParams = (ArrayList<Document>) MissionInstructionArray.get(0);
                                     for (Document TaskParams : MissionSequenceParams) {
                                         if (TaskParams.containsKey("code") && TaskParams.get("code")!=null && TaskParams.get("code").toString().equals(Related_id)) {
                                             if (TaskParams.containsKey("value") && !TaskParams.get("value").equals("")) {
                                                 TaskParamsValue = TaskParams.get("value").toString();
+                                                findInsArray = true;
                                             }
                                             break;
+                                        }
+                                    }
+                                    if (!findInsArray) {
+                                        for (Document TaskParams : MissionInstructionDefautArrayChild) {
+                                            if (TaskParams.containsKey("code") && TaskParams.get("code") != null && TaskParams.get("code").toString().equals(Related_id)) {
+                                                if (TaskParams.containsKey("default_value") && !TaskParams.get("default_value").equals("")) {
+                                                    TaskParamsValue = TaskParams.get("default_value").toString();
+                                                    findInsArray = true;
+                                                }
+                                                break;
+                                            }
                                         }
                                     }
                                     Document sequencemapping= (Document) document1.get("mapping");
@@ -2015,13 +2076,26 @@ public class InsGenWithoutTaskPlanInf {
                                                     String MetaRelated_id = document3.get("related_param_id").toString();
                                                     //搜索任务中相应id的值
                                                     String SequenceParamsValue = "";
+                                                    boolean findInsArray = false;
                                                     ArrayList<Document> MissionSequenceParamsChild = (ArrayList<Document>) MissionInstructionArray.get(0);
                                                     for (Document SequenceParams : MissionSequenceParamsChild) {
                                                         if (SequenceParams.containsKey("code") && SequenceParams.get("code")!=null && SequenceParams.get("code").toString().equals(MetaRelated_id)) {
                                                             if (SequenceParams.containsKey("value") && !SequenceParams.get("value").equals("")) {
                                                                 SequenceParamsValue = SequenceParams.get("value").toString();
+                                                                findInsArray = true;
                                                             }
                                                             break;
+                                                        }
+                                                    }
+                                                    if (!findInsArray) {
+                                                        for (Document SequenceParams : MissionInstructionArrayChild) {
+                                                            if (SequenceParams.containsKey("code") && SequenceParams.get("code") != null && SequenceParams.get("code").toString().equals(MetaRelated_id)) {
+                                                                if (SequenceParams.containsKey("default_value") && !SequenceParams.get("default_value").equals("")) {
+                                                                    SequenceParamsValue = SequenceParams.get("default_value").toString();
+                                                                    findInsArray = true;
+                                                                }
+                                                                break;
+                                                            }
                                                         }
                                                     }
                                                     if ( document3.containsKey("when")) {
@@ -2042,13 +2116,25 @@ public class InsGenWithoutTaskPlanInf {
                                                     String MetaRelated_id = document3.get("related_param_id").toString();
                                                     //搜索任务中相应id的值
                                                     String SequenceParamsValue = "";
+                                                    boolean findInsArray = false;
                                                     ArrayList<Document> MissionSequenceParamsChild = (ArrayList<Document>) MissionInstructionArray.get(0);
                                                     for (Document SequenceParams : MissionSequenceParamsChild) {
                                                         if (SequenceParams.containsKey("code") && SequenceParams.get("code").toString().equals(MetaRelated_id)) {
                                                             if (SequenceParams.containsKey("value") && !SequenceParams.get("value").equals("")) {
                                                                 SequenceParamsValue = SequenceParams.get("value").toString();
+                                                                findInsArray = true;
                                                             }
                                                             break;
+                                                        }
+                                                    }
+                                                    if (!findInsArray) {
+                                                        for (Document SequenceParams : MissionInstructionDefautArrayChild) {
+                                                            if (SequenceParams.containsKey("code") && SequenceParams.get("code").toString().equals(MetaRelated_id)) {
+                                                                if (SequenceParams.containsKey("default_value") && !SequenceParams.get("default_value").equals("")) {
+                                                                    SequenceParamsValue = SequenceParams.get("default_value").toString();
+                                                                }
+                                                                break;
+                                                            }
                                                         }
                                                     }
                                                     Document sequencemapping= (Document) document3.get("mapping");
@@ -2069,13 +2155,25 @@ public class InsGenWithoutTaskPlanInf {
                                                         String delta_tId=delta_tDocument.get("related_param_id").toString();
                                                         //搜索任务中相应id的值
                                                         String DeltaParamsValue = "";
+                                                        boolean findInsArray = false;
                                                         ArrayList<Document> MissionSequenceParamsChild = (ArrayList<Document>) MissionInstructionArray.get(0);
                                                         for (Document SequenceParams : MissionSequenceParamsChild) {
                                                             if (SequenceParams.containsKey("code") && SequenceParams.get("code").toString().equals(delta_tId)) {
                                                                 if (SequenceParams.containsKey("value") && !SequenceParams.get("value").equals("")) {
                                                                     DeltaParamsValue = SequenceParams.get("value").toString();
+                                                                    findInsArray = true;
                                                                 }
                                                                 break;
+                                                            }
+                                                        }
+                                                        if (!findInsArray) {//todo
+                                                            for (Document SequenceParams : MissionInstructionDefautArrayChild) {
+                                                                if (SequenceParams.containsKey("code") && SequenceParams.get("code").toString().equals(delta_tId)) {
+                                                                    if (SequenceParams.containsKey("default_value") && !SequenceParams.get("default_value").equals("")) {
+                                                                        DeltaParamsValue = SequenceParams.get("default_value").toString();
+                                                                    }
+                                                                    break;
+                                                                }
                                                             }
                                                         }
                                                         if (delta_tDocument.containsKey("mapping")) {
@@ -2104,11 +2202,12 @@ public class InsGenWithoutTaskPlanInf {
                                                                             if (MetaParamsChild.containsKey("id")) {
                                                                                 String MetaParamsId = MetaParamsChild.get("id").toString();
                                                                                 //搜索任务中相应的id值
+                                                                                boolean findInsArray = false;
                                                                                 ArrayList<Document> MissionMetaParamsChildParams = (ArrayList<Document>) MissionInstructionArray.get(0);
                                                                                 for (Document MissionMetaParamsChildParamsChild : MissionMetaParamsChildParams) {
                                                                                     if (MissionMetaParamsChildParamsChild.containsKey("code") && MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsId)) {
                                                                                         if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
-                                                                                            //System.out.println(MetaParamsId);
+                                                                                            findInsArray = true;//System.out.println(MetaParamsId);
                                                                                             String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("value").toString();
                                                                                             int byteIndex = MetaParamsChild.getInteger("byte_index");
                                                                                             int byteLength = MetaParamsChild.getInteger("byte_length");
@@ -2122,19 +2221,52 @@ public class InsGenWithoutTaskPlanInf {
                                                                                         }
                                                                                     }
                                                                                 }
+                                                                                if (!findInsArray) {
+                                                                                    for (Document MissionMetaParamsChildParamsChild : MissionInstructionDefautArrayChild) {
+                                                                                        if (MissionMetaParamsChildParamsChild.containsKey("code") && MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsId)) {
+                                                                                            if (MissionMetaParamsChildParamsChild.containsKey("default_value") && !MissionMetaParamsChildParamsChild.get("default_value").equals("")) {
+                                                                                                findInsArray = true;
+                                                                                                //System.out.println(MetaParamsId);
+                                                                                                String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("default_value").toString();
+                                                                                                int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                                int byteLength = MetaParamsChild.getInteger("byte_length");
+                                                                                                byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
+                                                                                                for (int j = byteIndex; j < byteIndex + byteLength; j++) {
+                                                                                                    if (j < byteMetaHex.length && j - byteIndex < bytevalueHex.length) {
+                                                                                                        byteMetaHex[j] = bytevalueHex[j - byteIndex];
+                                                                                                    }
+                                                                                                }
+                                                                                                break;
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
                                                                             }else if (MetaParamsChild.containsKey("related_param_id")) {
                                                                                 String MetaParamsCode="";
                                                                                 //列表选择执行种类
                                                                                 String MetaRelated_id = MetaParamsChild.get("related_param_id").toString();
                                                                                 //搜索任务中相应id的值
                                                                                 String SequenceParamsValue = "";
+                                                                                boolean findInsArray = false;
                                                                                 ArrayList<Document> MissionSequenceParamsChild = (ArrayList<Document>) MissionInstructionArray.get(0);
                                                                                 for (Document SequenceParams : MissionSequenceParamsChild) {
                                                                                     if (SequenceParams.containsKey("code") && SequenceParams.get("code").toString().equals(MetaRelated_id)) {
                                                                                         if (SequenceParams.containsKey("value") && !SequenceParams.get("value").equals("")) {
                                                                                             SequenceParamsValue = SequenceParams.get("value").toString();
+                                                                                            findInsArray = true;
                                                                                         }
                                                                                         break;
+                                                                                    }
+                                                                                }
+                                                                                if (!findInsArray) {
+                                                                                    for (Document SequenceParams : MissionInstructionDefautArrayChild) {
+                                                                                        if (SequenceParams.containsKey("code") && SequenceParams.get("code").toString().equals(MetaRelated_id)) {
+                                                                                            if (SequenceParams.containsKey("default_value") && !SequenceParams.get("default_value").equals("")) {
+                                                                                                SequenceParamsValue = SequenceParams.get("default_value").toString();
+                                                                                                findInsArray = true;
+                                                                                            }
+                                                                                            break;
+                                                                                        }
                                                                                     }
                                                                                 }
                                                                                 if (MetaParamsChild.containsKey("mapping")) {
@@ -2162,10 +2294,12 @@ public class InsGenWithoutTaskPlanInf {
                                                                                 }
                                                                             }else {
                                                                                 String MetaParamsCode = MetaParamsChild.get("code").toString();
+                                                                                boolean findInsArray = false;
                                                                                 //搜索任务中相应的code值
                                                                                 ArrayList<Document> MissionMetaParamsChildParams = (ArrayList<Document>) MissionInstructionArray.get(0);
                                                                                 for (Document MissionMetaParamsChildParamsChild : MissionMetaParamsChildParams) {
                                                                                     if (MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsCode)) {
+                                                                                        findInsArray = true;
                                                                                         String MetaParamsCodeValue = MissionMetaParamsChildParamsChild.get("value").toString();
                                                                                         int byteIndex = MetaParamsChild.getInteger("byte_index")-7;
                                                                                         int byteLength = MetaParamsChild.getInteger("byte_length");
@@ -2176,6 +2310,24 @@ public class InsGenWithoutTaskPlanInf {
                                                                                             }
                                                                                         }
                                                                                         break;
+                                                                                    }
+                                                                                }
+
+                                                                                if (!findInsArray) {
+                                                                                    for (Document MissionMetaParamsChildParamsChild : MissionInstructionDefautArrayChild) {
+                                                                                        if (MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsCode)) {
+                                                                                            String MetaParamsCodeValue = MissionMetaParamsChildParamsChild.get("default_value").toString();
+                                                                                            findInsArray = true;
+                                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                            int byteLength = MetaParamsChild.getInteger("byte_length");
+                                                                                            byte[] bytevalueHex = hexStringToBytes(MetaParamsCodeValue);
+                                                                                            for (int j = byteIndex; j < byteIndex + byteLength; j++) {
+                                                                                                if (j < byteMetaHex.length && j - byteIndex < bytevalueHex.length) {
+                                                                                                    byteMetaHex[j] = bytevalueHex[j - byteIndex];
+                                                                                                }
+                                                                                            }
+                                                                                            break;
+                                                                                        }
                                                                                     }
                                                                                 }
                                                                             }
@@ -2212,10 +2364,6 @@ public class InsGenWithoutTaskPlanInf {
                                                                     MetaHex="100280210118";
                                                                     MetaHex=MetaHex+"A002";
                                                                     MetaHex=MetaHex+"0202";
-                                                                }else if (InstCode.equals("K4404")) {
-                                                                    MetaHex="100280210118";
-                                                                    MetaHex=MetaHex+"A002";
-                                                                    MetaHex=MetaHex+"0303";
                                                                 }else if (InstCode.equals("K4404")) {
                                                                     MetaHex="100280210118";
                                                                     MetaHex=MetaHex+"A002";
@@ -2268,10 +2416,10 @@ public class InsGenWithoutTaskPlanInf {
                                                                     MetaHex="100280210118";
                                                                     MetaHex=MetaHex+"A102";
                                                                     MetaHex=MetaHex+"0707";
-                                                                //}else if (InstCode.equals("K4418")) {
-                                                                //    MetaHex="100280210118";
-                                                                //    MetaHex=MetaHex+"A102";
-                                                                 //   MetaHex=MetaHex+"0808";
+                                                                }else if (InstCode.equals("K4417")) {
+                                                                    MetaHex="100280210118";
+                                                                    MetaHex=MetaHex+"A102";
+                                                                    MetaHex=MetaHex+"0808";
                                                                 }else if (InstCode.equals("K4419")) {
                                                                     MetaHex="100280210118";
                                                                     MetaHex=MetaHex+"A200";
@@ -2425,6 +2573,7 @@ public class InsGenWithoutTaskPlanInf {
                 String KaiShiShiJian=timeHashMap.get(MissionInstructionCodeChild.get(j)).ExecutionTime(timeVariable,workcode).toUpperCase();
                 String YingYongShuJuTemp=MissionInstructionHexChild.get(j);
                 MissionInstructionHexChild.set(j,KaiShiShiJian+YingYongShuJuTemp);
+
                 Instant time_ZhiXing= zerostart;
                 time_ZhiXing=time_ZhiXing.plusSeconds((long)(Integer.parseInt(KaiShiShiJian,16)));
                 Date time_ZhixingDate=Date.from(time_ZhiXing);

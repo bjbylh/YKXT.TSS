@@ -10,6 +10,7 @@ import com.mongodb.client.model.UpdateOptions;
 import common.ConfigManager;
 import common.FilePathUtil;
 import common.def.FileType;
+import common.mongo.CommUtils;
 import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import javafx.util.Pair;
@@ -19,7 +20,10 @@ import org.bson.conversions.Bson;
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Created by lihan on 2019/11/12.
@@ -165,7 +169,7 @@ public class InsAndFlashMontor {
 
                     ArrayList<Document> instruction_info = (ArrayList<Document>) document.get("instruction_info");
 
-                    if (!checkInstructionInfo(instruction_info))
+                    if (!CommUtils.checkInstructionInfo(instruction_info))
                         continue;
 
                     if (instruction_info.size() > 0) {
@@ -188,7 +192,7 @@ public class InsAndFlashMontor {
 
                     ArrayList<Document> instruction_info = (ArrayList<Document>) document.get("instruction_info");
 
-                    if (!checkInstructionInfo(instruction_info))
+                    if (!CommUtils.checkInstructionInfo(instruction_info))
                         continue;
 
                     if (instruction_info != null && instruction_info.size() > 0) {
@@ -207,27 +211,6 @@ public class InsAndFlashMontor {
             }
 
 //            mongoClient.close();
-        }
-
-        private boolean checkInstructionInfo(ArrayList<Document> instruction_info) {
-            if (instruction_info == null)
-                return false;
-
-            for (Document document : instruction_info) {
-
-                if (!document.containsKey("valid") || !Objects.equals(document.get("valid").getClass().getName(), "java.lang.Boolean"))
-                    return false;
-
-                if (!document.containsKey("sequence_code") || !Objects.equals(document.get("sequence_code").getClass().getName(), "java.lang.String"))
-                    return false;
-
-
-//                System.out.println(document.get("execution_time").getClass().getName());
-                if (!document.containsKey("execution_time") || !Objects.equals(document.get("execution_time").getClass().getName(), "java.util.Date"))
-                    return false;
-            }
-
-            return true;
         }
 
         private void procInsPool(ArrayList<Document> pool_inss_image, ArrayList<Document> pool_inss_trans) {
