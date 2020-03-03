@@ -1,5 +1,6 @@
 package core.taskplan;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
@@ -11,6 +12,8 @@ import common.ConfigManager;
 import common.def.MainTaskStatus;
 import common.def.SubTaskStatus;
 import common.def.TaskType;
+import common.def.TempletType;
+import common.mongo.CommUtils;
 import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import common.redis.RedisPublish;
@@ -18,6 +21,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import srv.task.CamAndScStatus;
+import srv.task.EnergyCalc;
 
 import java.text.ParseException;
 import java.time.Instant;
@@ -121,6 +125,18 @@ public class TaskPlanCore {
 
             Boolean needEnergyCalculation = true;
 
+            MongoCollection<Document> satellite_resource = mongoDatabase.getCollection("satellite_resource");
+
+            Document first = satellite_resource.find().first();
+
+            ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
+            for (Document document : properties) {
+                if (document.getString("key").equals("enable_energy_monitoring")) {
+                    needEnergyCalculation = document.getString("value").equals("true");
+                    break;
+                }
+            }
+
             if (needEnergyCalculation) {
                 System.out.println("[" + Instant.now().toString() + "] " + "资源平衡");
                 //资源平衡
@@ -214,7 +230,7 @@ public class TaskPlanCore {
                     Document cam = null;
 
                     if (TaskType.CRONTAB == taskType) {
-                        cam = CamAndScStatus.getInstance().getStatus(Instant.now().plusSeconds(3600*24), false);
+                        cam = CamAndScStatus.getInstance().getStatus(Instant.now().plusSeconds(3600 * 24), false);
 
                     } else {
                         cam = CamAndScStatus.getInstance().getStatus(Instant.now(), true);
@@ -245,6 +261,153 @@ public class TaskPlanCore {
 
 
         private void initOrbit() {
+            try {
+                if (taskType == TaskType.REALTIME) {
+                    //更新开始时间
+                    if (startTime.before(Date.from(Instant.now().plusSeconds(60 * 30))))
+                        startTime = Date.from(Instant.now().plusSeconds(60 * 30));
+
+                    MongoCollection<Document> Data_Missionjson = mongoDatabase.getCollection("image_mission");
+                    FindIterable<Document> D_Missionjson = Data_Missionjson.find();
+
+                    for (Document document : D_Missionjson) {
+                        if (document.getString("mission_state").equals("待执行") || document.getString("mission_state").equals("已执行")) {
+                            if (!document.containsKey("work_mode")) continue;
+
+                            if (document.containsKey("work_mode") && document.getString("work_mode").contains("擦除"))
+                                continue;
+
+                            if (!document.containsKey("instruction_info"))
+                                continue;
+
+                            ArrayList<Document> instruction_info = (ArrayList<Document>) document.get("instruction_info");
+
+                            if (!CommUtils.checkInstructionInfo(instruction_info))
+                                continue;
+
+                            if (!document.containsKey("image_window"))
+                                continue;
+
+                            ArrayList<Document> image_window = (ArrayList<Document>) document.get("image_window");
+
+                            if (instruction_info.size() > 0 && image_window.size() > 0) {
+                                Document document1 = image_window.get(0);
+                                if (document1.get("start_time").getClass().getName().equals("java.util.Date") && document1.get("end_time").getClass().getName().equals("java.util.Date")) {
+                                    if (document1.getDate("start_time").before(startTime) && document1.getDate("end_time").after(startTime)) {
+                                        startTime = document1.getDate("end_time").after(startTime) ? document1.getDate("end_time") : startTime;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+
+                    MongoCollection<Document> transmission_misison = mongoDatabase.getCollection("transmission_mission");
+
+
+                    for (Document Transmissionjson : transmission_misison.find()) {
+
+                        if (Transmissionjson.containsKey("transmission_window")) {
+                            ArrayList<Document> transmission_window = (ArrayList<Document>) Transmissionjson.get("transmission_window");
+                            for (Document window : transmission_window) {
+
+                                if (window.get("start_time").getClass().getName().equals("java.util.Date") && window.get("end_time").getClass().getName().equals("java.util.Date")) {
+                                    if (window.getDate("start_time").before(Date.from(Instant.now())) && window.getDate("end_time").after(Date.from(Instant.now()))) {
+                                        startTime = window.getDate("end_time").after(startTime) ? window.getDate("end_time") : startTime;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    //更新结束时间
+                    MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
+
+                    BasicDBObject query = new BasicDBObject();
+                    BasicDBList saleChannel = new BasicDBList();
+                    saleChannel.add(MainTaskStatus.NEW.name());
+                    saleChannel.add(MainTaskStatus.SUSPEND.name());
+                    saleChannel.add(MainTaskStatus.RUNNING.name());
+                    query.put("status", new
+
+                            BasicDBObject("$in", saleChannel));
+
+
+                    FindIterable<Document> main_task = tasks.find(query);
+
+                    for (Document document : main_task) {
+                        if (document.getString("type").equals(TaskType.CRONTAB.name()) && document.getString("templet").equals(TempletType.TASK_PLAN.name())) {
+                            Date date = ((Document) document.get("cron_core")).getDate("first_time");
+
+                            Instant instant_ft = date.toInstant();
+                            long nt = instant_ft.toEpochMilli() + 1000 * Integer.parseInt((((Document) document.get("cron_core")).getString("cycle")));
+                            endTime = endTime.after(Date.from(Instant.ofEpochMilli(nt))) ? Date.from(Instant.ofEpochMilli(nt)) : endTime;
+                        }
+                    }
+                } else {
+
+                    if (startTime.before(Date.from(Instant.now().plusSeconds(3600 * 24))))
+                        startTime = Date.from(Instant.now().plusSeconds(3600 * 24));
+
+                    MongoCollection<Document> Data_Missionjson = mongoDatabase.getCollection("image_mission");
+                    FindIterable<Document> D_Missionjson = Data_Missionjson.find();
+
+                    for (Document document : D_Missionjson) {
+                        if (document.getString("mission_state").equals("待执行") || document.getString("mission_state").equals("已执行")) {
+
+                            if (document.getString("work_mode").contains("擦除")) continue;
+
+                            if (!document.containsKey("instruction_info"))
+                                continue;
+
+                            ArrayList<Document> instruction_info = (ArrayList<Document>) document.get("instruction_info");
+
+                            if (!CommUtils.checkInstructionInfo(instruction_info))
+                                continue;
+
+                            if (!document.containsKey("image_window"))
+                                continue;
+
+                            ArrayList<Document> image_window = (ArrayList<Document>) document.get("image_window");
+
+                            if (instruction_info.size() > 0 && image_window.size() > 0) {
+                                Document document1 = image_window.get(0);
+                                if (document1.get("start_time").getClass().getName().equals("java.util.Date") && document1.get("end_time").getClass().getName().equals("java.util.Date")) {
+                                    if (document1.getDate("start_time").before(Date.from(Instant.now().plusSeconds(3600 * 24))) && document1.getDate("end_time").after(Date.from(Instant.now().plusSeconds(3600 * 24)))) {
+                                        startTime = document1.getDate("end_time").after(startTime) ? document1.getDate("end_time") : startTime;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+
+                    MongoCollection<Document> transmission_misison = mongoDatabase.getCollection("transmission_mission");
+
+
+                    for (Document Transmissionjson : transmission_misison.find()) {
+
+                        if (Transmissionjson.containsKey("transmission_window")) {
+                            ArrayList<Document> transmission_window = (ArrayList<Document>) Transmissionjson.get("transmission_window");
+                            for (Document window : transmission_window) {
+
+                                if (window.get("start_time").getClass().getName().equals("java.util.Date") && window.get("end_time").getClass().getName().equals("java.util.Date")) {
+                                    if (window.getDate("start_time").before(Date.from(Instant.now().plusSeconds(3600 * 24))) && window.getDate("end_time").after(Date.from(Instant.now().plusSeconds(3600 * 24)))) {
+                                        startTime = window.getDate("end_time").after(startTime) ? window.getDate("end_time") : startTime;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    //更新结束时间
+                    if (endTime.after(Date.from(Instant.now().plusSeconds(3600 * 48))))
+                        endTime = Date.from(Instant.now().plusSeconds(3600 * 48));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
             //轨道数据表
             MongoCollection<Document> Data_Orbitjson = mongoDatabase.getCollection("orbit_attitude");
 
@@ -491,8 +654,22 @@ public class TaskPlanCore {
 
                 }
             }
+            double storage_capacity = 0.0;
+            double storage_valid = 0.0;
 
-            Document poolFiles = null;
+            MongoCollection<Document> sate_res = mongoDatabase.getCollection("satellite_resource");
+
+            Document first = sate_res.find().first();
+            ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
+
+            for (Document document : properties) {
+
+                if (document.getString("key").equals("storage_capacity")) {
+                    storage_capacity = Double.parseDouble(document.getString("value")) * 1024 * 1024L;
+                    break;
+                }
+            }
+
 
             MongoCollection<Document> pool_files = mongoDatabase.getCollection("pool_files");
 
@@ -507,15 +684,26 @@ public class TaskPlanCore {
             Document file = null;
 
             try {
-                Document first = pool_files.find(queryBson).first();
+                first = pool_files.find(queryBson).first();
                 ArrayList<Document> data = (ArrayList<Document>) first.get("data");
                 file = data.get(data.size() - 1);
+
+                storage_valid = storage_capacity * (1 - file.getDouble("flash_usage"));//todo
             } catch (Exception e) {
+                e.printStackTrace();
             }
+
+            EnergyCalc energyCalc = new EnergyCalc();
+            double v = energyCalc.fetchEnergy(startTime.toInstant());
+
             MissionPlanning.MissionPlanningII(this.Satllitejson, this.GroundStationjson, this.D_orbitjson, this.count, Missionjson, Transmissionjson, station_missions, file);
 
             updateSubStatus(subid, SubTaskStatus.SUSPEND);
             RedisPublish.dbRefresh(id);
+
+            energyCalc.calcEnergy(startTime.toInstant(), endTime.toInstant(), 0.0, false);
+
+            energyCalc.close();
 
             return checkIfStopped(id, 2);
 
@@ -599,6 +787,24 @@ public class TaskPlanCore {
                     break;
                 }
 
+            }
+
+            MongoCollection<Document> pool_files = mongoDatabase.getCollection("pool_files");
+
+
+            if (taskType == TaskType.REALTIME) {
+                queryBson = Filters.eq("type", "REALTIME");
+            } else {
+                queryBson = Filters.eq("type", "FORECAST");
+            }
+
+            Document file = null;
+
+            try {
+                Document first = pool_files.find(queryBson).first();
+                ArrayList<Document> data = (ArrayList<Document>) first.get("data");
+                file = data.get(data.size() - 1);
+            } catch (Exception e) {
             }
 
             ReviewReset.ReviewResetII(Satllitejson, this.D_orbitjson, this.count, documents, dcount, Missionjson, Transmissionjson);

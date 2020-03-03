@@ -6,20 +6,18 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.UpdateOptions;
-//import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
-//import com.sun.source.tree.Tree;
 import org.bson.Document;
 
 import javax.swing.*;
-import java.lang.reflect.Array;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
 import static java.lang.Math.*;
+
+//import common.mongo.DbDefine;
 
 //import common.mongo.MangoDBConnector;
 
@@ -532,15 +530,21 @@ public class VisibilityCalculation {
                         break;
                     }
                 }
+
                 //搜索对应的传输任务
                 ArrayList<double[]> subStationMissionStarTime=new ArrayList<double[]>();
                 ArrayList<double[]> subStationMissionStopTime=new ArrayList<double[]>();
+                /*
                 for (int StationMission_i = 0; StationMission_i < StationMissionNum; StationMission_i++) {
                     if (StationMissionStationNumberList.get(StationMission_i).equals(subMissionTransferStation)) {
                         subStationMissionStarTime.add(StationMissionStarList.get(StationMission_i));
                         subStationMissionStopTime.add(StationMissionStopList.get(StationMission_i));
                     }
                 }
+                */
+                //期望时间
+                subStationMissionStarTime.add(MissionStarTimeList.get(Mission_i));
+                subStationMissionStopTime.add(MissionStopTimeList.get(Mission_i));
                 //载荷循环
                 for (int Load_i = 0; Load_i < LoadNumber; Load_i++) {
                     ArrayList<int[]> VisibilityTimeperiod_iiList = new ArrayList<int[]>();
@@ -1461,12 +1465,17 @@ public class VisibilityCalculation {
                 //搜索对应的传输任务
                 ArrayList<double[]> subStationMissionStarTime=new ArrayList<double[]>();
                 ArrayList<double[]> subStationMissionStopTime=new ArrayList<double[]>();
+                /*
                 for (int StationMission_i = 0; StationMission_i < StationMissionNum; StationMission_i++) {
                     if (StationMissionStationNumberList.get(StationMission_i).equals(subMissionTransferStation)) {
                         subStationMissionStarTime.add(StationMissionStarList.get(StationMission_i));
                         subStationMissionStopTime.add(StationMissionStopList.get(StationMission_i));
                     }
                 }
+                */
+                //期望时间
+                subStationMissionStarTime.add(MissionStarTimeList.get(Mission_i));
+                subStationMissionStopTime.add(MissionStopTimeList.get(Mission_i));
                 //载荷循环
                 for (int Load_i = 0; Load_i < LoadNumber; Load_i++) {
                     ArrayList<int[]> VisibilityTimeperiod_iiList = new ArrayList<int[]>();
@@ -1984,10 +1993,10 @@ public class VisibilityCalculation {
             if (ViewAng_Min > ViewAngle[i])
                 ViewAng_Min = ViewAngle[i];
         }
-        //double[] ViewTheta_xz = {OpticalTheta_xz - ViewAng_Min - Euler_Max[1], OpticalTheta_xz + ViewAng_Min + Euler_Max[1]};
-        //double[] ViewTheta_yz = {OpticalTheta_yz - ViewAng_Min - Euler_Max[0], OpticalTheta_yz + ViewAng_Min + Euler_Max[0]};
-        double[] ViewTheta_xz = {OpticalTheta_xz-   Euler_Max[1], OpticalTheta_xz +  Euler_Max[1]};
-        double[] ViewTheta_yz = {OpticalTheta_yz-   Euler_Max[0], OpticalTheta_yz +  Euler_Max[0]};
+        double[] ViewTheta_xz = {OpticalTheta_xz - ViewAng_Min - Euler_Max[1], OpticalTheta_xz + ViewAng_Min + Euler_Max[1]};
+        double[] ViewTheta_yz = {OpticalTheta_yz - ViewAng_Min - Euler_Max[0], OpticalTheta_yz + ViewAng_Min + Euler_Max[0]};
+        //double[] ViewTheta_xz = {OpticalTheta_xz-   Euler_Max[1], OpticalTheta_xz +  Euler_Max[1]};
+        //double[] ViewTheta_yz = {OpticalTheta_yz-   Euler_Max[0], OpticalTheta_yz +  Euler_Max[0]};
 
         if (theta_xz >= ViewTheta_xz[0] && theta_xz <= ViewTheta_xz[1] && theta_yz >= ViewTheta_yz[0] && theta_yz <= ViewTheta_yz[1])
             Visibility_Flag = 1;

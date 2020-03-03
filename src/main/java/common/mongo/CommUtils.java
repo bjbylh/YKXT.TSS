@@ -113,4 +113,65 @@ public class CommUtils {
 
         return true;
     }
+
+    public static boolean checkInstructionInfoValid(ArrayList<Document> instruction_info) {
+        if (instruction_info == null)
+            return false;
+
+        for (Document document : instruction_info) {
+            if(document.getBoolean("valid"))
+                return true;
+        }
+
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static java.util.Date getExecTimeLast(Document d) {
+        ArrayList<Document> instruction_info = (ArrayList<Document>) d.get("instruction_info");
+
+        java.util.Date ret = null;
+
+        for(Document ii : instruction_info){
+            if(ii.getBoolean("valid")){
+                if(ret == null){
+                    ret = ii.getDate("execution_time");
+                }else{
+                    if(ii.getDate("execution_time").after(ret)){
+                        ret = ii.getDate("execution_time");
+                    }
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static java.util.Date getExecTimeFirst(Document d) {
+        ArrayList<Document> instruction_info = (ArrayList<Document>) d.get("instruction_info");
+
+        java.util.Date ret = null;
+
+        for(Document ii : instruction_info){
+            if(ii.getBoolean("valid")){
+                if(ret == null){
+                    ret = ii.getDate("execution_time");
+                }else{
+                    if(ii.getDate("execution_time").before(ret)){
+                        ret = ii.getDate("execution_time");
+                    }
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    public static java.util.Date getExecTimeCachu(Document d) {
+        if (d.containsKey("expected_start_time") && d.getDate("expected_start_time") != null) {
+            return d.getDate("expected_start_time");
+        } else
+            return null;
+    }
 }

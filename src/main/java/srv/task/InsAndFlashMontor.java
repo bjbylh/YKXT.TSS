@@ -307,21 +307,6 @@ public class InsAndFlashMontor {
             }
         }
 
-        @SuppressWarnings("unchecked")
-        private Date getExecTime(Document d) {
-            ArrayList<Document> instruction_info = (ArrayList<Document>) d.get("instruction_info");
-            if (!instruction_info.get(instruction_info.size() - 1).getBoolean("valid"))
-                return null;
-
-            return instruction_info.get(instruction_info.size() - 1).getDate("execution_time");
-        }
-
-        private Date getExecTimeCachu(Document d) {
-            if (d.containsKey("expected_start_time") && d.getDate("expected_start_time") != null) {
-                return d.getDate("expected_start_time");
-            } else
-                return null;
-        }
 
         @SuppressWarnings("unchecked")
         private void procFilePool(ArrayList<Document> pool_files_image, ArrayList<Document> pool_files_trans, boolean isRT) {
@@ -335,7 +320,7 @@ public class InsAndFlashMontor {
 
             for (Document d : pool_files_image) {
                 if (d.getString("work_mode").contains("擦除") && d.getBoolean("clear_all")) {
-                    Date execution_time = getExecTimeCachu(d);
+                    Date execution_time = CommUtils.getExecTimeCachu(d);
 
                     if (execution_time == null)
                         continue;
@@ -372,9 +357,9 @@ public class InsAndFlashMontor {
                 Date execution_time = null;
 
                 if (d.getString("work_mode").contains("擦除"))
-                    execution_time = getExecTimeCachu(d);
+                    execution_time = CommUtils.getExecTimeCachu(d);
                 else
-                    execution_time = getExecTime(d);
+                    execution_time = CommUtils.getExecTimeLast(d);
 
                 if (execution_time == null)
                     continue;
@@ -393,7 +378,7 @@ public class InsAndFlashMontor {
 
 
             for (Document d : pool_files_trans) {
-                Date execution_time = getExecTime(d);
+                Date execution_time = CommUtils.getExecTimeLast(d);
 
                 if (execution_time == null)
                     continue;
@@ -419,9 +404,9 @@ public class InsAndFlashMontor {
             for (Date date : all_pool.keySet()) {
                 double totalSize = 0.0;
                 Document d = all_pool.get(date).getValue();
-                Date execution_time = getExecTime(d);
+                Date execution_time = CommUtils.getExecTimeLast(d);
 
-                if(execution_time == null)
+                if (execution_time == null)
                     continue;
                 if (all_pool.get(date).getKey()) {//记录任务
                     try {
@@ -816,16 +801,32 @@ public class InsAndFlashMontor {
             MongoCollection<Document> pool_files = mongoDatabase.getCollection("pool_files");
             Bson queryBson;
 
-            if (isRT)
-
-            {
+            if (isRT) {
                 save.append("type", "REALTIME");
                 queryBson = Filters.eq("type", "REALTIME");
-            } else
-
-            {
+            } else {
                 save.append("type", "FORECAST");
                 queryBson = Filters.eq("type", "FORECAST");
+            }
+
+            if (stepRcd.size() == 0) {
+                Document doc = new Document();
+                doc.append("time_stamp", Date.from(Instant.now()));
+                doc.append("pool_size", 64);
+                for (int i = 0; i < 64; i++) {
+                    Document data = new Document();
+                    data.append("valid", true);
+                    data.append("replayed", false);
+                    data.append("size", 0.0);
+
+
+                    doc.append("file_" + i, data);
+                }
+                doc.append("flash_usage", 0.0);
+
+                doc.append("replayed_size", 0.0);
+
+                stepRcd.add(doc);
             }
 
             save.append("data", stepRcd);
@@ -866,7 +867,7 @@ public class InsAndFlashMontor {
                 Boolean[] camEnables = new Boolean[4];
                 Double[] frameP = new Double[4];
 
-                for (int i = 0; i < camEnables.length; i++) {
+                for (int i = 0; i < camEnables.length; i++) {//初始化四个相机的状态，开始时为关机
                     camEnables[i] = false;
                 }
 
@@ -895,7 +896,7 @@ public class InsAndFlashMontor {
                 }
 
                 //计算压缩比
-                double compressRate = 1.5;
+                double compressRate = 1.5;//无压缩则按1.5处理
                 String P02 = "";
 
                 ArrayList<Document> mission_params = (ArrayList<Document>) imageMisson.get("mission_params");

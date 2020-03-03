@@ -922,6 +922,9 @@ public class InstructionGeneration {
 
             String ZhilingKuai = "";
             ArrayList<String> MissionTaskModelChild = MissionTaskModel.get(i);
+
+            Map<String, String> it = new HashMap<>();
+
             for (String workcode : MissionTaskModelChild) {
                 //System.out.println(workcode);
                 for (Document document : TaskInstructionjson) {
@@ -1783,7 +1786,7 @@ public class InstructionGeneration {
                         continue;
                     }
                 }
-                Map<String, String> it = new HashMap<>();
+
 
                 //更新执行时间
                 for (int j = 0; j < MissionInstructionHexChild.size(); j++) {
@@ -1929,7 +1932,7 @@ public class InstructionGeneration {
                 bytesTotxt(InstructionArray.get(i).get(j), realPath);
             }
 
-            String InsTimeFileName = "Ins-Time.txt";
+            String InsTimeFileName = "Ins-Time-" + Instant.now().toEpochMilli() + ".txt";
             String InsTimeFileNameRealPath = FilePathUtil.getRealFilePath(FileFolder + "\\" + InsTimeFileName);
 
             StringToFile(insTimeMap.get(i), InsTimeFileNameRealPath);
@@ -2949,7 +2952,7 @@ public class InstructionGeneration {
             }
             insTimeMap.put(i, it);
 
-            String InsTimeFileName = "Ins-Time.txt";
+            String InsTimeFileName = "Ins-Time-" + Instant.now().toEpochMilli() + ".txt";
             String InsTimeFileNameRealPath = FilePathUtil.getRealFilePath(FileFolder + "\\" + InsTimeFileName);
 
             StringToFile(insTimeMap.get(i), InsTimeFileNameRealPath);
