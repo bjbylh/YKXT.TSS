@@ -72,7 +72,10 @@ public class ReviewReset {
     private static int FalseMissionNum = 0;
     private static int[] FalseMission;
 
-    public static void ReviewResetII(Document Satllitejson, FindIterable<Document> Orbitjson, long OrbitDataCount, FindIterable<Document> Attitudejson, long AttitudeDataCount, ArrayList<Document> ImageMissionjson, Document TransmissionMissionJson) {
+    private static Double[] v_records = new Double[4];//存储每个相机的记录速度
+    private static String[] sensorCodes = new String[4];//存储相机code
+
+    public static void ReviewResetII(Document Satllitejson, FindIterable<Document> Orbitjson, long OrbitDataCount, FindIterable<Document> Attitudejson, long AttitudeDataCount, ArrayList<Document> ImageMissionjson, Document TransmissionMissionJson,double DataStorageCapacitySur,double PowerCapacitySur) {
         //数据初始话
         ImageMissionStatus = new int[(int) OrbitDataCount];
         StationMissionStatus = new int[(int) OrbitDataCount];
@@ -177,6 +180,30 @@ public class ReviewReset {
                 continue;
             }
         }
+        for (Document document : properties) {//读取记录速度
+            if (document.getString("key").equals("v_record_1") && document.getString("group").equals("payload1")) {
+                v_records[0] = Double.parseDouble(document.getString("value"));
+            } else if (document.getString("key").equals("v_record_2") && document.getString("group").equals("payload2")) {
+                v_records[1] = Double.parseDouble(document.getString("value"));
+            } else if (document.getString("key").equals("v_record_3") && document.getString("group").equals("payload3")) {
+                v_records[2] = Double.parseDouble(document.getString("value"));
+            } else if (document.getString("key").equals("v_record_4") && document.getString("group").equals("payload4")) {
+                v_records[3] = Double.parseDouble(document.getString("value"));
+            } else {
+            }
+        }
+        for (Document document : properties) {//获取相机code
+            if (document.getString("key").equals("code") && document.getString("group").equals("payload1")) {
+                sensorCodes[0] = document.getString("value");
+            } else if (document.getString("key").equals("code") && document.getString("group").equals("payload2")) {
+                sensorCodes[1] = document.getString("value");
+            } else if (document.getString("key").equals("code") && document.getString("group").equals("payload3")) {
+                sensorCodes[2] = document.getString("value");
+            } else if (document.getString("key").equals("code") && document.getString("group").equals("payload4")) {
+                sensorCodes[3] = document.getString("value");
+            } else {
+            }
+        }
 
         //轨道数据读入
         //轨道数据读入
@@ -262,11 +289,16 @@ public class ReviewReset {
         ArrayList<Boolean> MissionCheckFlag=new ArrayList<>();
         ArrayList<int[]> MissionStarEndTime=new ArrayList<>();
         ArrayList<Integer> MissionFalseResuFlag=new ArrayList<>();
+        ArrayList<Double> MissionV_RecordList=new ArrayList<>();
 
         try {
             if (ImageMissionjson != null) {
                 for (Document document : ImageMissionjson) {
                     try {
+                        //获取数据写入速率
+                        double MissionV_RecordTemp=getSizePerSec(document);
+                        MissionV_RecordList.add(MissionNumber,MissionV_RecordTemp);
+
                         if (document.getString("mission_state").equals("待执行")) {
                             ArrayList<Document> available_window = (ArrayList<Document>) document.get("image_window");
                             for (Document document1 : available_window) {
@@ -414,8 +446,10 @@ public class ReviewReset {
         double BatteryCapacity = PowerCapacity * 42 * 60 * 60;      //蓄电池电量
         double MemorySpace = MemoryStorageCapacity;           //固存空间
         if ((int) OrbitDataCount > 0) {
-            PowerStatus[0] = BatteryCapacity;
-            DataStatus[0] = MemorySpace;
+            //PowerStatus[0] = BatteryCapacity;
+            //DataStatus[0] = MemorySpace;
+            PowerStatus[0] = PowerCapacitySur* 42 * 60 * 60;
+            DataStatus[0] = DataStorageCapacitySur;
         }
         FalseMissionNum = 0;
         Boolean CheckFlag_now=true;
@@ -482,6 +516,8 @@ public class ReviewReset {
                 double PowerUse=average_power_image_JL;
                 double DataUse=0;
                 if (ImageWindowLoad.size() >= ImageMissionStatus[i]) {
+                    DataUse=-MissionV_RecordList.get(ImageMissionStatus[i]-1);
+                    /*
                     if (ImageWindowLoad.get(ImageMissionStatus[i]-1)==1) {
                         DataUse=-v_record_1;
                     }else if (ImageWindowLoad.get(ImageMissionStatus[i]-1)==2) {
@@ -491,19 +527,20 @@ public class ReviewReset {
                     }else if (ImageWindowLoad.get(ImageMissionStatus[i]-1)==4) {
                         DataUse=-v_record_4;
                     }
+                    */
                 }
                 if (ImageWorkModel.size()>=ImageMissionStatus[i]) {
                     if (ImageWorkModel.get(ImageMissionStatus[i]-1) == 1) {
                         PowerUse=average_power_image_JL;
                     }else if (ImageWorkModel.get(ImageMissionStatus[i]-1) == 2) {
                         PowerUse=average_power_image_SC;
-                        DataUse=0;
+                        //DataUse=0;
                     }else if (ImageWorkModel.get(ImageMissionStatus[i]-1) == 3) {
                         PowerUse=average_power_image_SCHF;
-                        DataUse=DataUse+v_playback;
+                        //DataUse=DataUse+v_playback;
                     }else if (ImageWorkModel.get(ImageMissionStatus[i]-1) == 4) {
                         PowerUse=record_play_power;
-                        DataUse=DataUse+v_playback;
+                        //DataUse=DataUse+v_playback;
                     }
                 }
                 if (SailBoard >= PowerUse) {
@@ -851,6 +888,259 @@ public class ReviewReset {
 
             }
      */
+
+    private static double getSizePerSec(Document imageMisson) {
+        try {
+            double ret = 0.0;
+            Boolean[] camEnables = new Boolean[4];
+            Double[] frameP = new Double[4];
+
+            for (int i = 0; i < camEnables.length; i++) {//初始化四个相机的状态，开始时为关机
+                camEnables[i] = false;
+            }
+
+            //检查哪个相机开机
+            ArrayList<Document> expected_cam = (ArrayList<Document>) imageMisson.get("expected_cam");
+
+            if (expected_cam == null)
+                return ret;
+
+            if (expected_cam.size() == 0)
+                return ret;
+
+            Document sat = expected_cam.get(0);
+
+            ArrayList<Document> sensors = (ArrayList<Document>) sat.get("sensors");
+
+            for (Document sensor : sensors) {
+                String code = sensor.getString("code");
+                int i = 0;
+                for (String sensorCode : sensorCodes) {
+                    if (code.equals(sensorCode)) {
+                        camEnables[i] = true;
+                        break;
+                    }
+                    i++;
+                }
+            }
+
+            //计算压缩比
+            double compressRate = 1.5;//无压缩则按1.5处理
+            String P02 = "";
+
+            ArrayList<Document> mission_params = (ArrayList<Document>) imageMisson.get("mission_params");
+
+            for (Document mission_param : mission_params) {
+                if (mission_param.getString("code").equals("P02")) {
+                    P02 = mission_param.getString("value");
+                }
+            }
+
+            if (P02.equals("")) {
+                ArrayList<Document> default_mission_params = (ArrayList<Document>) imageMisson.get("default_mission_params");
+
+                for (Document default_mission_param : default_mission_params) {
+                    if (default_mission_param.getString("code").equals("P02")) {
+                        P02 = default_mission_param.getString("default_value");
+                    }
+                }
+            }
+
+            if (!P02.equals("")) {
+                if (P02.equals("1"))
+                    compressRate = 2.0;
+            }
+            //压缩比计算完成
+
+            //计算高分相机帧频，按照a开机、b开机、ab均开机分别计算
+            if (camEnables[0] && camEnables[1]) {//ab均开机
+                String P08_AB = "";
+
+                for (Document mission_param : mission_params) {
+                    if (mission_param.getString("code").equals("P08_AB")) {
+                        P08_AB = mission_param.getString("value");
+                    }
+                }
+
+                if (P08_AB.equals("")) {
+                    ArrayList<Document> default_mission_params = (ArrayList<Document>) imageMisson.get("default_mission_params");
+
+                    for (Document default_mission_param : default_mission_params) {
+                        if (default_mission_param.getString("code").equals("P08_AB")) {
+                            P08_AB = default_mission_param.getString("default_value");
+                        }
+                    }
+                }
+
+                if (P08_AB.equals("1")) {
+                    frameP[0] = 0.5;
+                    frameP[1] = 0.5;
+                } else {
+                    frameP[0] = 1.0;
+                    frameP[1] = 1.0;
+                }
+            } else if (camEnables[0] && !camEnables[1]) {//a开b关
+                String P08_A = "";
+
+                for (Document mission_param : mission_params) {
+                    if (mission_param.getString("code").equals("P08_A")) {
+                        P08_A = mission_param.getString("value");
+                    }
+                }
+
+                if (P08_A.equals("")) {
+                    ArrayList<Document> default_mission_params = (ArrayList<Document>) imageMisson.get("default_mission_params");
+
+                    for (Document default_mission_param : default_mission_params) {
+                        if (default_mission_param.getString("code").equals("P08_A")) {
+                            P08_A = default_mission_param.getString("default_value");
+                        }
+                    }
+                }
+
+                if (P08_A.equals("1")) {
+                    frameP[0] = 0.5;
+                } else {
+                    frameP[0] = 1.0;
+                }
+
+            } else if (!camEnables[0] && camEnables[1]) {
+                String P08_B = "";
+
+                for (Document mission_param : mission_params) {
+                    if (mission_param.getString("code").equals("P08_B")) {
+                        P08_B = mission_param.getString("value");
+                    }
+                }
+
+                if (P08_B.equals("")) {
+                    ArrayList<Document> default_mission_params = (ArrayList<Document>) imageMisson.get("default_mission_params");
+
+                    for (Document default_mission_param : default_mission_params) {
+                        if (default_mission_param.getString("code").equals("P08_B")) {
+                            P08_B = default_mission_param.getString("default_value");
+                        }
+                    }
+                }
+
+                if (P08_B.equals("0")) {
+                    frameP[1] = 1.0;
+                } else if (P08_B.equals("2")) {
+                    frameP[1] = 3.0;
+                } else if (P08_B.equals("3")) {
+                    frameP[1] = 4.0;
+                } else if (P08_B.equals("4")) {
+                    frameP[1] = 5.0;
+                } else if (P08_B.equals("5")) {
+                    frameP[1] = 0.5;
+                } else if (P08_B.equals("6")) {
+                    frameP[1] = 0.2;
+                } else if (P08_B.equals("7")) {
+                    frameP[1] = 0.1;
+                } else {
+                    frameP[1] = 1.0;
+                }
+            } else {//都关机
+            }
+
+            //计算多光谱相机帧频，按照a开机、b开机、ab均开机分别计算
+            if (camEnables[2] && camEnables[3]) {
+                String P09_AB = "";
+
+                for (Document mission_param : mission_params) {
+                    if (mission_param.getString("code").equals("P09_AB")) {
+                        P09_AB = mission_param.getString("value");
+                    }
+                }
+
+                if (P09_AB.equals("")) {
+                    ArrayList<Document> default_mission_params = (ArrayList<Document>) imageMisson.get("default_mission_params");
+
+                    for (Document default_mission_param : default_mission_params) {
+                        if (default_mission_param.getString("code").equals("P08_AB")) {
+                            P09_AB = default_mission_param.getString("default_value");
+                        }
+                    }
+                }
+
+                if (P09_AB.equals("1")) {
+                    frameP[2] = 0.5;
+                    frameP[3] = 0.5;
+                } else {
+                    frameP[2] = 1.0;
+                    frameP[3] = 1.0;
+                }
+            } else if (camEnables[2] && !camEnables[3]) {
+                String P09_A = "";
+
+                for (Document mission_param : mission_params) {
+                    if (mission_param.getString("code").equals("P09_A")) {
+                        P09_A = mission_param.getString("value");
+                    }
+                }
+
+                if (P09_A.equals("")) {
+                    ArrayList<Document> default_mission_params = (ArrayList<Document>) imageMisson.get("default_mission_params");
+
+                    for (Document default_mission_param : default_mission_params) {
+                        if (default_mission_param.getString("code").equals("P09_A")) {
+                            P09_A = default_mission_param.getString("default_value");
+                        }
+                    }
+                }
+
+                if (P09_A.equals("1")) {
+                    frameP[2] = 0.5;
+                } else if (P09_A.equals("2")) {
+                    frameP[2] = 0.2;
+                } else if (P09_A.equals("3")) {
+                    frameP[2] = 0.1;
+                } else {
+                    frameP[2] = 1.0;
+                }
+
+            } else if (!camEnables[2] && camEnables[3]) {
+                String P09_B = "";
+
+                for (Document mission_param : mission_params) {
+                    if (mission_param.getString("code").equals("P09_B")) {
+                        P09_B = mission_param.getString("value");
+                    }
+                }
+
+                if (P09_B.equals("")) {
+                    ArrayList<Document> default_mission_params = (ArrayList<Document>) imageMisson.get("default_mission_params");
+
+                    for (Document default_mission_param : default_mission_params) {
+                        if (default_mission_param.getString("code").equals("P09_B")) {
+                            P09_B = default_mission_param.getString("default_value");
+                        }
+                    }
+                }
+
+                if (P09_B.equals("1")) {
+                    frameP[3] = 0.5;
+                } else if (P09_B.equals("2")) {
+                    frameP[3] = 0.2;
+                } else if (P09_B.equals("3")) {
+                    frameP[3] = 0.1;
+                } else {
+                    frameP[3] = 1.0;
+                }
+            } else {
+            }
+            //帧频计算完成
+
+            for (int i = 0; i < 4; i++) {
+                if (camEnables[i]) {
+                    ret += v_records[i] * frameP[i] / compressRate;
+                }
+            }
+            return ret;
+        } catch (Exception e) {
+            return 0.0;
+        }
+    }
 
     //太阳矢量
     private static double Sun(double JD, double[] r_sun, double[] su) {

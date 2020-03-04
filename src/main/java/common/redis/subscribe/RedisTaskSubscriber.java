@@ -22,6 +22,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import redis.clients.jedis.JedisPubSub;
 import srv.task.CamAndScStatus;
+import srv.task.EnergyCalc;
 import srv.task.TaskInit;
 import xml.FileBodyType;
 import xml.FileHeaderType;
@@ -102,6 +103,14 @@ public class RedisTaskSubscriber extends JedisPubSub {
             } else if (asString.equals(MsgType.MANUAL_LOOP.name())) {
 
                 proManualLoop(json, id);
+
+            } else if (asString.equals(MsgType.ORBIT_DATA_EXPORT.name())) {
+
+                procOrbitDataExport(json, id);
+
+            } else if (asString.equals(MsgType.ENERGY_RESET.name())) {
+
+                procEnergyReset(json, id);
 
             } else return;
         } catch (Exception e) {
@@ -209,6 +218,27 @@ public class RedisTaskSubscriber extends JedisPubSub {
             RedisPublish.CommonReturn(id, false, message, MsgType.MANUAL_LOOP_FINISHED);
         }
     }
+
+    private void procEnergyReset(JsonObject json, String id) {
+        try {
+            String energy = json.get("content").getAsString();
+
+            EnergyCalc energyCalc = new EnergyCalc();
+
+            energyCalc.clearAllDB();
+
+            energyCalc.energyReset(Double.parseDouble(energy));
+
+            energyCalc.close();
+
+            RedisPublish.CommonReturn(id, true, "", MsgType.ENERGY_RESET_FINISHED);
+
+        } catch (Exception e) {
+            String message = e.getMessage();
+            RedisPublish.CommonReturn(id, false, message, MsgType.ENERGY_RESET_FINISHED);
+        }
+    }
+
 
     private void procBlackCali(JsonObject json, String id) {
         try {
@@ -405,35 +435,6 @@ public class RedisTaskSubscriber extends JedisPubSub {
             //卫星资源表
             FindIterable<Document> transmission_missions = mongoDatabase.getCollection("transmission_mission").find();
 
-//            ObjectFactory objectFactory = new ObjectFactory();
-
-//            DtplanType dtplanType = objectFactory.createDtplanType();
-//
-//            HeadType headType = objectFactory.createHeadType();
-//            headType.setCreationTime(Instant.now().toString());
-//
-//            dtplanType.setHead(headType);
-//
-//            PlanType planType = objectFactory.createPlanType();
-//            for (Document transmission_mission : transmission_missions) {
-//                if (transmission_numbers.contains(transmission_mission.getString("transmission_number"))) {
-//
-//                    if (transmission_mission.containsKey("transmission_window")) {
-//                        ArrayList<Document> transmission_window = (ArrayList<Document>) transmission_mission.get("transmission_window");
-//
-//                        for (Document window : transmission_window) {
-//                            MissionType missionType = objectFactory.createMissionType();
-//                            missionType.setTplanID(transmission_mission.getString("transmission_number"));
-//                            missionType.setStationID(window.getString("station_name"));
-//                            missionType.setStartTime(Instant.ofEpochMilli(window.getDate("start_time").getTime()).toString());
-//                            missionType.setEndTime(Instant.ofEpochMilli(window.getDate("end_time").getTime()).toString());
-//                            missionType.setSatelliteID(sat_code);
-//                            planType.setMission(missionType);
-//                        }
-//                    }
-//                }
-//            }
-//            dtplanType.setPlan(planType);
 
             for (Document transmission_mission : transmission_missions) {
                 if (transmission_numbers.contains(transmission_mission.getString("transmission_number"))) {
@@ -483,7 +484,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
                             interFaceFileType.setFileBody(fileBodyType);
 
                             String date = String.valueOf(localDateTime.getYear()) + String.format("%02d", localDateTime.getMonth().getValue()) + String.format("%02d", localDateTime.getDayOfMonth());
-                            String filename = "MPSS_TRGS-JD-11_" + sat_code + "_" + date + "_" + String.format("%06d", message_ser) + ".TRTASK";
+                            String filename = "MPSS_YGJD-01_" + sat_code + "_" + date + "_" + String.format("%06d", message_ser) + ".TRTASK";
 
                             File file = new File(FilePathUtil.getRealFilePath(f + "//" + filename));
 
@@ -511,6 +512,118 @@ public class RedisTaskSubscriber extends JedisPubSub {
         } catch (Exception e) {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.ORBIT_DATA_IMPORT_FINISHED);
+        }
+    }
+
+    private void procOrbitDataExport(JsonObject json, String id) {
+        try {
+            Instant createTime = Instant.now();
+            LocalDateTime localDateTime = LocalDateTime.now();
+            String dir = String.valueOf(createTime.toEpochMilli());
+            String f = ConfigManager.getInstance().fetchXmlFilePath() + dir;
+
+            File mulu = new File(f);
+
+            if (mulu.exists())
+                mulu.delete();
+
+            mulu.mkdir();
+
+            MongoClient mongoClient = MangoDBConnector.getClient();
+            //获取名为"temp"的数据库
+            MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+
+            MongoCollection<Document> sate_res = mongoDatabase.getCollection("satellite_resource");
+
+            Document first = sate_res.find().first();
+
+            String sat_code = first.getString("sat_code");
+
+            Instant start = Instant.now();
+
+            ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
+            double[] orbits = new double[6];
+            for (Document document : properties) {
+
+                if (document.getString("key").equals("a")) {
+                    orbits[0] = Double.parseDouble(document.getString("value"));
+                } else if (document.getString("key").equals("e")) {
+                    orbits[1] = Double.parseDouble(document.getString("value"));
+                } else if (document.getString("key").equals("i")) {
+                    orbits[2] = Double.parseDouble(document.getString("value"));
+                } else if (document.getString("key").equals("RAAN")) {
+                    orbits[3] = Double.parseDouble(document.getString("value"));
+                } else if (document.getString("key").equals("perigee_angle")) {
+                    orbits[4] = Double.parseDouble(document.getString("value"));
+                } else if (document.getString("key").equals("mean_anomaly")) {
+                    orbits[5] = Double.parseDouble(document.getString("value"));
+                } else if (document.getString("key").equals("update_time")) {
+                    start = document.getDate("value").toInstant();
+                } else {
+                }
+            }
+
+            String epochTime = start.atZone(ZoneId.systemDefault()).toLocalDateTime().toString();
+
+            if (epochTime.length() == 16)
+                epochTime += ":00";
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            sb.append("<InterFaceFile>");
+
+            sb.append("<FileHeader>");
+
+            sb.append("<messageType>").append("GENDATA").append("</messageType>");
+            sb.append("<messageID>").append(String.format("%06d", message_ser)).append("</messageID>");
+            sb.append("<originatorAddress>").append("MPSS").append("</originatorAddress>");
+            sb.append("<recipientAddress>").append("YGJD-01").append("</recipientAddress>");
+            sb.append("<creationTime>").append(localDateTime.toString()).append("</creationTime>");
+
+            sb.append("</FileHeader>");
+
+            sb.append("<FileBody>");
+
+            sb.append("<dataID>").append(String.format("%09d", message_ser)).append("</dataID>");
+            sb.append("<satellite>").append(sat_code).append("</satellite>");
+            sb.append("<epochTime>").append(epochTime).append("</epochTime>");
+            sb.append("<semimajorAxis>").append(orbits[0]).append("</semimajorAxis>");
+            sb.append("<eccentricity>").append(orbits[1]).append("</eccentricity>");
+            sb.append("<inclination>").append(orbits[2]).append("</inclination>");
+            sb.append("<ascendNode>").append(orbits[3]).append("</ascendNode>");
+            sb.append("<argumentOfPerigee>").append(orbits[4]).append("</argumentOfPerigee>");
+            sb.append("<meanAnomaly>").append(orbits[5]).append("</meanAnomaly>");
+
+            sb.append("</FileBody>");
+
+            sb.append("</InterFaceFile>");
+
+
+            String date = String.valueOf(localDateTime.getYear()) + String.format("%02d", localDateTime.getMonth().getValue()) + String.format("%02d", localDateTime.getDayOfMonth());
+            String filename = "MPSS_YGJD-01_" + sat_code + "_" + date + "_" + String.format("%06d", message_ser) + ".GENDATA";
+
+            File file = new File(FilePathUtil.getRealFilePath(f + "//" + filename));
+
+            if (file.exists())
+                file.delete();
+
+            file.createNewFile();
+            Writer w = new FileWriter(file);
+            w.write(sb.toString());
+            w.close();
+
+            if (message_ser == MESSAGE_MAX)
+                message_ser = 0;
+            else message_ser++;
+
+
+            mongoClient.close();
+            RedisPublish.CommonReturn(id, true, f, MsgType.ORBIT_DATA_EXPORT_FINISHED);
+
+
+        } catch (Exception e) {
+            String message = e.getMessage();
+            RedisPublish.CommonReturn(id, false, message, MsgType.ORBIT_DATA_EXPORT_FINISHED);
         }
     }
 
@@ -609,6 +722,14 @@ public class RedisTaskSubscriber extends JedisPubSub {
             Document Satllitejson = Data_Satllitejson.find().first();
             Document newSateInfo = Document.parse(Satllitejson.toJson());
 
+            double trueAnomaly = MeanToTrueAnomaly.MeanToTrueAnomalyII(
+                    Double.parseDouble(parser.get("A"))
+                    , Double.parseDouble(parser.get("e"))
+                    , Double.parseDouble(parser.get("i"))
+                    , Double.parseDouble(parser.get("W"))
+                    , Double.parseDouble(parser.get("O"))
+                    , Double.parseDouble(parser.get("M")));
+
             ArrayList<Document> properties = (ArrayList<Document>) newSateInfo.get("properties");
             for (Document d : properties) {
                 if (d.getString("group").equals("轨道参数")) {
@@ -628,6 +749,8 @@ public class RedisTaskSubscriber extends JedisPubSub {
                     } else if (d.getString("key").equals("perigee_angle")) {
                         d.append("value", parser.get("W"));
                     } else if (d.getString("key").equals("true_anomaly")) {//todo
+                        d.append("value", String.valueOf(trueAnomaly));
+                    } else if (d.getString("key").equals("mean_anomaly")) {//todo
                         d.append("value", parser.get("M"));
                     } else continue;
                 }

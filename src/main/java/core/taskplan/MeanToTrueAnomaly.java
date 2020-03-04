@@ -30,4 +30,9 @@ public class MeanToTrueAnomaly {
         TrueAnomaly = Math.atan2(y, x);
         return TrueAnomaly * 180 / Math.PI;
     }
+
+    public static void main(String[] args) {
+        double v = MeanToTrueAnomaly.MeanToTrueAnomalyII(24628.1, 0.72072, 19.6, 290.0, 20.0, 0.0);
+        System.out.println(v);
+    }
 }

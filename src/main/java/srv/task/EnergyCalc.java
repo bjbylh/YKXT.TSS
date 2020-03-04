@@ -6,6 +6,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
 import common.def.LightEnum;
 import common.def.MissionType;
 import common.mongo.CommUtils;
@@ -13,6 +14,7 @@ import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import javafx.util.Pair;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -26,7 +28,7 @@ import java.util.TreeMap;
 public class EnergyCalc {
     public static void main(String[] args) {
         EnergyCalc energyCalc = new EnergyCalc();
-        energyCalc.calcEnergy(Instant.now().minusSeconds(60 * 60 * 24 * 365), Instant.now(), 0.0, false);
+        energyCalc.calcEnergy(Instant.now().minusSeconds(60 * 60 * 24 * 2), Instant.now(), 0.0, false);
         energyCalc.close();
     }
 
@@ -34,7 +36,15 @@ public class EnergyCalc {
 
     private MongoDatabase mongoDatabase = null;
 
-    private Map<Range<Date>, MissionType> ranges = Maps.newHashMap();
+    private Map<Range<Date>, MissionType> rangesMissions = Maps.newHashMap();
+
+    private Map<Range<Date>, Map<Range<Date>, LightEnum>> rangesLight = Maps.newHashMap();
+
+
+    private MongoCollection<Document> satellite_energy = null;
+
+    private MongoCollection<Document> range_sunlight = null;
+
 
     private double
             voltage = 42,//电压
@@ -52,6 +62,10 @@ public class EnergyCalc {
     public EnergyCalc() {
         mongoClient = MangoDBConnector.getClient();
         mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+
+        satellite_energy = mongoDatabase.getCollection("satellite_energy");
+
+        range_sunlight = mongoDatabase.getCollection("range_sunlight");
 
         loadConfig();
     }
@@ -194,30 +208,33 @@ public class EnergyCalc {
         if (!useInitValue)
             initValue = fetchEnergy(start);
 
+        initRange(pool);
 
-        for (Instant t = start; t.toEpochMilli() < end.toEpochMilli(); t.plusSeconds(10)) {
+        ArrayList<Document> datas = new ArrayList<>();
+
+        for (Instant t = start; t.toEpochMilli() < end.toEpochMilli(); ) {
             LightEnum lightEnum = getLightEnum(t);
 
             if (lightEnum == LightEnum.SUNLIGHT) {
                 MissionType missionType = getMissionType(t);
 
                 if (missionType == MissionType.HF) {
-                    initValue += (sailboard_current - hf_power_playback) * power_charge * 10.0 / 3600.0 / voltage;
+                    initValue += (sailboard_current - hf_power_playback) * power_charge * 60.0 / 3600.0 / voltage;
 
                     if (initValue > power_capacity)
                         initValue = power_capacity;
                 } else if (missionType == MissionType.JL) {
-                    initValue += (sailboard_current - jl_power_image) * power_charge * 10.0 / 3600.0 / voltage;
+                    initValue += (sailboard_current - jl_power_image) * power_charge * 60.0 / 3600.0 / voltage;
 
                     if (initValue > power_capacity)
                         initValue = power_capacity;
                 } else if (missionType == MissionType.JLHF) {
-                    initValue += (sailboard_current - record_play_power) * power_charge * 10.0 / 3600.0 / voltage;
+                    initValue += (sailboard_current - record_play_power) * power_charge * 60.0 / 3600.0 / voltage;
 
                     if (initValue > power_capacity)
                         initValue = power_capacity;
                 } else if (missionType == MissionType.SC) {
-                    initValue += (sailboard_current - sc_power_image) * power_charge * 10.0 / 3600.0 / voltage;
+                    initValue += (sailboard_current - sc_power_image) * power_charge * 60.0 / 3600.0 / voltage;
 
                     if (initValue > power_capacity)
                         initValue = power_capacity;
@@ -236,22 +253,22 @@ public class EnergyCalc {
                 MissionType missionType = getMissionType(t);
 
                 if (missionType == MissionType.HF) {
-                    initValue -= hf_power_playback / power_efficiency * 10.0 / 3600.0 / voltage;
+                    initValue -= hf_power_playback / power_efficiency * 60.0 / 3600.0 / voltage;
 
                     if (initValue > power_capacity)
                         initValue = power_capacity;
                 } else if (missionType == MissionType.JL) {
-                    initValue -= jl_power_image / power_efficiency * 10.0 / 3600.0 / voltage;
+                    initValue -= jl_power_image / power_efficiency * 60.0 / 3600.0 / voltage;
 
                     if (initValue > power_capacity)
                         initValue = power_capacity;
                 } else if (missionType == MissionType.JLHF) {
-                    initValue -= record_play_power / power_efficiency * 10.0 / 3600.0 / voltage;
+                    initValue -= record_play_power / power_efficiency * 60.0 / 3600.0 / voltage;
 
                     if (initValue > power_capacity)
                         initValue = power_capacity;
                 } else if (missionType == MissionType.SC) {
-                    initValue -= sc_power_image / power_efficiency * 10.0 / 3600.0 / voltage;
+                    initValue -= sc_power_image / power_efficiency * 60.0 / 3600.0 / voltage;
 
                     if (initValue > power_capacity)
                         initValue = power_capacity;
@@ -268,8 +285,22 @@ public class EnergyCalc {
                 }
             }
 
-            output(initValue);
+            Document d = new Document();
+            d.append("time_point", Date.from(t));
+            d.append("energy", initValue);
+            datas.add(d);
+            t = t.plusSeconds(60);
         }
+
+        satellite_energy.insertMany(datas);
+
+    }
+
+    public void energyReset(double value){
+        Document d = new Document();
+        d.append("time_point", Date.from(Instant.now()));
+        d.append("energy", value);
+        satellite_energy.insertOne(d);
     }
 
     private void initRange(TreeMap<Date, Pair<Boolean, Document>> pool) {
@@ -282,35 +313,123 @@ public class EnergyCalc {
 
                 String workmode = pool.get(t).getValue().getString("work_mode");
 
-               // if()
+                if (workmode.trim().equals("记录"))
+                    rangesMissions.put(r, MissionType.JL);
+                else if (workmode.trim().equals("实传")) {
+                    rangesMissions.put(r, MissionType.SC);
+                } else if (workmode.trim().equals("记录+回放"))
+                    rangesMissions.put(r, MissionType.JLHF);
+                else if (workmode.trim().equals("实传+回放"))
+                    rangesMissions.put(r, MissionType.SCHF);
+                else
+                    rangesMissions.put(r, MissionType.STANDBY);
             } else {
                 ArrayList<Document> transmission_window = (ArrayList<Document>) pool.get(t).getValue().get("transmission_window");
 
                 for (Document window : transmission_window) {
                     Range r = Range.closedOpen(window.getDate("start_time"), window.getDate("end_time"));
-                    ranges.put(r, MissionType.HF);
+                    rangesMissions.put(r, MissionType.HF);
                 }
+            }
+        }
+
+        FindIterable<Document> documents = range_sunlight.find();
+
+        for (Document d : documents) {
+            Date from = d.getDate("time_point");
+            Date to = Date.from(from.toInstant().plusSeconds(3600 * 24 * 7L));
+
+            Range<Date> dateRange = Range.closedOpen(from, to);
+
+            if (!d.containsKey("range_window")) continue;
+
+            ArrayList<Document> range_window = (ArrayList<Document>) d.get("range_window");
+
+            if (range_window.size() > 0) {
+
+                Map<Range<Date>, LightEnum> lm = Maps.newHashMap();
+
+                for (Document window : range_window) {
+                    Date start = window.getDate("start_time");
+                    Date end = window.getDate("end_time");
+
+                    Range<Date> dateRange1 = Range.closedOpen(start, end);
+
+                    lm.put(dateRange1, LightEnum.SUNLIGHT);
+
+                }
+                rangesLight.put(dateRange, lm);
             }
         }
     }
 
-    private void output(double value) {
-
+    private void clearDB(Instant start, Instant end) {
+        Bson queryBson = Filters.and(Filters.gte("time_point", Date.from(start)), Filters.lte("time_point", Date.from(end)));
+        satellite_energy.deleteMany(queryBson);
     }
 
-    private void clearDB(Instant start, Instant end) {
-
+    public void clearAllDB() {
+        clearDB(Instant.now().minusSeconds(3600 * 24 * 365 * 10L), Instant.now().plusSeconds(3600 * 24 * 365 * 10L));
     }
 
     public double fetchEnergy(Instant time) {
-        return 0.0;
+
+        try {
+            Document query = new Document();
+            query.append("time_point", new Document().append("$lte", Date.from(time)));
+
+            Document sort = new Document();
+            sort.append("time_point", -1.0);
+
+            int limit = 1;
+
+            Document first = satellite_energy.find(query).sort(sort).limit(limit).first();
+
+            if (first == null)
+                return power_capacity;
+
+            return first.getDouble("energy");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return power_capacity;
+        }
     }
 
     private MissionType getMissionType(Instant time) {
-        return MissionType.HF;
+
+        for (Range<Date> r : rangesMissions.keySet()) {
+            if (r.contains(Date.from(time)))
+                return rangesMissions.get(r);
+        }
+        return MissionType.STANDBY;
     }
 
     private LightEnum getLightEnum(Instant time) {
+        Range<Date> initDate = null;
+
+        for (Range<Date> r : rangesLight.keySet()) {
+            if (r.contains(Date.from(time))) {
+                if (initDate == null)
+                    initDate = r;
+                else {
+                    if (r.upperEndpoint().after(initDate.upperEndpoint()))
+                        initDate = r;
+                }
+            }
+        }
+
+        if (initDate == null)
+            return LightEnum.SHADOW;
+        else {
+            Map<Range<Date>, LightEnum> rangeLightEnumMap = rangesLight.get(initDate);
+
+            for (Range<Date> r : rangeLightEnumMap.keySet()) {
+                if (r.contains(Date.from(time)))
+                    return LightEnum.SUNLIGHT;
+            }
+        }
+
         return LightEnum.SHADOW;
     }
 }

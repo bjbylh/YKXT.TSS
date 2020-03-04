@@ -654,21 +654,6 @@ public class TaskPlanCore {
 
                 }
             }
-            double storage_capacity = 0.0;
-            double storage_valid = 0.0;
-
-            MongoCollection<Document> sate_res = mongoDatabase.getCollection("satellite_resource");
-
-            Document first = sate_res.find().first();
-            ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
-
-            for (Document document : properties) {
-
-                if (document.getString("key").equals("storage_capacity")) {
-                    storage_capacity = Double.parseDouble(document.getString("value")) * 1024 * 1024L;
-                    break;
-                }
-            }
 
 
             MongoCollection<Document> pool_files = mongoDatabase.getCollection("pool_files");
@@ -684,26 +669,19 @@ public class TaskPlanCore {
             Document file = null;
 
             try {
-                first = pool_files.find(queryBson).first();
+                Document first = pool_files.find(queryBson).first();
                 ArrayList<Document> data = (ArrayList<Document>) first.get("data");
                 file = data.get(data.size() - 1);
-
-                storage_valid = storage_capacity * (1 - file.getDouble("flash_usage"));//todo
             } catch (Exception e) {
                 e.printStackTrace();
             }
 
-            EnergyCalc energyCalc = new EnergyCalc();
-            double v = energyCalc.fetchEnergy(startTime.toInstant());
 
             MissionPlanning.MissionPlanningII(this.Satllitejson, this.GroundStationjson, this.D_orbitjson, this.count, Missionjson, Transmissionjson, station_missions, file);
 
             updateSubStatus(subid, SubTaskStatus.SUSPEND);
             RedisPublish.dbRefresh(id);
 
-            energyCalc.calcEnergy(startTime.toInstant(), endTime.toInstant(), 0.0, false);
-
-            energyCalc.close();
 
             return checkIfStopped(id, 2);
 
@@ -789,8 +767,23 @@ public class TaskPlanCore {
 
             }
 
-            MongoCollection<Document> pool_files = mongoDatabase.getCollection("pool_files");
+            double storage_capacity = 0.0;
+            double storage_valid = 0.0;
 
+            MongoCollection<Document> sate_res = mongoDatabase.getCollection("satellite_resource");
+
+            Document first = sate_res.find().first();
+            ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
+
+            for (Document document : properties) {
+
+                if (document.getString("key").equals("storage_capacity")) {
+                    storage_capacity = Double.parseDouble(document.getString("value")) * 1024 * 1024L;
+                    break;
+                }
+            }
+
+            MongoCollection<Document> pool_files = mongoDatabase.getCollection("pool_files");
 
             if (taskType == TaskType.REALTIME) {
                 queryBson = Filters.eq("type", "REALTIME");
@@ -798,18 +791,24 @@ public class TaskPlanCore {
                 queryBson = Filters.eq("type", "FORECAST");
             }
 
-            Document file = null;
-
             try {
-                Document first = pool_files.find(queryBson).first();
+                first = pool_files.find(queryBson).first();
                 ArrayList<Document> data = (ArrayList<Document>) first.get("data");
-                file = data.get(data.size() - 1);
+                Document file = data.get(data.size() - 1);
+
+                storage_valid = storage_capacity * (1 - file.getDouble("flash_usage"));//todo
             } catch (Exception e) {
+                e.printStackTrace();
             }
 
-            ReviewReset.ReviewResetII(Satllitejson, this.D_orbitjson, this.count, documents, dcount, Missionjson, Transmissionjson);
+            EnergyCalc energyCalc = new EnergyCalc();
+            double v = energyCalc.fetchEnergy(startTime.toInstant());
 
+            ReviewReset.ReviewResetII(Satllitejson, this.D_orbitjson, this.count, documents, dcount, Missionjson, Transmissionjson, storage_valid, v);
 
+            energyCalc.calcEnergy(startTime.toInstant(), endTime.toInstant(), 0.0, false);
+
+            energyCalc.close();
             updateSubStatus(subid, SubTaskStatus.SUSPEND);
             RedisPublish.dbRefresh(id);
             return checkIfStopped(id, 4);

@@ -3172,6 +3172,7 @@ public class InstructionGeneration {
             C0 = (C0 + B) % 255;
             C1 = (C1 + C0) % 255;
         }
+//        int CK1 = 0 - ((C0 + C1) % 255);
         int CK1 = (-(C0 + C1)) % 255;
         if (CK1 < 0) {
             CK1 = CK1 + 255;
@@ -3195,6 +3196,8 @@ public class InstructionGeneration {
         }
         return CK1str + CK2str;
     }
+
+
 
     //CRC校验
     private static int getCRC_0xFFFFold(byte[] data, int len)        //CRC校验
@@ -3336,58 +3339,167 @@ public class InstructionGeneration {
         return CoordinatesList;
     }
 
+//    private static ArrayList<double[]> GetGeometryPoint(Document geometry) {
+//        ArrayList<double[]> CoordinatesList = new ArrayList<double[]>();
+//        if (geometry.get("type").equals("Point")) {
+//            ArrayList<Double> coordinates = (ArrayList<Double>) geometry.get("coordinates");
+//            double[] Target = new double[2];
+//            Target[0] = coordinates.get(0);
+//            Target[1] = coordinates.get(1);
+//            CoordinatesList.add(Target);
+//        } else if (geometry.get("type").equals("LineString")) {
+//            ArrayList<ArrayList<Double>> coordinates = (ArrayList<ArrayList<Double>>) geometry.get("coordinates");
+//            for (ArrayList<Double> document : coordinates) {
+//                double[] Target = new double[2];
+//                Target[0] = document.get(0);
+//                Target[1] = document.get(1);
+//                CoordinatesList.add(Target);
+//            }
+//        } else if (geometry.get("type").equals("Polygon")) {
+//            ArrayList<ArrayList<ArrayList<Double>>> coordinates = (ArrayList<ArrayList<ArrayList<Double>>>) geometry.get("coordinates");
+//            for (ArrayList<ArrayList<Double>> subcoordinates : coordinates) {
+//                for (ArrayList<Double> subsubcoordinates : subcoordinates) {
+//                    double[] Target = new double[2];
+//                    Target[0] = subsubcoordinates.get(0);
+//                    Target[1] = subsubcoordinates.get(1);
+//                    CoordinatesList.add(Target);
+//                }
+//            }
+//        } else if (geometry.get("type").equals("MultiPoint")) {
+//            ArrayList<ArrayList<Double>> coordinates = (ArrayList<ArrayList<Double>>) geometry.get("coordinates");
+//            for (ArrayList<Double> document : coordinates) {
+//                double[] Target = new double[2];
+//                Target[0] = document.get(0);
+//                Target[1] = document.get(1);
+//                CoordinatesList.add(Target);
+//            }
+//        } else if (geometry.get("type").equals("MultiLineString")) {
+//            ArrayList<ArrayList<ArrayList<Double>>> coordinates = (ArrayList<ArrayList<ArrayList<Double>>>) geometry.get("coordinates");
+//            for (ArrayList<ArrayList<Double>> subcoordinates : coordinates) {
+//                for (ArrayList<Double> subsubcoordinates : subcoordinates) {
+//                    double[] Target = new double[2];
+//                    Target[0] = subsubcoordinates.get(0);
+//                    Target[1] = subsubcoordinates.get(1);
+//                    CoordinatesList.add(Target);
+//                }
+//            }
+//        } else if (geometry.get("type").equals("MultiPolygon")) {
+//            ArrayList<ArrayList<ArrayList<ArrayList<Double>>>> coordinates = (ArrayList<ArrayList<ArrayList<ArrayList<Double>>>>) geometry.get("coordinates");
+//            for (ArrayList<ArrayList<ArrayList<Double>>> subcoordinates : coordinates) {
+//                for (ArrayList<ArrayList<Double>> subsubcoordinates : subcoordinates) {
+//                    for (ArrayList<Double> subsubsubcoordinates : subsubcoordinates) {
+//                        double[] Target = new double[2];
+//                        Target[0] = subsubsubcoordinates.get(0);
+//                        Target[1] = subsubsubcoordinates.get(1);
+//                        CoordinatesList.add(Target);
+//                    }
+//                }
+//            }
+//        }
+//
+//        return CoordinatesList;
+//    }
+
     private static ArrayList<double[]> GetGeometryPoint(Document geometry) {
         ArrayList<double[]> CoordinatesList = new ArrayList<double[]>();
         if (geometry.get("type").equals("Point")) {
-            ArrayList<Double> coordinates = (ArrayList<Double>) geometry.get("coordinates");
+            ArrayList<Object> coordinates = (ArrayList<Object>) geometry.get("coordinates");
             double[] Target = new double[2];
-            Target[0] = coordinates.get(0);
-            Target[1] = coordinates.get(1);
+            if (coordinates.get(0).getClass().getName().equals("java.lang.Double")) {
+                Target[0] = (Double) coordinates.get(0);
+            } else {
+                Target[0] = (double) (Integer) coordinates.get(0);
+            }
+            if (coordinates.get(1).getClass().getName().equals("java.lang.Double")) {
+                Target[1] = (Double) coordinates.get(1);
+            } else {
+                Target[1] = (double) (Integer) coordinates.get(1);
+            }
             CoordinatesList.add(Target);
         } else if (geometry.get("type").equals("LineString")) {
-            ArrayList<ArrayList<Double>> coordinates = (ArrayList<ArrayList<Double>>) geometry.get("coordinates");
-            for (ArrayList<Double> document : coordinates) {
+            ArrayList<ArrayList<Object>> coordinates = (ArrayList<ArrayList<Object>>) geometry.get("coordinates");
+            for (ArrayList<Object> document : coordinates) {
                 double[] Target = new double[2];
-                Target[0] = document.get(0);
-                Target[1] = document.get(1);
+                if (document.get(0).getClass().getName().equals("java.lang.Double")) {
+                    Target[0] = (Double) document.get(0);
+                } else {
+                    Target[0] = (double) (Integer) document.get(0);
+                }
+                if (document.get(1).getClass().getName().equals("java.lang.Double")) {
+                    Target[1] = (Double) document.get(1);
+                } else {
+                    Target[1] = (double) (Integer) document.get(1);
+                }
                 CoordinatesList.add(Target);
             }
         } else if (geometry.get("type").equals("Polygon")) {
-            ArrayList<ArrayList<ArrayList<Double>>> coordinates = (ArrayList<ArrayList<ArrayList<Double>>>) geometry.get("coordinates");
-            for (ArrayList<ArrayList<Double>> subcoordinates : coordinates) {
-                for (ArrayList<Double> subsubcoordinates : subcoordinates) {
+            ArrayList<ArrayList<ArrayList<Object>>> coordinates = (ArrayList<ArrayList<ArrayList<Object>>>) geometry.get("coordinates");
+            for (ArrayList<ArrayList<Object>> subcoordinates : coordinates) {
+                for (ArrayList<Object> subsubcoordinates : subcoordinates) {
                     double[] Target = new double[2];
-                    Target[0] = subsubcoordinates.get(0);
-                    Target[1] = subsubcoordinates.get(1);
+                    if (subsubcoordinates.get(0).getClass().getName().equals("java.lang.Double")) {
+                        Target[0] = (Double) subsubcoordinates.get(0);
+                    } else {
+                        Target[0] = (double) (Integer) subsubcoordinates.get(0);
+                    }
+                    if (subsubcoordinates.get(1).getClass().getName().equals("java.lang.Double")) {
+                        Target[1] = (Double) subsubcoordinates.get(1);
+                    } else {
+                        Target[1] = (double) (Integer) subsubcoordinates.get(1);
+                    }
                     CoordinatesList.add(Target);
                 }
             }
         } else if (geometry.get("type").equals("MultiPoint")) {
-            ArrayList<ArrayList<Double>> coordinates = (ArrayList<ArrayList<Double>>) geometry.get("coordinates");
-            for (ArrayList<Double> document : coordinates) {
+            ArrayList<ArrayList<Object>> coordinates = (ArrayList<ArrayList<Object>>) geometry.get("coordinates");
+            for (ArrayList<Object> document : coordinates) {
                 double[] Target = new double[2];
-                Target[0] = document.get(0);
-                Target[1] = document.get(1);
+                if (document.get(0).getClass().getName().equals("java.lang.Double")) {
+                    Target[0] = (Double) document.get(0);
+                } else {
+                    Target[0] = (double) (Integer) document.get(0);
+                }
+                if (document.get(1).getClass().getName().equals("java.lang.Double")) {
+                    Target[1] = (Double) document.get(1);
+                } else {
+                    Target[1] = (double) (Integer) document.get(1);
+                }
                 CoordinatesList.add(Target);
             }
         } else if (geometry.get("type").equals("MultiLineString")) {
-            ArrayList<ArrayList<ArrayList<Double>>> coordinates = (ArrayList<ArrayList<ArrayList<Double>>>) geometry.get("coordinates");
-            for (ArrayList<ArrayList<Double>> subcoordinates : coordinates) {
-                for (ArrayList<Double> subsubcoordinates : subcoordinates) {
+            ArrayList<ArrayList<ArrayList<Object>>> coordinates = (ArrayList<ArrayList<ArrayList<Object>>>) geometry.get("coordinates");
+            for (ArrayList<ArrayList<Object>> subcoordinates : coordinates) {
+                for (ArrayList<Object> subsubcoordinates : subcoordinates) {
                     double[] Target = new double[2];
-                    Target[0] = subsubcoordinates.get(0);
-                    Target[1] = subsubcoordinates.get(1);
+                    if (subsubcoordinates.get(0).getClass().getName().equals("java.lang.Double")) {
+                        Target[0] = (Double) subsubcoordinates.get(0);
+                    } else {
+                        Target[0] = (double) (Integer) subsubcoordinates.get(0);
+                    }
+                    if (subsubcoordinates.get(1).getClass().getName().equals("java.lang.Double")) {
+                        Target[1] = (Double) subsubcoordinates.get(1);
+                    } else {
+                        Target[1] = (double) (Integer) subsubcoordinates.get(1);
+                    }
                     CoordinatesList.add(Target);
                 }
             }
         } else if (geometry.get("type").equals("MultiPolygon")) {
-            ArrayList<ArrayList<ArrayList<ArrayList<Double>>>> coordinates = (ArrayList<ArrayList<ArrayList<ArrayList<Double>>>>) geometry.get("coordinates");
-            for (ArrayList<ArrayList<ArrayList<Double>>> subcoordinates : coordinates) {
-                for (ArrayList<ArrayList<Double>> subsubcoordinates : subcoordinates) {
-                    for (ArrayList<Double> subsubsubcoordinates : subsubcoordinates) {
+            ArrayList<ArrayList<ArrayList<ArrayList<Object>>>> coordinates = (ArrayList<ArrayList<ArrayList<ArrayList<Object>>>>) geometry.get("coordinates");
+            for (ArrayList<ArrayList<ArrayList<Object>>> subcoordinates : coordinates) {
+                for (ArrayList<ArrayList<Object>> subsubcoordinates : subcoordinates) {
+                    for (ArrayList<Object> subsubsubcoordinates : subsubcoordinates) {
                         double[] Target = new double[2];
-                        Target[0] = subsubsubcoordinates.get(0);
-                        Target[1] = subsubsubcoordinates.get(1);
+                        if (subsubsubcoordinates.get(0).getClass().getName().equals("java.lang.Double")) {
+                            Target[0] = (Double) subsubsubcoordinates.get(0);
+                        } else {
+                            Target[0] = (double) (Integer) subsubsubcoordinates.get(0);
+                        }
+                        if (subsubsubcoordinates.get(1).getClass().getName().equals("java.lang.Double")) {
+                            Target[1] = (Double) subsubsubcoordinates.get(1);
+                        } else {
+                            Target[1] = (double) (Integer) subsubsubcoordinates.get(1);
+                        }
                         CoordinatesList.add(Target);
                     }
                 }
@@ -3493,16 +3605,8 @@ public class InstructionGeneration {
 
     public static void main(String[] args) {
         //连接数据库
-        MongoClient mongoClient = MangoDBConnector.getClient();
-        //获取名为"temp"的数据库
-        MongoDatabase database = mongoClient.getDatabase("temp");
-        FindIterable<Document> image_mission = database.getCollection("image_mission").find();
-        ArrayList<Document> input = new ArrayList<>();
-
-        for (Document d : image_mission) {
-            if (d.getString("mission_number") != null)
-                input.add(d);
-        }
-        //InstructionGenerationII(input, null, null, "C:\\test\\");
+        String str = "1C11C0000019100B80210405A40800300101E30A10028021010F40020002";
+        String iso = ISO(str);
+        System.out.println(iso);
     }
 }
