@@ -638,8 +638,9 @@ public class InsAndFlashMontor {
                                                     filePlayBackStatus.remove(fileno);
                                                     filePlayBackStatus.put(fileno, FileType.FINISHED);
 
+                                                    Boolean key = fileStatus.get(fileno).getKey();
                                                     fileStatus.remove(fileno);
-                                                    fileStatus.put(fileno, new Pair<>(false, true));
+                                                    fileStatus.put(fileno, new Pair<>(key, true));
                                                 }
                                             } else {
                                                 if (filemaxsize <= (fileRecordSize.get(fileno))) {
@@ -661,8 +662,9 @@ public class InsAndFlashMontor {
                                                     filePlayBackStatus.remove(fileno);
                                                     filePlayBackStatus.put(fileno, FileType.FINISHED);
 
+                                                    Boolean key = fileStatus.get(fileno).getKey();
                                                     fileStatus.remove(fileno);
-                                                    fileStatus.put(fileno, new Pair<>(false, true));
+                                                    fileStatus.put(fileno, new Pair<>(key, true));
                                                 }
                                             }
                                         }
@@ -749,8 +751,9 @@ public class InsAndFlashMontor {
                             }
 
                             if (playbacksize > fileRecordSize.get(file_no)) {
+                                Boolean key = fileStatus.get(file_no).getKey();
                                 fileStatus.remove(file_no);
-                                fileStatus.put(file_no, new Pair<>(false, true));
+                                fileStatus.put(file_no, new Pair<>(key, true));
                             }
                         }
                     } catch (Exception e) {

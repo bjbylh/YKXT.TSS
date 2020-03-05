@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 
 public class SingleInsGeneration {
@@ -1030,7 +1031,7 @@ public class SingleInsGeneration {
                                                         } else if (strTemp.length() < 4) {
                                                             for (int i = strTemp.length(); i < 4; i++) {
                                                                 strTemp = "0" + strTemp;
-                                                                strTemp = "0" + strTemp;
+                                                                //strTemp = "0" + strTemp;
                                                             }
                                                         }
                                                         MetaHex = MetaHex + strTemp;
@@ -1152,6 +1153,74 @@ public class SingleInsGeneration {
                                             } else if (InstCode.equals("K4425")) {
                                                 MetaHex = "100280210118";
                                                 MetaHex = MetaHex + "A81C";
+                                                try {
+                                                    if (Mission.containsKey("sepcial_params") && Mission.get("sepcial_params") != null) {
+                                                        Document SepcialParams = (Document) Mission.get("sepcial_params");
+                                                        double GazeStartTime=Double.parseDouble(SepcialParams.get("maneuvering_time").toString());
+                                                        String str_GazeStartTime=Long.toHexString(Double.doubleToLongBits(GazeStartTime));
+                                                        if (str_GazeStartTime.length() < 16) {
+                                                            for (int j = str_GazeStartTime.length() + 1; j <= 16; j++) {
+                                                                str_GazeStartTime = "0" + str_GazeStartTime;
+                                                            }
+                                                        }else if (str_GazeStartTime.length() < 16) {
+                                                            str_GazeStartTime=str_GazeStartTime.substring(str_GazeStartTime.length()-16);
+                                                        }
+                                                        float GazeStartGap=720*1000000;
+                                                        String str_GazeStartGap=Integer.toHexString(Float.floatToIntBits(GazeStartGap));
+                                                        if (str_GazeStartGap.length() < 8) {
+                                                            for (int j = str_GazeStartGap.length() + 1; j <= 8; j++) {
+                                                                str_GazeStartGap = "0" + str_GazeStartGap;
+                                                            }
+                                                        }else if (str_GazeStartGap.length() > 8) {
+                                                            str_GazeStartGap=str_GazeStartGap.substring(str_GazeStartGap.length()-8);
+                                                        }
+                                                        float GazeTime=(float)Double.parseDouble(SepcialParams.get("Duration_time").toString());
+                                                        String str_GazeTime=Integer.toHexString(Float.floatToIntBits(GazeTime));
+                                                        if (str_GazeTime.length() < 8) {
+                                                            for (int j = str_GazeTime.length() + 1; j <= 8; j++) {
+                                                                str_GazeTime = "0" + str_GazeTime;
+                                                            }
+                                                        }else if (str_GazeTime.length() > 8) {
+                                                            str_GazeTime=str_GazeTime.substring(str_GazeTime.length()-8);
+                                                        }
+                                                        float lon = (float) Float.parseFloat(SepcialParams.get("lon").toString());;
+                                                        float lat = (float) Float.parseFloat(SepcialParams.get("lat").toString());;
+                                                        float H = 0;
+                                                        String strtemplon = Integer.toHexString(Float.floatToIntBits(lon));
+                                                        if (strtemplon.length() < 8) {
+                                                            for (int j = strtemplon.length() + 1; j <= 8; j++) {
+                                                                strtemplon = "0" + strtemplon;
+                                                            }
+                                                        }else if (strtemplon.length() > 8) {
+                                                            strtemplon=strtemplon.substring(strtemplon.length()-8);
+                                                        }
+                                                        String strtemplat = Integer.toHexString(Float.floatToIntBits(lat));
+                                                        if (strtemplat.length() < 8) {
+                                                            for (int j = strtemplat.length() + 1; j <= 8; j++) {
+                                                                strtemplat = "0" + strtemplat;
+                                                            }
+                                                        } else if (strtemplat.length() > 8) {
+                                                            strtemplat=strtemplat.substring(strtemplat.length()-8);
+                                                        }
+                                                        String strtempH = Integer.toHexString(Float.floatToIntBits(H));
+                                                        if (strtempH.length() < 8) {
+                                                            for (int j = strtempH.length() + 1; j <= 8; j++) {
+                                                                strtempH = "0" + strtempH;
+                                                            }
+                                                        }else if (strtempH.length() > 8) {
+                                                            strtempH=strtempH.substring(strtempH.length()-8);
+                                                        }
+                                                        MetaHex = MetaHex + GazeStartTime +
+                                                                GazeStartGap +
+                                                                str_GazeTime +
+                                                                strtemplon +
+                                                                strtemplat +
+                                                                strtempH;
+                                                    }
+                                                } catch (Exception e) {
+                                                    e.printStackTrace();
+                                                    continue;
+                                                }
                                             } else {
                                                 break;
                                             }
@@ -1330,6 +1399,57 @@ public class SingleInsGeneration {
             hexString.append(Integer.toHexString(0xFF & src[i]).toUpperCase());
         }
         return hexString.toString().toUpperCase();
+    }
+
+    //计算当前时间和基准时间的时间间隔的秒数
+    private static double time2SecondK4425(Date time_point) {
+        //时间转换为doubule型
+        String StringTime;
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(time_point);
+        cal.add(Calendar.HOUR_OF_DAY, -8);
+        StringTime = sdf.format(cal.getTime());
+        double[] TimeStarTime = new double[6];
+        TimeStarTime[0] = Double.parseDouble(StringTime.substring(0, 4));
+        TimeStarTime[1] = Double.parseDouble(StringTime.substring(5, 7));
+        TimeStarTime[2] = Double.parseDouble(StringTime.substring(8, 10));
+        TimeStarTime[3] = Double.parseDouble(StringTime.substring(11, 13));
+        TimeStarTime[4] = Double.parseDouble(StringTime.substring(14, 16));
+        TimeStarTime[5] = Double.parseDouble(StringTime.substring(17, 19));
+        double[] ZeroTimeK4425 = {2018, 1, 1, 0, 0, 0};//参考时间
+        double TimeMiddle = (JD(TimeStarTime) - JD(ZeroTimeK4425)) * 24 * 60 * 60*1000000;
+
+        return TimeMiddle;
+    }
+
+    //儒略日计算
+    private static double JD(double Time[]) {
+        double year_UT = Time[0];
+        double month_UT = Time[1];
+        double day_UT = Time[2];
+        double hour_UT = Time[3];
+        double minute_UT = Time[4];
+        double second_UT = Time[5];
+
+        double D = day_UT;
+        double M, Y, B;
+        double JD;
+        if (month_UT == 1 || month_UT == 2) {
+            M = month_UT + 12;
+            Y = year_UT - 1;
+        } else {
+            Y = year_UT;
+            M = month_UT;
+        }
+        B = 0;
+        if (Y > 1582 || (Y == 1582 && M > 10) || (Y == 1582 && M == 10 && D >= 15)) {
+            B = 2 - (int) Math.floor(Y / 100.0) + (int) Math.floor(Y / 400.0);
+        }
+        JD = (int) Math.floor(365.25 * (Y + 4716)) + (int) Math.floor(30.6 * (M + 1)) + D + B - 1524.5;
+        JD = JD - 0.5 + hour_UT / 24.0 + minute_UT / 1440 + second_UT / 86400;
+        JD = JD + 0.5;
+        return JD;
     }
 
     //16进制字符串转化为byte[]数组

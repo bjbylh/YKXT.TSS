@@ -409,7 +409,8 @@ public class EnergyCalc {
         Range<Date> initDate = null;
 
         for (Range<Date> r : rangesLight.keySet()) {
-            if (r.contains(Date.from(time))) {
+            Date from = Date.from(time);
+            if (r.contains(from)) {
                 if (initDate == null)
                     initDate = r;
                 else {

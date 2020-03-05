@@ -1,6 +1,5 @@
 package core.orbit;
 
-//import com.company.MangoDBConnector;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
@@ -29,7 +28,10 @@ public class AvoidSunshine {
     private static int[] SunAvoidTimePeriod=new int[10];
     private static int SunAvoidTimePeriodNum;
 
-    public static void AvoidSunshineII(FindIterable<Document> Orbitjson, long orbitDataCount,Instant timeRaw ){
+    //ESDStatus       当前坐标系，ture为东南系，false为轨道系
+    public static void AvoidSunshineII(FindIterable<Document> Orbitjson, long orbitDataCount,Instant timeRaw){
+        Boolean ESDStatus = true;
+        String AxisType = "";
         //读入模板
         //连接数据库
         MongoClient mongoClient = MangoDBConnector.getClient();
@@ -41,15 +43,20 @@ public class AvoidSunshine {
         Document first=sate_res.find().first();
         //将表中properties内容存入properties列表中
         ArrayList<Document> properties=(ArrayList<Document>) first.get("properties");
-        double sun_angle_threshold=25*PI/180.0;//阳光夹角门限
-        double sun_middle_day_duration=1800;//正午规避时长
+        double sun_angle_threshold=25.5*PI/180.0;//阳光夹角门限
+        double sun_middle_day_duration=25*60+15;//正午规避时长
         for (Document document:properties){
             if (document.getString("key").equals("sun_angle_threshold")){
                 sun_angle_threshold=Double.parseDouble(document.get("value").toString())*PI/180.0;
             }else if (document.getString("key").equals("sun_middle_day_duration")) {
                 sun_middle_day_duration=Double.parseDouble(document.get("value").toString());
+            }else if(document.getString("key").equals("axis")){
+                AxisType = document.getString("value");
             }
         }
+
+        if(AxisType.contains("轨道"))
+            ESDStatus = false;
 
         //读入轨道数据
         //轨道数据
@@ -102,6 +109,177 @@ public class AvoidSunshine {
         //输出光照区
         EarthEclipseStatusII(OrbitTimeDateList,OrbitTimeList,OrbitSatPositionGEIList,timeRaw);
 
+        Boolean SatFlyFlag_tBefore=true;//卫星正飞true/倒飞false判定
+        Boolean SatFlyFlag_t=true;
+        Boolean SatSunFlag_tBefore=false;
+        Boolean SatSunFlag_t=false;
+        int SatSunDayFlag=0;
+        double SatSunDayAng=PI/2;
+        //初始值
+        if (OrbitalDataNum > 0) {
+            Boolean MiddleNightFlag=false;
+            //判断当前时刻是白天false/黑夜true
+            double Time_JD=JD(OrbitTimeList.get(0));
+            double[] r_sun=new double[3];//地心惯性坐标系下太阳位置
+            double[] su=new double[2];//赤经和赤纬
+            double rad_sun;//太阳地球的距离
+            rad_sun=Sun(Time_JD,r_sun,su);
+            double[] r_sun_sat_GEI=new double[]{r_sun[0]-OrbitSatPositionGEIList.get(0)[0],
+                    r_sun[1]-OrbitSatPositionGEIList.get(0)[1],
+                    r_sun[2]-OrbitSatPositionGEIList.get(0)[2]};
+            double[] r_sun_sat=new double[3];
+            if (ESDStatus) {
+                //东南系
+                double[] r_sun_sat_ECEF=new double[3];
+                ICRSToECEF(OrbitTimeList.get(0),r_sun_sat_GEI, r_sun_sat_ECEF);
+                ECEFToESD(OrbitSatPositionLLAList.get(0), r_sun_sat_ECEF, r_sun_sat);
+            }else {
+                //轨道系
+                GEIToORF_Ellipse(OrbitSatPositionGEIList.get(0), OrbitSatVelocityGEIList.get(0), r_sun_sat_GEI, r_sun_sat);
+            }
+            double[] r_sun_sat_n=new double[]{r_sun_sat[0]/sqrt(r_sun_sat[0]*r_sun_sat[0]+r_sun_sat[1]*r_sun_sat[1]+r_sun_sat[2]*r_sun_sat[2]),
+                    r_sun_sat[1]/sqrt(r_sun_sat[0]*r_sun_sat[0]+r_sun_sat[1]*r_sun_sat[1]+r_sun_sat[2]*r_sun_sat[2]),
+                    r_sun_sat[2]/sqrt(r_sun_sat[0]*r_sun_sat[0]+r_sun_sat[1]*r_sun_sat[1]+r_sun_sat[2]*r_sun_sat[2])};
+            double theta=atan2(r_sun_sat_n[0],r_sun_sat_n[2]);
+            if (abs(theta) <= PI/2) {
+                MiddleNightFlag=true;
+            }else {
+                MiddleNightFlag=false;
+            }
+            if (MiddleNightFlag) {
+                //午夜规避
+                if (abs(theta) <= sun_angle_threshold) {
+                    SatSunFlag_tBefore=true;
+                    SatSunFlag_t=true;
+                }else {
+                    SatSunFlag_tBefore=false;
+                    SatSunFlag_t=false;
+                }
+            }else {
+                SatSunFlag_tBefore=false;
+                SatSunFlag_t=false;
+                SatSunDayFlag=0;
+                SatSunDayAng=abs(theta);
+                if (theta >= 0) {
+                    SatFlyFlag_tBefore=true;
+                    SatFlyFlag_t=true;
+                }else {
+                    SatFlyFlag_tBefore=false;
+                    SatFlyFlag_t=false;
+                }
+            }
+        }
+
+        ArrayList<int[]> SunAvoidTimePeriodDayList=new ArrayList<>();
+        ArrayList<int[]> SunAvoidTimePeriodNightList=new ArrayList<>();
+        int[] SunAvoidTimePeriodNightListChild=new int[2];
+        for (int i = 0; i < OrbitalDataNum; i++) {
+            Boolean MiddleNightFlag=false;
+            if (i>=OrbitTimeList.size() || i>=OrbitSatPositionGEIList.size() || i>OrbitSatVelocityGEIList.size()) {
+                break;
+            }
+            //判断当前时刻是白天false/黑夜true
+            double Time_JD=JD(OrbitTimeList.get(i));
+            double[] r_sun=new double[3];//地心惯性坐标系下太阳位置
+            double[] su=new double[2];//赤经和赤纬
+            double rad_sun;//太阳地球的距离
+            rad_sun=Sun(Time_JD,r_sun,su);
+            double[] r_sun_sat_GEI=new double[]{r_sun[0]-OrbitSatPositionGEIList.get(i)[0],
+                    r_sun[1]-OrbitSatPositionGEIList.get(i)[1],
+                    r_sun[2]-OrbitSatPositionGEIList.get(i)[2]};
+            double[] r_sun_sat=new double[3];
+            if (ESDStatus) {
+                //东南系
+                double[] r_sun_sat_ECEF=new double[3];
+                ICRSToECEF(OrbitTimeList.get(i),r_sun_sat_GEI, r_sun_sat_ECEF);
+                ECEFToESD(OrbitSatPositionLLAList.get(i), r_sun_sat_ECEF, r_sun_sat);
+            }else {
+                //轨道系
+                GEIToORF_Ellipse(OrbitSatPositionGEIList.get(i), OrbitSatVelocityGEIList.get(i), r_sun_sat_GEI, r_sun_sat);
+            }
+            double[] r_sun_sat_n=new double[]{r_sun_sat[0]/sqrt(r_sun_sat[0]*r_sun_sat[0]+r_sun_sat[1]*r_sun_sat[1]+r_sun_sat[2]*r_sun_sat[2]),
+                    r_sun_sat[1]/sqrt(r_sun_sat[0]*r_sun_sat[0]+r_sun_sat[1]*r_sun_sat[1]+r_sun_sat[2]*r_sun_sat[2]),
+                    r_sun_sat[2]/sqrt(r_sun_sat[0]*r_sun_sat[0]+r_sun_sat[1]*r_sun_sat[1]+r_sun_sat[2]*r_sun_sat[2])};
+            double theta=atan2(r_sun_sat_n[0],r_sun_sat_n[2]);
+            if (abs(theta) <= PI/2) {
+                MiddleNightFlag=true;
+            }else {
+                MiddleNightFlag=false;
+            }
+            if (MiddleNightFlag) {
+                if (theta >= 0) {
+                    SatFlyFlag_tBefore=SatFlyFlag_t;
+                    SatFlyFlag_t=true;
+                }else {
+                    SatFlyFlag_tBefore=SatFlyFlag_t;
+                    SatFlyFlag_t=false;
+                }
+                //午夜规避
+                if (abs(theta) <= sun_angle_threshold) {
+                    SatSunFlag_tBefore=SatSunFlag_t;
+                    SatSunFlag_t=true;
+                }else {
+                    SatSunFlag_tBefore=SatSunFlag_t;
+                    SatSunFlag_t=false;
+                }
+                if (SatSunFlag_tBefore == false && SatSunFlag_t==true) {
+                    SunAvoidTimePeriodNightListChild[0]=i-1;
+                    if (SunAvoidTimePeriodNightListChild[0] < 0) {
+                        SunAvoidTimePeriodNightListChild[0]=0;
+                    }
+                }else if (SatSunFlag_tBefore == true && SatSunFlag_t==false) {
+                    SunAvoidTimePeriodNightListChild[1]=i;
+                    int[] nighttime=new int[]{SunAvoidTimePeriodNightListChild[0],SunAvoidTimePeriodNightListChild[1]};
+                    SunAvoidTimePeriodNightList.add(nighttime);
+                }
+                if (SatSunFlag_tBefore == true && SatSunFlag_t==true && i==OrbitalDataNum-1) {
+                    SunAvoidTimePeriodNightListChild[1]=i;
+                    int[] nighttime=new int[]{SunAvoidTimePeriodNightListChild[0],SunAvoidTimePeriodNightListChild[1]};
+                    SunAvoidTimePeriodNightList.add(nighttime);
+                }
+            }else {
+                if (SatSunFlag_tBefore == true && SatSunFlag_t==true) {
+                    SunAvoidTimePeriodNightListChild[1]=i;
+                    int[] nighttime=new int[]{SunAvoidTimePeriodNightListChild[0],SunAvoidTimePeriodNightListChild[1]};
+                    SunAvoidTimePeriodNightList.add(nighttime);
+                }
+                SatSunFlag_tBefore=false;
+                SatSunFlag_t=false;
+                if (abs(theta) > SatSunDayAng) {
+                    SatSunDayFlag=i;
+                    SatSunDayAng=abs(theta);
+                }
+                if (theta >= 0) {
+                    SatFlyFlag_tBefore=SatFlyFlag_t;
+                    SatFlyFlag_t=true;
+                }else {
+                    SatFlyFlag_tBefore=SatFlyFlag_t;
+                    SatFlyFlag_t=false;
+                }
+                if ((SatFlyFlag_tBefore==true && SatFlyFlag_t==false)||(SatFlyFlag_tBefore==false && SatFlyFlag_t==true)) {
+                    int[] daytime=new int[]{i-(int) (sun_middle_day_duration/2),i+(int) (sun_middle_day_duration/2)};
+                    if (daytime[0] < 0) {
+                        daytime[0]=0;
+                    }
+                    if (daytime[1] >= OrbitalDataNum) {
+                        daytime[1]=OrbitalDataNum-1;
+                    }
+                    SunAvoidTimePeriodDayList.add(daytime);
+                }
+                if (((SatFlyFlag_tBefore==true && SatFlyFlag_t==true)||(SatFlyFlag_tBefore==false && SatFlyFlag_t==false)) && i == OrbitalDataNum-1 && SatSunDayAng>(PI-0.05)) {
+                    int[] daytime=new int[]{SatSunDayFlag-(int) (sun_middle_day_duration/2),SatSunDayFlag+(int) (sun_middle_day_duration/2)};
+                    if (daytime[0] < 0) {
+                        daytime[0]=0;
+                    }
+                    if (daytime[1] >= OrbitalDataNum) {
+                        daytime[1]=OrbitalDataNum-1;
+                    }
+                    SunAvoidTimePeriodDayList.add(daytime);
+                }
+            }
+        }
+
+        /*
         Boolean SatFlyFlag_tBefore=true;//卫星正飞true/倒飞false判定
         Boolean SatFlyFlag_t=true;
         Boolean SatSunFlag_tBefore=false;
@@ -287,6 +465,7 @@ public class AvoidSunshine {
                 }
             }
         }
+        */
 
         //数据传出
         ArrayList<Document> avoid_sunshine_lp = new ArrayList<>();
@@ -319,6 +498,138 @@ public class AvoidSunshine {
         mongoClient.close();
     }
 
+    //地固坐标系到卫星东南地坐标系
+    private static void ECEFToESD(double[] Satellite_LLA, double[] Target_ECEF, double[] Target_ESD) {
+        double[] Satellite_ECEF = new double[3];
+        LLAToECEF(Satellite_LLA, Satellite_ECEF);
+
+        double B = Satellite_LLA[1] * Math.PI / 180.0;//经度
+        double L = Satellite_LLA[0] * Math.PI / 180.0;//纬度
+        double[][] R_ECEFToNED = {{-sin(B) * cos(L), -sin(B) * sin(L), cos(B)},
+                {-sin(L), cos(L), 0},
+                {-cos(B) * cos(L), -cos(B) * sin(L), -sin(B)}};
+        double[][] Error_r = new double[3][1];
+        Error_r[0][0] = Target_ECEF[0] - Satellite_ECEF[0];
+        Error_r[1][0] = Target_ECEF[1] - Satellite_ECEF[1];
+        Error_r[2][0] = Target_ECEF[2] - Satellite_ECEF[2];
+        double[][] Target_NED_mid = new double[3][1];
+        Target_NED_mid = MatrixMultiplication(R_ECEFToNED, Error_r);
+        double Ang_z = -PI / 2;
+        double[][] R_NEDToESD = {{cos(Ang_z), -sin(Ang_z), 0},
+                {sin(Ang_z), cos(Ang_z), 0},
+                {0, 0, 1}};
+        double[][] Target_ESD_mid = new double[3][1];
+        Target_ESD_mid = MatrixMultiplication(R_NEDToESD, Target_NED_mid);
+        Target_ESD[0] = Target_ESD_mid[0][0];
+        Target_ESD[1] = Target_ESD_mid[1][0];
+        Target_ESD[2] = Target_ESD_mid[2][0];
+    }
+
+    //地固直角坐标系转换为地心地固坐标系
+    private static void LLAToECEF(double Position_LLA[], double Position_ECEF[]) {
+        double L = Position_LLA[0] * Math.PI / 180.0;
+        double B = Position_LLA[1] * Math.PI / 180.0;
+        double H = Position_LLA[2];
+
+        Position_ECEF[0] = (Re + H) * Math.cos(B) * Math.cos(L);
+        Position_ECEF[1] = (Re + H) * Math.cos(B) * Math.sin(L);
+        Position_ECEF[2] = (Re + H) * Math.sin(B);
+    }
+
+    //惯性坐标系到地固坐标系转
+    private static void ICRSToECEF(double[] Time, double position_GEI[], double position_ECEF[]) {
+        double JD = JD(Time);
+        double T = (JD - 2451545.0) / 36525.0;
+
+        //岁差角
+        double Zeta_A = 2.5976176 + 2306.0809506 * T + 0.3019015 * T * T + 0.0179663 * T * T * T - 0.0000327 * T * T * T * T - 0.0000002 * T * T * T * T * T;//秒
+        double Theta_A = 2004.1917476 * T - 0.4269353 * T * T - 0.041825 * T * T * T - 0.0000601 * T * T * T * T - 0.0000001 * T * T * T * T * T;
+        double Z_A = -2.5976176 + 2306.0803226 * T + 1.094779 * T * T + 0.0182273 * T * T * T + 0.000047 * T * T * T * T - 0.0000003 * T * T * T * T * T;
+        Zeta_A = Zeta_A / 3600.0;//度
+        Theta_A = Theta_A / 3600.0;
+        Z_A = Z_A / 3600.0;
+        //岁差矩阵
+        double[][] R3Z_A = {{cos(-Z_A * PI / 180.0), sin(-Z_A * PI / 180.0), 0},
+                {-sin(-Z_A * PI / 180.0), cos(-Z_A * PI / 180.0), 0},
+                {0, 0, 1}};
+        double[][] R2Theta_A = {{cos(Theta_A * PI / 180.0), 0, -sin(Theta_A * PI / 180.0)},
+                {0, 1, 0},
+                {sin(Theta_A * PI / 180.0), 0, cos(Theta_A * PI / 180.0)}};
+        double[][] R3_Zeta_A = {{cos(-Zeta_A * PI / 180.0), sin(-Zeta_A * PI / 180.0), 0},
+                {-sin(-Zeta_A * PI / 180.0), cos(-Zeta_A * PI / 180.0), 0},
+                {0, 0, 1}};
+        double[][] PR = new double[3][3];
+        double[][] PR_mid = new double[3][3];
+        PR_mid = MatrixMultiplication(R3Z_A, R2Theta_A);
+        PR = MatrixMultiplication(PR_mid, R3_Zeta_A);
+
+        //章动计算
+        double Epsilon_A = 84381.448 - 46.8150 * T - 0.00059 * T * T + 0.001813 * T * T * T;
+        Epsilon_A = Epsilon_A / 3600.0;
+        // http://blog.sina.com.cn/s/blog_852e40660100w1m6.html
+        double L = 280.4665 + 36000.7698 * T;
+        double dL = 218.3165 + 481267.8813 * T;
+        double Omega = 125.04452 - 1934.136261 * T;
+        double DeltaPsi = -17.20 * sin(Omega * PI / 180.0) - 1.32 * sin(2 * L * PI / 180.0) - 0.23 * sin(2 * dL * PI / 180.0) + 0.21 * sin(2 * Omega * PI / 180.0);
+        double DeltaEpsilon = 9.20 * cos(Omega * PI / 180.0) + 0.57 * cos(2 * L * PI / 180.0) + 0.10 * cos(2 * dL * PI / 180.0) - 0.09 * cos(2 * Omega * PI / 180.0);
+        DeltaPsi = DeltaPsi / 3600.0;
+        DeltaEpsilon = DeltaEpsilon / 3600.0;
+
+        //章动矩阵
+        double[][] R1_DEA = {{1, 0, 0},
+                {0, cos(-(DeltaEpsilon + Epsilon_A) * PI / 180.0), sin(-(DeltaEpsilon + Epsilon_A) * PI / 180.0)},
+                {0, -sin(-(DeltaEpsilon + Epsilon_A) * PI / 180.0), cos(-(DeltaEpsilon + Epsilon_A) * PI / 180.0)}};
+        double[][] R3_DeltaPsi = {{cos(-DeltaPsi * PI / 180.0), sin(-DeltaPsi * PI / 180.0), 0},
+                {-sin(-DeltaPsi * PI / 180.0), cos(-DeltaPsi * PI / 180.0), 0},
+                {0, 0, 1}};
+        double[][] R1_Epsilon = {{1, 0, 0},
+                {0, cos(Epsilon_A * PI / 180.0), sin(Epsilon_A * PI / 180.0)},
+                {0, -sin(Epsilon_A * PI / 180.0), cos(Epsilon_A * PI / 180.0)}};
+        double[][] NR = new double[3][3];
+        double[][] NR_mid = new double[3][3];
+        NR_mid = MatrixMultiplication(R1_DEA, R3_DeltaPsi);
+        NR = MatrixMultiplication(NR_mid, R1_Epsilon);
+
+        //地球自转
+        double GMST = 280.46061837 + 360.98564736629 * (JD - 2451545.0) + 0.000387933 * T * T - T * T * T / 38710000.0;
+        GMST = GMST % 360;
+        double GAST = GMST + DeltaPsi * cos((DeltaEpsilon + Epsilon_A) * PI / 180.0);
+        GAST = GAST % 360;
+        double[][] ER = {{cos(GAST * PI / 180.0), sin(GAST * PI / 180.0), 0},
+                {-sin(GAST * PI / 180.0), cos(GAST * PI / 180.0), 0},
+                {0, 0, 1}};
+
+        //极移坐标
+        //  https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop.html
+        // https://datacenter.iers.org/data/html/finals.all.html
+        double Xp = 0.001674 * 0.955;
+        double Yp = 0.001462 * 0.955;
+        // 极移矩阵
+        double[][] R1_YP = {{1, 0, 0},
+                {0, cos(-Yp * PI / 180.0), sin(-Yp * PI / 180.0)},
+                {0, -sin(-Yp * PI / 180.0), cos(-Yp * PI / 180.0)}};
+        double[][] R2_XP = {{cos(-Xp * PI / 180.0), 0, -sin(-Xp * PI / 180.0)},
+                {0, 1, 0},
+                {sin(-Xp * PI / 180.0), 0, cos(-Xp * PI / 180.0)}};
+        double[][] EP = new double[3][3];
+        EP = MatrixMultiplication(R1_YP, R2_XP);
+
+        // 空固坐标系到地固坐标系的转换矩阵
+        double[][] EPER = new double[3][3];
+        double[][] EPERNR = new double[3][3];
+        double[][] ECEF;
+        EPER = MatrixMultiplication(EP, ER);
+        EPERNR = MatrixMultiplication(EPER, NR);
+        ECEF = MatrixMultiplication(EPERNR, PR);
+
+        double[][] p_GEI = {{position_GEI[0]}, {position_GEI[1]}, {position_GEI[2]}};
+        double[][] pp_ECEF = new double[3][1];
+        pp_ECEF = MatrixMultiplication(ECEF, p_GEI);
+
+        position_ECEF[0] = pp_ECEF[0][0];
+        position_ECEF[1] = pp_ECEF[1][0];
+        position_ECEF[2] = pp_ECEF[2][0];
+    }
 
     //太阳矢量
     private static double Sun(double JD, double[] r_sun, double[] su) {

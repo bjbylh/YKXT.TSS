@@ -2,6 +2,8 @@ package common.redis.subscribe;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -10,6 +12,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.UpdateOptions;
 import common.ConfigManager;
 import common.FilePathUtil;
+import common.def.MainTaskStatus;
 import common.def.TaskType;
 import common.def.TempletType;
 import common.mongo.DbDefine;
@@ -221,13 +224,42 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
     private void procEnergyReset(JsonObject json, String id) {
         try {
+            Instant start = Instant.now();
+            Instant end = start.plusSeconds(3600 * 24);
+
+            MongoClient mongoClient = MangoDBConnector.getClient();
+            //获取名为"temp"的数据库
+            MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+
+            MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
+
+            BasicDBObject query = new BasicDBObject();
+            BasicDBList saleChannel = new BasicDBList();
+            saleChannel.add(MainTaskStatus.NEW.name());
+            saleChannel.add(MainTaskStatus.SUSPEND.name());
+            saleChannel.add(MainTaskStatus.RUNNING.name());
+            query.put("status", new BasicDBObject("$in", saleChannel));
+
+
+            FindIterable<Document> main_task = tasks.find(query);
+
+            for (Document document : main_task) {
+                if (document.getString("type").equals(TaskType.CRONTAB.name()) && document.getString("templet").equals(TempletType.TASK_PLAN.name())) {
+                    Date date = ((Document) document.get("cron_core")).getDate("first_time");
+
+                    Instant instant_ft = date.toInstant();
+                    long nt = instant_ft.toEpochMilli() + 1000 * Integer.parseInt((((Document) document.get("cron_core")).getString("cycle")));
+                    end = Instant.ofEpochMilli(nt);
+                }
+            }
+
             String energy = json.get("content").getAsString();
 
             EnergyCalc energyCalc = new EnergyCalc();
 
-            energyCalc.clearAllDB();
+            //energyCalc.clearDB(start, end);
 
-            energyCalc.energyReset(Double.parseDouble(energy));
+            energyCalc.calcEnergy(start, end, Double.parseDouble(energy), true);
 
             energyCalc.close();
 
