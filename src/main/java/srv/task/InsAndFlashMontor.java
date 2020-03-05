@@ -202,6 +202,50 @@ public class InsAndFlashMontor {
                 }
             }
 
+            MongoCollection<Document> station_mission = mongoDatabase.getCollection("station_mission");
+            FindIterable<Document> station_missions = station_mission.find();
+
+            for (Document document : station_missions) {
+                if (document.containsKey("tag") && document.getString("tag").contains("待执行")) {
+                    if (document.containsKey("transmission_number") && !document.getString("transmission_number").equals("")) {
+                        String transmission_number = document.getString("transmission_number");
+
+                        for (Document tm : transmission_missions) {
+
+                            if (tm.getString("transmission_number").equals(transmission_number)) {
+                                Date t0 = null;
+                                if (tm.containsKey("transmission_window")) {
+                                    ArrayList<Document> transmission_window = (ArrayList<Document>) tm.get("transmission_window");
+
+                                    if (transmission_window.size() > 0) {
+
+                                        for(Document im : transmission_window){
+                                            Date end_time = im.getDate("end_time");
+
+                                            if(t0 == null)
+                                                t0 = end_time;
+                                            else{
+                                                if(end_time.after(t0))
+                                                    t0 = end_time;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if(t0 != null && t0.before(Date.from(Instant.now()))){
+                                    document.append("tag", "已执行");
+                                    Document modifiers = new Document();
+                                    modifiers.append("$set", document);
+                                    station_mission.updateOne(new Document("mission_number", document.getString("mission_number")), modifiers, new UpdateOptions().upsert(true));
+                                }
+
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
             if (pool_inss_image.size() > 0 || pool_inss_trans.size() > 0)
                 procInsPool(pool_inss_image, pool_inss_trans);
 

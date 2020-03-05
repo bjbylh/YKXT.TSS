@@ -330,7 +330,10 @@ public class ReviewReset {
                                 int MissionEnd_Number = (int) ((JD(MissionEnd_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
                                 MissionStarEnd_Number[MissionNumber][0] = MissionStar_Number;
                                 MissionStarEnd_Number[MissionNumber][1] = MissionEnd_Number;
-                                int Load_numberTemp= Integer.parseInt(document1.get("load_number").toString());
+                                int Load_numberTemp= 1;
+                                if (document1.containsKey("load_number") && document1.get("load_number")!=null) {
+                                    Load_numberTemp= Integer.parseInt(document1.get("load_number").toString());
+                                }
                                 ImageWindowLoad.add(Load_numberTemp);
                                 MissionChark_Number = MissionChark_Number + 1;
                                 for (int i = MissionStar_Number; i <= MissionEnd_Number; i++) {

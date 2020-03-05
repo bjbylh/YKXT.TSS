@@ -1,6 +1,7 @@
 package core.taskplan;
 
 //import com.company.MangoDBConnector;
+//import com.company.MangoDBConnector;
 import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -20,7 +21,6 @@ import java.util.Date;
 import static java.lang.Math.*;
 
 //import common.mongo.DbDefine;
-//import common.mongo.MangoDBConnector;
 
 //import common.mongo.MangoDBConnector;
 
@@ -193,6 +193,7 @@ public class MissionPlanning {
         if(AxisType.contains("轨道"))
             ESDStatus = false;
 
+
         //首先判定是否生成固存清除任务
         ArrayList<Integer> PoolFileCanUse=new ArrayList<>();
         if (auto_obliterateFlag.equals("true")) {
@@ -255,6 +256,7 @@ public class MissionPlanning {
                 }
             }
         }
+
 
 
         //获取时间
@@ -1212,6 +1214,7 @@ public class MissionPlanning {
                 }
 
 
+
                 //回溯订单
                 ArrayList<String> MissionForOrderNumbers_i=MissionForOrderNumbers.get(i);
                 for (String OrderNumber:MissionForOrderNumbers_i) {
@@ -1221,6 +1224,7 @@ public class MissionPlanning {
                     for (Document document:D_ImageOrderjson) {
                         if (document.get("order_number").equals(OrderNumber)) {
                             document.append("order_state","待执行");
+
 
                             //添加文件号
                             if (document.containsKey("record_file_no") && document.get("record_file_no").toString().equals("")) {
@@ -1232,6 +1236,7 @@ public class MissionPlanning {
                                     document.append("record_file_no",PoolFileCanUse.get(PoolFileNum-1).toString());
                                 }
                             }
+                            
                             
                             if(document.containsKey("_id"))
                                 document.remove("_id");
@@ -2487,7 +2492,7 @@ public class MissionPlanning {
                 ImageWindowjsonObject.append("end_time", "");
                 ImageWindowjsonArry.add(ImageWindowjsonObject);
                 ImageMissionjson.get(i).append("mission_state", "被退回");
-                ImageMissionjson.get(i).append("fail_reason", "不可见");
+                ImageMissionjson.get(i).append("fail_reason", "可见弧段不满足成像需求");
                 ImageMissionjson.get(i).append("image_window", ImageWindowjsonArry);
 
                 //回溯订单

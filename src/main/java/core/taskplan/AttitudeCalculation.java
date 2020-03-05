@@ -1,7 +1,6 @@
 package core.taskplan;
 
 //import com.company.MangoDBConnector;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mongodb.MongoClient;
@@ -20,7 +19,6 @@ import java.util.Date;
 import static java.lang.Math.*;
 
 //import common.mongo.DbDefine;
-//import common.mongo.MangoDBConnector;
 
 //import common.mongo.DbDefine;
 //import common.mongo.MangoDBConnector;
@@ -1026,12 +1024,12 @@ public class AttitudeCalculation {
 
                                 //更改后欧拉角东南系321转序
                                 JsonObject jsonObject_ESD312_Euler = new JsonObject();
-                                jsonObject_ESD312_Euler.addProperty("yaw_angle", SatAttitud_ESD321_Euler[i][2]);
-                                jsonObject_ESD312_Euler.addProperty("roll_angle", SatAttitud_ESD321_Euler[i][0]);
-                                jsonObject_ESD312_Euler.addProperty("pitch_angle", SatAttitud_ESD321_Euler[i][1]);
-                                jsonObject_ESD312_Euler.addProperty("V_yaw_angle", SatAttitudVel_ESD321_Euler[i][2]);
-                                jsonObject_ESD312_Euler.addProperty("V_roll_angle", SatAttitudVel_ESD321_Euler[i][0]);
-                                jsonObject_ESD312_Euler.addProperty("V_pitch_angle", SatAttitudVel_ESD321_Euler[i][1]);
+                                jsonObject_ESD312_Euler.addProperty("yaw_angle", SatAttitud_ESD321_Euler[i- MissionWindow_int[0]][2]);
+                                jsonObject_ESD312_Euler.addProperty("roll_angle", SatAttitud_ESD321_Euler[i- MissionWindow_int[0]][0]);
+                                jsonObject_ESD312_Euler.addProperty("pitch_angle", SatAttitud_ESD321_Euler[i- MissionWindow_int[0]][1]);
+                                jsonObject_ESD312_Euler.addProperty("V_yaw_angle", SatAttitudVel_ESD321_Euler[i- MissionWindow_int[0]][2]);
+                                jsonObject_ESD312_Euler.addProperty("V_roll_angle", SatAttitudVel_ESD321_Euler[i- MissionWindow_int[0]][0]);
+                                jsonObject_ESD312_Euler.addProperty("V_pitch_angle", SatAttitudVel_ESD321_Euler[i- MissionWindow_int[0]][1]);
                                 jsonObject.add("Attitude_EulerAngle_EastSouthDown_321", jsonObject_ESD312_Euler);
 
                                 //视场顶点，左上、右下
