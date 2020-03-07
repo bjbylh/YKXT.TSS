@@ -2450,6 +2450,7 @@ public class InstructionGeneration {
                                                         if (SequenceParams.containsKey("code") && SequenceParams.get("code").toString().equals(MetaRelated_id)) {
                                                             if (SequenceParams.containsKey("value") && !SequenceParams.get("value").equals("")) {
                                                                 SequenceParamsValue = SequenceParams.get("value").toString();
+                                                                findInsArray = true;
                                                             }
                                                             break;
                                                         }
@@ -2487,6 +2488,7 @@ public class InstructionGeneration {
                                                             if (SequenceParams.containsKey("code") && SequenceParams.get("code").toString().equals(delta_tId)) {
                                                                 if (SequenceParams.containsKey("value") && !SequenceParams.get("value").equals("")) {
                                                                     DeltaParamsValue = SequenceParams.get("value").toString();
+                                                                    findInsArray = true;
                                                                 }
                                                                 break;
                                                             }
