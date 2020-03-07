@@ -219,20 +219,20 @@ public class InsAndFlashMontor {
 
                                     if (transmission_window.size() > 0) {
 
-                                        for(Document im : transmission_window){
+                                        for (Document im : transmission_window) {
                                             Date end_time = im.getDate("end_time");
 
-                                            if(t0 == null)
+                                            if (t0 == null)
                                                 t0 = end_time;
-                                            else{
-                                                if(end_time.after(t0))
+                                            else {
+                                                if (end_time.after(t0))
                                                     t0 = end_time;
                                             }
                                         }
                                     }
                                 }
 
-                                if(t0 != null && t0.before(Date.from(Instant.now()))){
+                                if (t0 != null && t0.before(Date.from(Instant.now()))) {
                                     document.append("tag", "已执行");
                                     Document modifiers = new Document();
                                     modifiers.append("$set", document);
@@ -297,6 +297,9 @@ public class InsAndFlashMontor {
                 if (d.containsKey("image_mode") && d.getString("image_mode").equals("人在回路"))
                     source = 1;
 
+                if (d.containsKey("image_mode") && d.getString("image_mode").equals("删除"))
+                    source = 2;
+
                 for (Document ins : instruction_info) {
 
                     Document newIns = Document.parse(ins.toJson());
@@ -316,6 +319,9 @@ public class InsAndFlashMontor {
                                 (d.containsKey("image_mode") && d.getString("image_mode").equals("人在回路"))
                                         &&
                                         (d.containsKey("output_type") && d.getString("output_type").equals("META"))) {
+                            if (Date.from(Instant.ofEpochMilli(t.toInstant().toEpochMilli() + 24 * 3600 * 1000L)).before(now))
+                                continue;
+                        } else if (d.containsKey("image_mode") && d.getString("image_mode").equals("删除")) {
                             if (Date.from(Instant.ofEpochMilli(t.toInstant().toEpochMilli() + 24 * 3600 * 1000L)).before(now))
                                 continue;
                         } else {

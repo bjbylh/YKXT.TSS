@@ -919,8 +919,8 @@ public class InstructionGeneration {
             timeVariable.T1 = time2Second(time_point);
             timeVariable.T1d = time2Second(time_pointEnd);
             timeVariable.T = time2Second(time_point);
-            double timeVariableT0K4425=time2SecondK4425(time_point);
-            double timeVariableGazeTimeK4425=time2SecondK4425(time_pointEnd)-time2SecondK4425(time_point);
+            double timeVariableT0K4425 = time2SecondK4425(time_point);
+            double timeVariableGazeTimeK4425 = time2SecondK4425(time_pointEnd) - time2SecondK4425(time_point);
 
             String ZhilingKuai = "";
             ArrayList<String> MissionTaskModelChild = MissionTaskModel.get(i);
@@ -1643,32 +1643,32 @@ public class InstructionGeneration {
                                                                     } else if (InstCode.equals("K4425")) {
                                                                         MetaHex = "100280210118";
                                                                         MetaHex = MetaHex + "A81C";
-                                                                        double GazeStartTime=timeVariableT0K4425;
-                                                                        String str_GazeStartTime=Long.toHexString(Double.doubleToLongBits(GazeStartTime));
+                                                                        double GazeStartTime = timeVariableT0K4425;
+                                                                        String str_GazeStartTime = Long.toHexString(Double.doubleToLongBits(GazeStartTime));
                                                                         if (str_GazeStartTime.length() < 16) {
                                                                             for (int j = str_GazeStartTime.length() + 1; j <= 16; j++) {
                                                                                 str_GazeStartTime = "0" + str_GazeStartTime;
                                                                             }
-                                                                        }else if (str_GazeStartTime.length() < 16) {
-                                                                            str_GazeStartTime=str_GazeStartTime.substring(str_GazeStartTime.length()-16);
+                                                                        } else if (str_GazeStartTime.length() < 16) {
+                                                                            str_GazeStartTime = str_GazeStartTime.substring(str_GazeStartTime.length() - 16);
                                                                         }
-                                                                        float GazeStartGap=720*1000000;
-                                                                        String str_GazeStartGap=Integer.toHexString(Float.floatToIntBits(GazeStartGap));
+                                                                        float GazeStartGap = 720 * 1000000;
+                                                                        String str_GazeStartGap = Integer.toHexString(Float.floatToIntBits(GazeStartGap));
                                                                         if (str_GazeStartGap.length() < 8) {
                                                                             for (int j = str_GazeStartGap.length() + 1; j <= 8; j++) {
                                                                                 str_GazeStartGap = "0" + str_GazeStartGap;
                                                                             }
-                                                                        }else if (str_GazeStartGap.length() > 8) {
-                                                                            str_GazeStartGap=str_GazeStartGap.substring(str_GazeStartGap.length()-8);
+                                                                        } else if (str_GazeStartGap.length() > 8) {
+                                                                            str_GazeStartGap = str_GazeStartGap.substring(str_GazeStartGap.length() - 8);
                                                                         }
-                                                                        float GazeTime=(float)timeVariableGazeTimeK4425;
-                                                                        String str_GazeTime=Integer.toHexString(Float.floatToIntBits(GazeTime));
+                                                                        float GazeTime = (float) timeVariableGazeTimeK4425;
+                                                                        String str_GazeTime = Integer.toHexString(Float.floatToIntBits(GazeTime));
                                                                         if (str_GazeTime.length() < 8) {
                                                                             for (int j = str_GazeTime.length() + 1; j <= 8; j++) {
                                                                                 str_GazeTime = "0" + str_GazeTime;
                                                                             }
-                                                                        }else if (str_GazeTime.length() > 8) {
-                                                                            str_GazeTime=str_GazeTime.substring(str_GazeTime.length()-8);
+                                                                        } else if (str_GazeTime.length() > 8) {
+                                                                            str_GazeTime = str_GazeTime.substring(str_GazeTime.length() - 8);
                                                                         }
                                                                         ArrayList<double[]> MissionTargetArea_iList = MissionTargetAreaList.get(i);
                                                                         double lonAll = 0;
@@ -1687,8 +1687,8 @@ public class InstructionGeneration {
                                                                             for (int j = strtemplon.length() + 1; j <= 8; j++) {
                                                                                 strtemplon = "0" + strtemplon;
                                                                             }
-                                                                        }else if (strtemplon.length() > 8) {
-                                                                            strtemplon=strtemplon.substring(strtemplon.length()-8);
+                                                                        } else if (strtemplon.length() > 8) {
+                                                                            strtemplon = strtemplon.substring(strtemplon.length() - 8);
                                                                         }
                                                                         String strtemplat = Integer.toHexString(Float.floatToIntBits(lat));
                                                                         if (strtemplat.length() < 8) {
@@ -1696,15 +1696,15 @@ public class InstructionGeneration {
                                                                                 strtemplat = "0" + strtemplat;
                                                                             }
                                                                         } else if (strtemplat.length() > 8) {
-                                                                            strtemplat=strtemplat.substring(strtemplat.length()-8);
+                                                                            strtemplat = strtemplat.substring(strtemplat.length() - 8);
                                                                         }
                                                                         String strtempH = Integer.toHexString(Float.floatToIntBits(H));
                                                                         if (strtempH.length() < 8) {
                                                                             for (int j = strtempH.length() + 1; j <= 8; j++) {
                                                                                 strtempH = "0" + strtempH;
                                                                             }
-                                                                        }else if (strtempH.length() > 8) {
-                                                                            strtempH=strtempH.substring(strtempH.length()-8);
+                                                                        } else if (strtempH.length() > 8) {
+                                                                            strtempH = strtempH.substring(strtempH.length() - 8);
                                                                         }
                                                                         MetaHex = MetaHex + GazeStartTime +
                                                                                 GazeStartGap +
@@ -2032,6 +2032,10 @@ public class InstructionGeneration {
             modifiers.append("$set", ImageMissionjson.get(i));
             MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
             image_mission.updateOne(new Document("mission_number", ImageMissionjson.get(i).get("mission_number").toString()), modifiers, new UpdateOptions().upsert(true));
+
+            InstructionManager instructionManager = new InstructionManager();
+            instructionManager.addInstrctionInfo(InstructionInfojsonArry, ImageMissionjson.get(i).get("mission_number").toString(), ImageMissionjson.get(i).get("name").toString());
+            instructionManager.close();
         }
         mongoClient.close();
     }
@@ -3053,6 +3057,11 @@ public class InstructionGeneration {
         modifiers.append("$set", TransmissionMissionJson);
         MongoCollection<Document> image_mission = mongoDatabase.getCollection("transmission_mission");
         image_mission.updateOne(new Document("transmission_number", TransmissionMissionJson.get("transmission_number").toString()), modifiers, new UpdateOptions().upsert(true));
+
+        InstructionManager instructionManager = new InstructionManager();
+        instructionManager.addInstrctionInfo(InstructionInfojsonArry, TransmissionMissionJson.get("transmission_number").toString(), "数传任务");
+        instructionManager.close();
+
         return true;
     }
 
@@ -3211,7 +3220,7 @@ public class InstructionGeneration {
         TimeStarTime[4] = Double.parseDouble(StringTime.substring(14, 16));
         TimeStarTime[5] = Double.parseDouble(StringTime.substring(17, 19));
         double[] ZeroTimeK4425 = {2018, 1, 1, 0, 0, 0};//参考时间
-        double TimeMiddle = (JD(TimeStarTime) - JD(ZeroTimeK4425)) * 24 * 60 * 60*1000000;
+        double TimeMiddle = (JD(TimeStarTime) - JD(ZeroTimeK4425)) * 24 * 60 * 60 * 1000000;
 
         return TimeMiddle;
     }
@@ -3289,7 +3298,6 @@ public class InstructionGeneration {
         }
         return CK1str + CK2str;
     }
-
 
 
     //CRC校验

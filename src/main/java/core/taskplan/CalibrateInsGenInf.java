@@ -1146,6 +1146,11 @@ public class CalibrateInsGenInf {
             image_mission.updateOne(new Document("mission_number", ImageMissionjson.get(i).get("mission_number").toString()), modifiers, new UpdateOptions().upsert(true));
 
             mongoClient.close();
+
+            InstructionManager instructionManager = new InstructionManager();
+            instructionManager.addInstrctionInfo(InstructionInfojsonArry, ImageMissionjson.get(i).get("mission_number").toString(),ImageMissionjson.get(i).get("name").toString());
+            instructionManager.close();
+
             return FileFolder;
         }
         mongoClient.close();

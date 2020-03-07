@@ -27,6 +27,8 @@ public class InsClearInsGenInf {
 
     public static String InsClearInsGenInfII(int isTimeSpan, int type, Instant exetime, Instant start, Instant end, HashSet<Integer> insno, String FilePath) {
         //连接数据库
+        String mission_number = String.valueOf(Instant.now().toEpochMilli());
+
         MongoClient mongoClient = MangoDBConnector.getClient();
         //获取名为"temp"的数据库
         MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
@@ -38,6 +40,10 @@ public class InsClearInsGenInf {
         //将表中properties内容存入properties列表中
         ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
         Instant zerostart = ZeroTimeIns;
+
+//        Map<Instant,Document> insmap = Maps.newTreeMap();
+
+        ArrayList<Document> InstructionInfojsonArry = new ArrayList<>();
 
         for (Document document : properties) {
             if (document.get("key").toString().equals("t0")) {
@@ -66,6 +72,10 @@ public class InsClearInsGenInf {
             int IDNum = str78910.length() / 2;
             str = strAPID + String.format("%02X", IDNum) + str78910;
             SequNume = "TCS291";
+
+            Document ins = new Document();
+            ins.append("sequence_code", SequNume).append("sequence_id", 0).append("execution_time", Date.from(Instant.now())).append("valid", true);
+            InstructionInfojsonArry.add(ins);
         } else if (isTimeSpan == 1) {
             //指定时间段删除
             String str78910 = "100B8221";
@@ -89,6 +99,9 @@ public class InsClearInsGenInf {
             int IDNum = str78910.length() / 2;
             str = strAPID + String.format("%02X", IDNum) + str78910;
             SequNume = "TCS292";
+            Document ins = new Document();
+            ins.append("sequence_code", SequNume).append("sequence_id", 0).append("execution_time", Date.from(Instant.now())).append("valid", true);
+            InstructionInfojsonArry.add(ins);
         } else if (isTimeSpan == 2) {
             //全部删除
             String str78910 = "100B8521";
@@ -97,22 +110,10 @@ public class InsClearInsGenInf {
             int IDNum = 4;
             str = strAPID + String.format("%02X", IDNum) + str78910;
             SequNume = "TCS296";
+            Document ins = new Document();
+            ins.append("sequence_code", SequNume).append("sequence_id", 0).append("execution_time", Date.from(Instant.now())).append("valid", true);
+            InstructionInfojsonArry.add(ins);
         }
-
-
-        //序列
-        int ZhiLingIDNum = SequenceID.SequenceId;
-        SequenceID.SequenceId = SequenceID.SequenceId + 1;
-        if (SequenceID.SequenceId > 255) {
-            SequenceID.SequenceId = 0;
-        }
-        String ZhiLingXuLieIDString = String.format("%02X", ZhiLingIDNum);
-        ZhiLingXuLieIDString = "00" + ZhiLingXuLieIDString;
-        String ZhiLingGeShuString = "01";
-        int exetimeint = (int) (exetime.getEpochSecond() - zerostart.getEpochSecond());
-        String KaiShiShiJian = String.format("%08X", exetimeint);
-
-        //str = KaiShiShiJian + ZhiLingXuLieIDString + ZhiLingGeShuString + str;
 
         //包
         String ShuJuQuTou = "";
@@ -183,7 +184,7 @@ public class InsClearInsGenInf {
             total = "EB907625C3" + total + CRCCode;
         byte[] bytes = hexStringToBytes(total);
 
-        String FileFolder = FilePathUtil.getRealFilePath(FilePath + "\\" + "InsClear");
+        String FileFolder = FilePathUtil.getRealFilePath(FilePath + "\\" + mission_number);
         File file = new File(FileFolder);
         if (!file.exists()) {
             //如果文件夹不存在，新建
@@ -203,7 +204,7 @@ public class InsClearInsGenInf {
         String StringTime = sdf.format(cal.getTime());
 
         String DateString = StringTime.substring(0, 4) + StringTime.substring(5, 7) + StringTime.substring(8, 10) + StringTime.substring(11, 13) + StringTime.substring(14, 16);
-        String FileName = FileFolder + "\\" + ZhiLingIDNum + "-" + SequNume + "-InsClear-" + DateString;
+        String FileName = FileFolder + "\\" + SequNume + "-InsClear-" + DateString;
         FileName = FilePathUtil.getRealFilePath(FileName);
         file = new File(FileName);
         if (file.exists()) {
@@ -212,7 +213,24 @@ public class InsClearInsGenInf {
         String realPath = FilePathUtil.getRealFilePath(FileName);
         bytesTotxt(bytes, realPath);
 
+        Document doc = new Document();
+        doc
+                .append("name", "指令删除")
+                .append("image_mode", "删除")
+                .append("expected_start_time", Date.from(Instant.now().minusSeconds(30)))
+                .append("expected_end_time", Date.from(Instant.now().plusSeconds(30)))
+                .append("mission_state", "待执行")
+                .append("mission_number", mission_number)
+                .append("instruction_info", InstructionInfojsonArry);
+
+        MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
+        image_mission.insertOne(doc);
+
         mongoClient.close();
+
+        InstructionManager instructionManager = new InstructionManager();
+        instructionManager.addInstrctionInfo(InstructionInfojsonArry, mission_number,"指令删除");
+        instructionManager.close();
         //返回加文件名的路径
         return FileFolder;
     }

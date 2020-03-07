@@ -3,6 +3,7 @@ package srv;
 import common.def.Topic;
 import common.redis.TaskBuilderService;
 import common.redis.subscribe.RedisTaskSubscriber;
+import srv.task.InitHistoryInstruction;
 import srv.task.InsAndFlashMontor;
 import srv.task.TaskMonitor;
 
@@ -13,6 +14,7 @@ import java.io.IOException;
  */
 public class Server {
     public static void main(String[] args) throws InterruptedException, IOException {
+        InitHistoryInstruction.getInstance().init();
         //启动任务监视线程
         TaskMonitor.getInstance().startup();
 

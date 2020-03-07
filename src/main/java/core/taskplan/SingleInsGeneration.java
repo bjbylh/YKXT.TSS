@@ -206,6 +206,11 @@ public class SingleInsGeneration {
             MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
             image_mission.updateOne(new Document("mission_number", Mission.get("mission_number").toString()), modifiers, new UpdateOptions().upsert(true));
             mongoClient.close();
+
+            InstructionManager instructionManager = new InstructionManager();
+            instructionManager.addInstrctionInfo(InstructionInfojsonArry, Mission.get("mission_number").toString(),Mission.get("name").toString());
+            instructionManager.close();
+
             return FileFolder;
         } else {
             return FilePath;

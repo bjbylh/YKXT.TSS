@@ -1,6 +1,8 @@
 package core.orbit;
 
 
+//import com.company.MangoDBConnector;
+
 import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -25,11 +27,11 @@ public class AvoidSunshine {
     private static double Re = 6371393;                  //地球半径，单位为：米
 
     //阳光规避弧段
-    private static int[] SunAvoidTimePeriod=new int[10];
+    private static int[] SunAvoidTimePeriod = new int[10];
     private static int SunAvoidTimePeriodNum;
 
     //ESDStatus       当前坐标系，ture为东南系，false为轨道系
-    public static void AvoidSunshineII(FindIterable<Document> Orbitjson, long orbitDataCount,Instant timeRaw){
+    public static void AvoidSunshineII(FindIterable<Document> Orbitjson, long orbitDataCount, Instant timeRaw) {
         Boolean ESDStatus = true;
         String AxisType = "";
         //读入模板
@@ -38,24 +40,24 @@ public class AvoidSunshine {
         //获取名为"temp"的数据库
         MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
         //获取名为“satellite_resource”的表
-        MongoCollection<Document> sate_res=mongoDatabase.getCollection("satellite_resource");
+        MongoCollection<Document> sate_res = mongoDatabase.getCollection("satellite_resource");
         //获取的表存在Document中
-        Document first=sate_res.find().first();
+        Document first = sate_res.find().first();
         //将表中properties内容存入properties列表中
-        ArrayList<Document> properties=(ArrayList<Document>) first.get("properties");
-        double sun_angle_threshold=25.5*PI/180.0;//阳光夹角门限
-        double sun_middle_day_duration=25*60+15;//正午规避时长
-        for (Document document:properties){
-            if (document.getString("key").equals("sun_angle_threshold")){
-                sun_angle_threshold=Double.parseDouble(document.get("value").toString())*PI/180.0;
-            }else if (document.getString("key").equals("sun_middle_day_duration")) {
-                sun_middle_day_duration=Double.parseDouble(document.get("value").toString());
-            }else if(document.getString("key").equals("axis")){
+        ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
+        double sun_angle_threshold = 25.5 * PI / 180.0;//阳光夹角门限
+        double sun_middle_day_duration = 25 * 60 + 15;//正午规避时长
+        for (Document document : properties) {
+            if (document.getString("key").equals("sun_angle_threshold")) {
+                sun_angle_threshold = Double.parseDouble(document.get("value").toString()) * PI / 180.0;
+            } else if (document.getString("key").equals("sun_middle_day_duration")) {
+                sun_middle_day_duration = Double.parseDouble(document.get("value").toString());
+            } else if (document.getString("key").equals("axis")) {
                 AxisType = document.getString("value");
             }
         }
 
-        if(AxisType.contains("轨道"))
+        if (AxisType.contains("轨道"))
             ESDStatus = false;
 
         //读入轨道数据
@@ -107,172 +109,174 @@ public class AvoidSunshine {
         }
 
         //输出光照区
-        EarthEclipseStatusII(OrbitTimeDateList,OrbitTimeList,OrbitSatPositionGEIList,timeRaw);
+        EarthEclipseStatusII(OrbitTimeDateList, OrbitTimeList, OrbitSatPositionGEIList, timeRaw);
 
-        Boolean SatFlyFlag_tBefore=true;//卫星正飞true/倒飞false判定
-        Boolean SatFlyFlag_t=true;
-        Boolean SatSunFlag_tBefore=false;
-        Boolean SatSunFlag_t=false;
-        int SatSunDayFlag=0;
-        double SatSunDayAng=PI/2;
+        Boolean SatFlyFlag_tBefore = true;//卫星正飞true/倒飞false判定
+        Boolean SatFlyFlag_t = true;
+        Boolean SatSunFlag_tBefore = false;
+        Boolean SatSunFlag_t = false;
+        int SatSunDayFlag = 0;
+        double SatSunDayAng = PI / 2;
         //初始值
         if (OrbitalDataNum > 0) {
-            Boolean MiddleNightFlag=false;
+            Boolean MiddleNightFlag = false;
             //判断当前时刻是白天false/黑夜true
-            double Time_JD=JD(OrbitTimeList.get(0));
-            double[] r_sun=new double[3];//地心惯性坐标系下太阳位置
-            double[] su=new double[2];//赤经和赤纬
+            double Time_JD = JD(OrbitTimeList.get(0));
+            double[] r_sun = new double[3];//地心惯性坐标系下太阳位置
+            double[] su = new double[2];//赤经和赤纬
             double rad_sun;//太阳地球的距离
-            rad_sun=Sun(Time_JD,r_sun,su);
-            double[] r_sun_sat_GEI=new double[]{r_sun[0]-OrbitSatPositionGEIList.get(0)[0],
-                    r_sun[1]-OrbitSatPositionGEIList.get(0)[1],
-                    r_sun[2]-OrbitSatPositionGEIList.get(0)[2]};
-            double[] r_sun_sat=new double[3];
+            rad_sun = Sun(Time_JD, r_sun, su);
+            double[] r_sun_sat_GEI = new double[]{r_sun[0] - OrbitSatPositionGEIList.get(0)[0],
+                    r_sun[1] - OrbitSatPositionGEIList.get(0)[1],
+                    r_sun[2] - OrbitSatPositionGEIList.get(0)[2]};
+            double[] r_sun_sat = new double[3];
             if (ESDStatus) {
                 //东南系
-                double[] r_sun_sat_ECEF=new double[3];
-                ICRSToECEF(OrbitTimeList.get(0),r_sun_sat_GEI, r_sun_sat_ECEF);
+                double[] r_sun_sat_ECEF = new double[3];
+                ICRSToECEF(OrbitTimeList.get(0), r_sun_sat_GEI, r_sun_sat_ECEF);
                 ECEFToESD(OrbitSatPositionLLAList.get(0), r_sun_sat_ECEF, r_sun_sat);
-            }else {
+            } else {
                 //轨道系
                 GEIToORF_Ellipse(OrbitSatPositionGEIList.get(0), OrbitSatVelocityGEIList.get(0), r_sun_sat_GEI, r_sun_sat);
             }
-            double[] r_sun_sat_n=new double[]{r_sun_sat[0]/sqrt(r_sun_sat[0]*r_sun_sat[0]+r_sun_sat[1]*r_sun_sat[1]+r_sun_sat[2]*r_sun_sat[2]),
-                    r_sun_sat[1]/sqrt(r_sun_sat[0]*r_sun_sat[0]+r_sun_sat[1]*r_sun_sat[1]+r_sun_sat[2]*r_sun_sat[2]),
-                    r_sun_sat[2]/sqrt(r_sun_sat[0]*r_sun_sat[0]+r_sun_sat[1]*r_sun_sat[1]+r_sun_sat[2]*r_sun_sat[2])};
-            double theta=atan2(r_sun_sat_n[0],r_sun_sat_n[2]);
-            if (abs(theta) <= PI/2) {
-                MiddleNightFlag=true;
-            }else {
-                MiddleNightFlag=false;
+            double[] r_sun_sat_n = new double[]{r_sun_sat[0] / sqrt(r_sun_sat[0] * r_sun_sat[0] + r_sun_sat[1] * r_sun_sat[1] + r_sun_sat[2] * r_sun_sat[2]),
+                    r_sun_sat[1] / sqrt(r_sun_sat[0] * r_sun_sat[0] + r_sun_sat[1] * r_sun_sat[1] + r_sun_sat[2] * r_sun_sat[2]),
+                    r_sun_sat[2] / sqrt(r_sun_sat[0] * r_sun_sat[0] + r_sun_sat[1] * r_sun_sat[1] + r_sun_sat[2] * r_sun_sat[2])};
+            double theta = atan2(r_sun_sat_n[0], r_sun_sat_n[2]);
+            if (abs(theta) <= PI / 2) {
+                MiddleNightFlag = true;
+            } else {
+                MiddleNightFlag = false;
             }
             if (MiddleNightFlag) {
                 //午夜规避
                 if (abs(theta) <= sun_angle_threshold) {
-                    SatSunFlag_tBefore=true;
-                    SatSunFlag_t=true;
-                }else {
-                    SatSunFlag_tBefore=false;
-                    SatSunFlag_t=false;
+                    SatSunFlag_tBefore = true;
+                    SatSunFlag_t = true;
+                } else {
+                    SatSunFlag_tBefore = false;
+                    SatSunFlag_t = false;
                 }
-            }else {
-                SatSunFlag_tBefore=false;
-                SatSunFlag_t=false;
-                SatSunDayFlag=0;
-                SatSunDayAng=abs(theta);
+            } else {
+                SatSunFlag_tBefore = false;
+                SatSunFlag_t = false;
+                SatSunDayFlag = 0;
+                SatSunDayAng = abs(theta);
                 if (theta >= 0) {
-                    SatFlyFlag_tBefore=true;
-                    SatFlyFlag_t=true;
-                }else {
-                    SatFlyFlag_tBefore=false;
-                    SatFlyFlag_t=false;
+                    SatFlyFlag_tBefore = true;
+                    SatFlyFlag_t = true;
+                } else {
+                    SatFlyFlag_tBefore = false;
+                    SatFlyFlag_t = false;
                 }
             }
         }
 
-        ArrayList<int[]> SunAvoidTimePeriodDayList=new ArrayList<>();
-        ArrayList<int[]> SunAvoidTimePeriodNightList=new ArrayList<>();
-        int[] SunAvoidTimePeriodNightListChild=new int[2];
+        ArrayList<int[]> SunAvoidTimePeriodDayList = new ArrayList<>();
+        ArrayList<int[]> SunAvoidTimePeriodNightList = new ArrayList<>();
+        int[] SunAvoidTimePeriodNightListChild = new int[2];
         for (int i = 0; i < OrbitalDataNum; i++) {
-            Boolean MiddleNightFlag=false;
-            if (i>=OrbitTimeList.size() || i>=OrbitSatPositionGEIList.size() || i>OrbitSatVelocityGEIList.size()) {
+            Boolean MiddleNightFlag = false;
+            if (i >= OrbitTimeList.size() || i >= OrbitSatPositionGEIList.size() || i > OrbitSatVelocityGEIList.size()) {
                 break;
             }
             //判断当前时刻是白天false/黑夜true
-            double Time_JD=JD(OrbitTimeList.get(i));
-            double[] r_sun=new double[3];//地心惯性坐标系下太阳位置
-            double[] su=new double[2];//赤经和赤纬
+            double Time_JD = JD(OrbitTimeList.get(i));
+            double[] r_sun = new double[3];//地心惯性坐标系下太阳位置
+            double[] su = new double[2];//赤经和赤纬
             double rad_sun;//太阳地球的距离
-            rad_sun=Sun(Time_JD,r_sun,su);
-            double[] r_sun_sat_GEI=new double[]{r_sun[0]-OrbitSatPositionGEIList.get(i)[0],
-                    r_sun[1]-OrbitSatPositionGEIList.get(i)[1],
-                    r_sun[2]-OrbitSatPositionGEIList.get(i)[2]};
-            double[] r_sun_sat=new double[3];
+            rad_sun = Sun(Time_JD, r_sun, su);
+            double[] r_sun_sat_GEI = new double[]{r_sun[0] - OrbitSatPositionGEIList.get(i)[0],
+                    r_sun[1] - OrbitSatPositionGEIList.get(i)[1],
+                    r_sun[2] - OrbitSatPositionGEIList.get(i)[2]};
+            double[] r_sun_sat = new double[3];
             if (ESDStatus) {
                 //东南系
-                double[] r_sun_sat_ECEF=new double[3];
-                ICRSToECEF(OrbitTimeList.get(i),r_sun_sat_GEI, r_sun_sat_ECEF);
+                double[] r_sun_sat_ECEF = new double[3];
+                ICRSToECEF(OrbitTimeList.get(i), r_sun_sat_GEI, r_sun_sat_ECEF);
                 ECEFToESD(OrbitSatPositionLLAList.get(i), r_sun_sat_ECEF, r_sun_sat);
-            }else {
+            } else {
                 //轨道系
                 GEIToORF_Ellipse(OrbitSatPositionGEIList.get(i), OrbitSatVelocityGEIList.get(i), r_sun_sat_GEI, r_sun_sat);
             }
-            double[] r_sun_sat_n=new double[]{r_sun_sat[0]/sqrt(r_sun_sat[0]*r_sun_sat[0]+r_sun_sat[1]*r_sun_sat[1]+r_sun_sat[2]*r_sun_sat[2]),
-                    r_sun_sat[1]/sqrt(r_sun_sat[0]*r_sun_sat[0]+r_sun_sat[1]*r_sun_sat[1]+r_sun_sat[2]*r_sun_sat[2]),
-                    r_sun_sat[2]/sqrt(r_sun_sat[0]*r_sun_sat[0]+r_sun_sat[1]*r_sun_sat[1]+r_sun_sat[2]*r_sun_sat[2])};
-            double theta=atan2(r_sun_sat_n[0],r_sun_sat_n[2]);
-            if (abs(theta) <= PI/2) {
-                MiddleNightFlag=true;
-            }else {
-                MiddleNightFlag=false;
+            double[] r_sun_sat_n = new double[]{r_sun_sat[0] / sqrt(r_sun_sat[0] * r_sun_sat[0] + r_sun_sat[1] * r_sun_sat[1] + r_sun_sat[2] * r_sun_sat[2]),
+                    r_sun_sat[1] / sqrt(r_sun_sat[0] * r_sun_sat[0] + r_sun_sat[1] * r_sun_sat[1] + r_sun_sat[2] * r_sun_sat[2]),
+                    r_sun_sat[2] / sqrt(r_sun_sat[0] * r_sun_sat[0] + r_sun_sat[1] * r_sun_sat[1] + r_sun_sat[2] * r_sun_sat[2])};
+            double theta = atan2(r_sun_sat_n[0], r_sun_sat_n[2]);
+            if (abs(theta) <= PI / 2) {
+                MiddleNightFlag = true;
+            } else {
+                MiddleNightFlag = false;
             }
             if (MiddleNightFlag) {
                 if (theta >= 0) {
-                    SatFlyFlag_tBefore=SatFlyFlag_t;
-                    SatFlyFlag_t=true;
-                }else {
-                    SatFlyFlag_tBefore=SatFlyFlag_t;
-                    SatFlyFlag_t=false;
+                    SatFlyFlag_tBefore = SatFlyFlag_t;
+                    SatFlyFlag_t = true;
+                } else {
+                    SatFlyFlag_tBefore = SatFlyFlag_t;
+                    SatFlyFlag_t = false;
                 }
                 //午夜规避
                 if (abs(theta) <= sun_angle_threshold) {
-                    SatSunFlag_tBefore=SatSunFlag_t;
-                    SatSunFlag_t=true;
-                }else {
-                    SatSunFlag_tBefore=SatSunFlag_t;
-                    SatSunFlag_t=false;
+                    SatSunFlag_tBefore = SatSunFlag_t;
+                    SatSunFlag_t = true;
+                } else {
+                    SatSunFlag_tBefore = SatSunFlag_t;
+                    SatSunFlag_t = false;
                 }
-                if (SatSunFlag_tBefore == false && SatSunFlag_t==true) {
-                    SunAvoidTimePeriodNightListChild[0]=i-1;
+                if (SatSunFlag_tBefore == false && SatSunFlag_t == true) {
+                    SunAvoidTimePeriodNightListChild[0] = i - 1;
                     if (SunAvoidTimePeriodNightListChild[0] < 0) {
-                        SunAvoidTimePeriodNightListChild[0]=0;
+                        SunAvoidTimePeriodNightListChild[0] = 0;
                     }
-                }else if (SatSunFlag_tBefore == true && SatSunFlag_t==false) {
-                    SunAvoidTimePeriodNightListChild[1]=i;
-                    int[] nighttime=new int[]{SunAvoidTimePeriodNightListChild[0],SunAvoidTimePeriodNightListChild[1]};
+                } else if (SatSunFlag_tBefore == true && SatSunFlag_t == false) {
+                    SunAvoidTimePeriodNightListChild[1] = i;
+                    int[] nighttime = new int[]{SunAvoidTimePeriodNightListChild[0], SunAvoidTimePeriodNightListChild[1]};
                     SunAvoidTimePeriodNightList.add(nighttime);
                 }
-                if (SatSunFlag_tBefore == true && SatSunFlag_t==true && i==OrbitalDataNum-1) {
-                    SunAvoidTimePeriodNightListChild[1]=i;
-                    int[] nighttime=new int[]{SunAvoidTimePeriodNightListChild[0],SunAvoidTimePeriodNightListChild[1]};
+                if (SatSunFlag_tBefore == true && SatSunFlag_t == true && i == OrbitalDataNum - 1) {
+                    SunAvoidTimePeriodNightListChild[1] = i;
+                    int[] nighttime = new int[]{SunAvoidTimePeriodNightListChild[0], SunAvoidTimePeriodNightListChild[1]};
                     SunAvoidTimePeriodNightList.add(nighttime);
                 }
-            }else {
-                if (SatSunFlag_tBefore == true && SatSunFlag_t==true) {
-                    SunAvoidTimePeriodNightListChild[1]=i;
-                    int[] nighttime=new int[]{SunAvoidTimePeriodNightListChild[0],SunAvoidTimePeriodNightListChild[1]};
+            } else {
+                if (SatSunFlag_tBefore == true && SatSunFlag_t == true) {
+                    SunAvoidTimePeriodNightListChild[1] = i;
+                    int[] nighttime = new int[]{SunAvoidTimePeriodNightListChild[0], SunAvoidTimePeriodNightListChild[1]};
                     SunAvoidTimePeriodNightList.add(nighttime);
                 }
-                SatSunFlag_tBefore=false;
-                SatSunFlag_t=false;
+                SatSunFlag_tBefore = false;
+                SatSunFlag_t = false;
                 if (abs(theta) > SatSunDayAng) {
-                    SatSunDayFlag=i;
-                    SatSunDayAng=abs(theta);
+                    SatSunDayFlag = i;
+                    SatSunDayAng = abs(theta);
                 }
                 if (theta >= 0) {
-                    SatFlyFlag_tBefore=SatFlyFlag_t;
-                    SatFlyFlag_t=true;
-                }else {
-                    SatFlyFlag_tBefore=SatFlyFlag_t;
-                    SatFlyFlag_t=false;
+                    SatFlyFlag_tBefore = SatFlyFlag_t;
+                    SatFlyFlag_t = true;
+                } else {
+                    SatFlyFlag_tBefore = SatFlyFlag_t;
+                    SatFlyFlag_t = false;
                 }
-                if ((SatFlyFlag_tBefore==true && SatFlyFlag_t==false)||(SatFlyFlag_tBefore==false && SatFlyFlag_t==true)) {
-                    int[] daytime=new int[]{i-(int) (sun_middle_day_duration/2),i+(int) (sun_middle_day_duration/2)};
+                if ((SatFlyFlag_tBefore == true && SatFlyFlag_t == false) || (SatFlyFlag_tBefore == false && SatFlyFlag_t == true)) {
+                    //int[] daytime = new int[]{i - (int) (sun_middle_day_duration / 2), i + (int) sun_middle_day_duration - (int) (sun_middle_day_duration / 2)};
+                    int[] daytime = new int[]{i, i + (int) sun_middle_day_duration};
                     if (daytime[0] < 0) {
-                        daytime[0]=0;
+                        daytime[0] = 0;
                     }
                     if (daytime[1] >= OrbitalDataNum) {
-                        daytime[1]=OrbitalDataNum-1;
+                        daytime[1] = OrbitalDataNum - 1;
                     }
                     SunAvoidTimePeriodDayList.add(daytime);
                 }
-                if (((SatFlyFlag_tBefore==true && SatFlyFlag_t==true)||(SatFlyFlag_tBefore==false && SatFlyFlag_t==false)) && i == OrbitalDataNum-1 && SatSunDayAng>(PI-0.05)) {
-                    int[] daytime=new int[]{SatSunDayFlag-(int) (sun_middle_day_duration/2),SatSunDayFlag+(int) (sun_middle_day_duration/2)};
+                if (((SatFlyFlag_tBefore == true && SatFlyFlag_t == true) || (SatFlyFlag_tBefore == false && SatFlyFlag_t == false)) && i == OrbitalDataNum - 1 && SatSunDayAng > (PI - 0.05)) {
+                    //int[] daytime = new int[]{SatSunDayFlag - (int) (sun_middle_day_duration / 2), SatSunDayFlag + (int) sun_middle_day_duration - (int) (sun_middle_day_duration / 2)};
+                    int[] daytime = new int[]{SatSunDayFlag, SatSunDayFlag + (int) sun_middle_day_duration};
                     if (daytime[0] < 0) {
-                        daytime[0]=0;
+                        daytime[0] = 0;
                     }
                     if (daytime[1] >= OrbitalDataNum) {
-                        daytime[1]=OrbitalDataNum-1;
+                        daytime[1] = OrbitalDataNum - 1;
                     }
                     SunAvoidTimePeriodDayList.add(daytime);
                 }
@@ -472,7 +476,7 @@ public class AvoidSunshine {
         MongoCollection<Document> avoidance_sunlight = mongoDatabase.getCollection("avoidance_sunlight");
         for (int i = 0; i < SunAvoidTimePeriodDayList.size(); i++) {
             Document jsonObject1 = new Document();
-            jsonObject1.append("amount_window", SunAvoidTimePeriodDayList.size()+SunAvoidTimePeriodNightList.size());
+            jsonObject1.append("amount_window", SunAvoidTimePeriodDayList.size() + SunAvoidTimePeriodNightList.size());
             jsonObject1.append("window_number", i + 1);
             jsonObject1.append("tag", "HighNoon");
             jsonObject1.append("start_time", OrbitTimeDateList.get(SunAvoidTimePeriodDayList.get(i)[0]));
@@ -481,8 +485,8 @@ public class AvoidSunshine {
         }
         for (int i = 0; i < SunAvoidTimePeriodNightList.size(); i++) {
             Document jsonObject1 = new Document();
-            jsonObject1.append("amount_window", SunAvoidTimePeriodDayList.size()+SunAvoidTimePeriodNightList.size());
-            jsonObject1.append("window_number", i +SunAvoidTimePeriodDayList.size()+ 1);
+            jsonObject1.append("amount_window", SunAvoidTimePeriodDayList.size() + SunAvoidTimePeriodNightList.size());
+            jsonObject1.append("window_number", i + SunAvoidTimePeriodDayList.size() + 1);
             jsonObject1.append("tag", "MidNight");
             jsonObject1.append("start_time", OrbitTimeDateList.get(SunAvoidTimePeriodNightList.get(i)[0]));
             jsonObject1.append("end_time", OrbitTimeDateList.get(SunAvoidTimePeriodNightList.get(i)[1]));
@@ -677,53 +681,53 @@ public class AvoidSunshine {
     }
 
     //光照弧段计算
-    private static void EarthEclipseStatusII(ArrayList<Date> OrbitTimeDateList,ArrayList<double[]> OrbitTimeList,ArrayList<double[]> OrbitSatPositionGEIList,Instant timeRaw){
-        ArrayList<int[]> SunAvoidTimePeriodDayList=new ArrayList<>();
-        ArrayList<Date[]> SunAvoidTimeDatePeriodDayList=new ArrayList<>();
-        Boolean SatSunFlag_tBefore=false;
-        Boolean SatSunFlag_t=false;
+    private static void EarthEclipseStatusII(ArrayList<Date> OrbitTimeDateList, ArrayList<double[]> OrbitTimeList, ArrayList<double[]> OrbitSatPositionGEIList, Instant timeRaw) {
+        ArrayList<int[]> SunAvoidTimePeriodDayList = new ArrayList<>();
+        ArrayList<Date[]> SunAvoidTimeDatePeriodDayList = new ArrayList<>();
+        Boolean SatSunFlag_tBefore = false;
+        Boolean SatSunFlag_t = false;
         //初始值
-        if (OrbitTimeList.size()>0 && OrbitSatPositionGEIList.size()>0 && OrbitTimeDateList.size()>0) {
+        if (OrbitTimeList.size() > 0 && OrbitSatPositionGEIList.size() > 0 && OrbitTimeDateList.size() > 0) {
             //判断当前时刻是
-            double Time_JD=JD(OrbitTimeList.get(0));
-            double[] r_sun=new double[3];//地心惯性坐标系下太阳位置
-            double[] su=new double[2];//赤经和赤纬
+            double Time_JD = JD(OrbitTimeList.get(0));
+            double[] r_sun = new double[3];//地心惯性坐标系下太阳位置
+            double[] su = new double[2];//赤经和赤纬
             double rad_sun;//太阳地球的距离
-            rad_sun=Sun(Time_JD,r_sun,su);
-            SatSunFlag_tBefore=EarthEclipseStatus(r_sun, OrbitSatPositionGEIList.get(0));
-            SatSunFlag_t=SatSunFlag_tBefore;
+            rad_sun = Sun(Time_JD, r_sun, su);
+            SatSunFlag_tBefore = EarthEclipseStatus(r_sun, OrbitSatPositionGEIList.get(0));
+            SatSunFlag_t = SatSunFlag_tBefore;
         }
-        int[] SunAvoidTimePeriodDayList_i=new int[2];
+        int[] SunAvoidTimePeriodDayList_i = new int[2];
         for (int i = 1; i < OrbitTimeDateList.size(); i++) {
-            if (i==1 && SatSunFlag_t) {
-                SunAvoidTimePeriodDayList_i[0]=0;
+            if (i == 1 && SatSunFlag_t) {
+                SunAvoidTimePeriodDayList_i[0] = 0;
             }
-            if (i>=OrbitTimeList.size() || i>=OrbitSatPositionGEIList.size() || i>OrbitTimeDateList.size()) {
+            if (i >= OrbitTimeList.size() || i >= OrbitSatPositionGEIList.size() || i > OrbitTimeDateList.size()) {
                 break;
             }
             //判断当前时刻是
-            SatSunFlag_tBefore=SatSunFlag_t;
-            double Time_JD=JD(OrbitTimeList.get(i));
-            double[] r_sun=new double[3];//地心惯性坐标系下太阳位置
-            double[] su=new double[2];//赤经和赤纬
+            SatSunFlag_tBefore = SatSunFlag_t;
+            double Time_JD = JD(OrbitTimeList.get(i));
+            double[] r_sun = new double[3];//地心惯性坐标系下太阳位置
+            double[] su = new double[2];//赤经和赤纬
             double rad_sun;//太阳地球的距离
-            rad_sun=Sun(Time_JD,r_sun,su);
-            SatSunFlag_t=EarthEclipseStatus(r_sun, OrbitSatPositionGEIList.get(i));
-            if (SatSunFlag_tBefore == false && SatSunFlag_t==true) {
-                SunAvoidTimePeriodDayList_i[0]=i;
-            }else if (SatSunFlag_tBefore == true && SatSunFlag_t==false) {
-                SunAvoidTimePeriodDayList_i[1]=i-1;
-                int[] SunAvoidTimePeriodDayList_iTemp=new int[]{SunAvoidTimePeriodDayList_i[0],SunAvoidTimePeriodDayList_i[1]};
+            rad_sun = Sun(Time_JD, r_sun, su);
+            SatSunFlag_t = EarthEclipseStatus(r_sun, OrbitSatPositionGEIList.get(i));
+            if (SatSunFlag_tBefore == false && SatSunFlag_t == true) {
+                SunAvoidTimePeriodDayList_i[0] = i;
+            } else if (SatSunFlag_tBefore == true && SatSunFlag_t == false) {
+                SunAvoidTimePeriodDayList_i[1] = i - 1;
+                int[] SunAvoidTimePeriodDayList_iTemp = new int[]{SunAvoidTimePeriodDayList_i[0], SunAvoidTimePeriodDayList_i[1]};
                 SunAvoidTimePeriodDayList.add(SunAvoidTimePeriodDayList_iTemp);
-                Date[] SunAvoidTimeDatePeriodDayListTemp=new Date[]{OrbitTimeDateList.get(SunAvoidTimePeriodDayList_i[0]),
+                Date[] SunAvoidTimeDatePeriodDayListTemp = new Date[]{OrbitTimeDateList.get(SunAvoidTimePeriodDayList_i[0]),
                         OrbitTimeDateList.get(SunAvoidTimePeriodDayList_i[1])};
                 SunAvoidTimeDatePeriodDayList.add(SunAvoidTimeDatePeriodDayListTemp);
             }
-            if (i == OrbitTimeDateList.size()-1 && SatSunFlag_tBefore == true && SatSunFlag_t==true) {
-                SunAvoidTimePeriodDayList_i[1]=i;
-                int[] SunAvoidTimePeriodDayList_iTemp=new int[]{SunAvoidTimePeriodDayList_i[0],SunAvoidTimePeriodDayList_i[1]};
+            if (i == OrbitTimeDateList.size() - 1 && SatSunFlag_tBefore == true && SatSunFlag_t == true) {
+                SunAvoidTimePeriodDayList_i[1] = i;
+                int[] SunAvoidTimePeriodDayList_iTemp = new int[]{SunAvoidTimePeriodDayList_i[0], SunAvoidTimePeriodDayList_i[1]};
                 SunAvoidTimePeriodDayList.add(SunAvoidTimePeriodDayList_iTemp);
-                Date[] SunAvoidTimeDatePeriodDayListTemp=new Date[]{OrbitTimeDateList.get(SunAvoidTimePeriodDayList_i[0]),
+                Date[] SunAvoidTimeDatePeriodDayListTemp = new Date[]{OrbitTimeDateList.get(SunAvoidTimePeriodDayList_i[0]),
                         OrbitTimeDateList.get(SunAvoidTimePeriodDayList_i[1])};
                 SunAvoidTimeDatePeriodDayList.add(SunAvoidTimeDatePeriodDayListTemp);
             }
@@ -770,32 +774,31 @@ public class AvoidSunshine {
     }
 
     //儒略日计算
-    private static double JD(double Time[]){
-        double year_UT=Time[0];
-        double month_UT=Time[1];
-        double day_UT=Time[2];
-        double hour_UT=Time[3];
-        double minute_UT=Time[4];
-        double second_UT=Time[5];
+    private static double JD(double Time[]) {
+        double year_UT = Time[0];
+        double month_UT = Time[1];
+        double day_UT = Time[2];
+        double hour_UT = Time[3];
+        double minute_UT = Time[4];
+        double second_UT = Time[5];
 
-        double D=day_UT;
-        double M,Y,B;
+        double D = day_UT;
+        double M, Y, B;
         double JD;
-        if (month_UT==1 || month_UT==2){
-            M=month_UT+12;
-            Y=year_UT-1;
+        if (month_UT == 1 || month_UT == 2) {
+            M = month_UT + 12;
+            Y = year_UT - 1;
+        } else {
+            Y = year_UT;
+            M = month_UT;
         }
-        else {
-            Y=year_UT;
-            M=month_UT;
+        B = 0;
+        if (Y > 1582 || (Y == 1582 && M > 10) || (Y == 1582 && M == 10 && D >= 15)) {
+            B = 2 - (int) Math.floor(Y / 100.0) + (int) Math.floor(Y / 400.0);
         }
-        B=0;
-        if (Y>1582 || (Y==1582 && M>10) || (Y==1582 && M==10 && D>=15)){
-            B=2-(int)Math.floor(Y/100.0)+(int)Math.floor(Y/400.0);
-        }
-        JD=(int)Math.floor(365.25*(Y+4716))+(int)Math.floor(30.6*(M+1))+D+B-1524.5;
-        JD=JD-0.5+hour_UT/24.0+minute_UT/1440+second_UT/86400;
-        JD=JD+0.5;
+        JD = (int) Math.floor(365.25 * (Y + 4716)) + (int) Math.floor(30.6 * (M + 1)) + D + B - 1524.5;
+        JD = JD - 0.5 + hour_UT / 24.0 + minute_UT / 1440 + second_UT / 86400;
+        JD = JD + 0.5;
         return JD;
     }
 
@@ -825,11 +828,11 @@ public class AvoidSunshine {
         double[] xs = {SatVelocity_GEI[0] / v, SatVelocity_GEI[1] / v, SatVelocity_GEI[2] / v};
         double[] ys = new double[3];
         ys = VectorCross(zs, xs);
-        double r_ys=sqrt(pow(ys[0],2)+pow(ys[1],2)+pow(ys[2],2));
-        ys[0]=ys[0]/r_ys;
-        ys[1]=ys[1]/r_ys;
-        ys[2]=ys[2]/r_ys;
-        xs=VectorCross(ys,zs);
+        double r_ys = sqrt(pow(ys[0], 2) + pow(ys[1], 2) + pow(ys[2], 2));
+        ys[0] = ys[0] / r_ys;
+        ys[1] = ys[1] / r_ys;
+        ys[2] = ys[2] / r_ys;
+        xs = VectorCross(ys, zs);
         double[][] OR = {{xs[0], xs[1], xs[2]},
                 {ys[0], ys[1], ys[2]},
                 {zs[0], zs[1], zs[2]}};

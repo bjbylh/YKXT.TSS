@@ -77,6 +77,7 @@ public class FileClearInsGenInf {
                 SequenceID.SequenceId = 0;
             }
             String ZhiLingXuLieIDString = String.format("%02X", ZhiLingIDNum);
+            ZhiLingXuLieIDString = "00" + ZhiLingXuLieIDString;
             String ZhiLingGeShuString = "01";
             int exetimeint = (int) (exetime.getEpochSecond() - zerostart.getEpochSecond()) - 30;
             String KaiShiShiJian = String.format("%08X", exetimeint);
@@ -115,6 +116,7 @@ public class FileClearInsGenInf {
                 SequenceID.SequenceId = 0;
             }
             ZhiLingXuLieIDString = String.format("%02X", ZhiLingIDNum);
+            ZhiLingXuLieIDString = "00" + ZhiLingXuLieIDString;
             ZhiLingGeShuString = "02";
             exetimeint = (int) (exetime.getEpochSecond() - zerostart.getEpochSecond()) - 30;
             KaiShiShiJian = String.format("%08X", exetimeint);
@@ -166,6 +168,7 @@ public class FileClearInsGenInf {
                 SequenceID.SequenceId = 0;
             }
             ZhiLingXuLieIDString = String.format("%02X", ZhiLingIDNum);
+            ZhiLingXuLieIDString = "00" + ZhiLingXuLieIDString;
             ZhiLingGeShuString = "01";
             exetimeint = (int) (exetime.getEpochSecond() - zerostart.getEpochSecond());
             KaiShiShiJian = String.format("%08X", exetimeint);
@@ -201,6 +204,7 @@ public class FileClearInsGenInf {
             if (SequenceID.SequenceId > 255) {
                 SequenceID.SequenceId = 0;
             }
+
             ZhiLingXuLieIDString = String.format("%02X", ZhiLingIDNum);
             ZhiLingXuLieIDString = "00" + ZhiLingXuLieIDString;
             exetimeint = (int) (exetime.getEpochSecond() - zerostart.getEpochSecond()) + 60;
@@ -359,6 +363,10 @@ public class FileClearInsGenInf {
             modifiers.append("$set", Mission);
             MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
             image_mission.updateOne(new Document("mission_number", Mission.get("mission_number").toString()), modifiers, new UpdateOptions().upsert(true));
+
+            InstructionManager instructionManager = new InstructionManager();
+            instructionManager.addInstrctionInfo(InstructionInfojsonArry, Mission.get("mission_number").toString(),Mission.get("name").toString());
+            instructionManager.close();
         }
 
         mongoClient.close();
