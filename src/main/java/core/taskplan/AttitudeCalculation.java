@@ -67,6 +67,8 @@ public class AttitudeCalculation {
     private static double MissionLimbAirHeighLimt = 200000;   //临边观测模式大气高度范围
 
     public static void AttitudeCalculationII(Document Satllitejson, FindIterable<Document> Orbitjson, long OrbitDataCount, ArrayList<Document> ImageMissionjson) {
+        Boolean ESDStatus = true;
+        String AxisType = "";
         //载荷参数更新
         ArrayList<Document> properties = (ArrayList<Document>) Satllitejson.get("properties");
         int ii = 0;
@@ -137,9 +139,16 @@ public class AttitudeCalculation {
                 SatelliteManeuverVelocity[0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
             } else if (document.getString("key").equals("v_pitch_angle")) {
                 SatelliteManeuverVelocity[1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+            } else if (document.getString("key").equals("axis")) {
+                AxisType = document.getString("value");
             } else
                 continue;
         }
+
+        if (AxisType.contains("轨道"))
+            ESDStatus = false;
+
+        System.out.println(ESDStatus);
 
         //读入轨道数据
         String StringTime;
@@ -361,18 +370,29 @@ public class AttitudeCalculation {
             double[] r_sun_n = new double[]{r_sun[0] / sqrt(r_sun[0] * r_sun[0] + r_sun[1] * r_sun[1] + r_sun[2] * r_sun[2]),
                     r_sun[1] / sqrt(r_sun[0] * r_sun[0] + r_sun[1] * r_sun[1] + r_sun[2] * r_sun[2]),
                     r_sun[2] / sqrt(r_sun[0] * r_sun[0] + r_sun[1] * r_sun[1] + r_sun[2] * r_sun[2])};
+            double[] r_ORF_ESD_N=new double[3];
+            double[] r_ORF_ECEF_N=new double[3];
+            if (ESDStatus) {
+                //东南系
+                ICRSToECEF(MissionStarTime[i], r_sun_n, r_ORF_ECEF_N);
+                ECEFToESDForAvoidSunshine(SatPosition_LLA[i], r_ORF_ECEF_N, r_ORF_ESD_N);
+            }else {
+                //轨道系
+                GEIToORF_Ellipse(SatPosition_GEI[i], SatVelocity_GEI[i], r_sun_n, r_ORF_ESD_N);
+            }
             double[] v_sat_n = new double[]{SatVelocity_GEI[i][0] / sqrt(SatVelocity_GEI[i][0] * SatVelocity_GEI[i][0] + SatVelocity_GEI[i][1] * SatVelocity_GEI[i][1] + SatVelocity_GEI[i][2] * SatVelocity_GEI[i][2]),
                     SatVelocity_GEI[i][1] / sqrt(SatVelocity_GEI[i][0] * SatVelocity_GEI[i][0] + SatVelocity_GEI[i][1] * SatVelocity_GEI[i][1] + SatVelocity_GEI[i][2] * SatVelocity_GEI[i][2]),
                     SatVelocity_GEI[i][2] / sqrt(SatVelocity_GEI[i][0] * SatVelocity_GEI[i][0] + SatVelocity_GEI[i][1] * SatVelocity_GEI[i][1] + SatVelocity_GEI[i][2] * SatVelocity_GEI[i][2])};
             double CosTheta_SunVel = (r_sun_n[0] * v_sat_n[0] + r_sun_n[1] * v_sat_n[1] + r_sun_n[2] * v_sat_n[2]) /
                     (sqrt(r_sun_n[0] * r_sun_n[0] + r_sun_n[1] * r_sun_n[1] + r_sun_n[2] * r_sun_n[2]) * sqrt(v_sat_n[0] * v_sat_n[0] + v_sat_n[1] * v_sat_n[1] + v_sat_n[2] * v_sat_n[2]));
-            if (CosTheta_SunVel > 0) {
-                FlyOrientationFlag = false;
-            } else {
+            if (r_ORF_ESD_N[0] >= 0) {
                 FlyOrientationFlag = true;
+            } else {
+                FlyOrientationFlag = false;
             }
 
             if (Mission_FLag == 1) {
+                System.out.println(Math.acos(r_ORF_ESD_N[0])*180/PI);
                 //AttitudeCalculation(SatPosition_GEI[i], SatVelocity_GEI[i], Target_LLA, Time[i], LoadInstall[LoadNum - 1], SatAttitud[i]);
                 //北东地1-2-3
                 AttitudeCalculationTest(SatPosition_LLA[i], Target_LLA, LoadInstall[LoadNum - 1], SatAttitud[i], FlyOrientationFlag);
@@ -3167,6 +3187,33 @@ public class AttitudeCalculation {
         double[] Target_ECEF = new double[3];
         LLAToECEF(Satellite_LLA, Satellite_ECEF);
         LLAToECEF(Target_LLA, Target_ECEF);
+
+        double B = Satellite_LLA[1] * Math.PI / 180.0;//经度
+        double L = Satellite_LLA[0] * Math.PI / 180.0;//纬度
+        double[][] R_ECEFToNED = {{-sin(B) * cos(L), -sin(B) * sin(L), cos(B)},
+                {-sin(L), cos(L), 0},
+                {-cos(B) * cos(L), -cos(B) * sin(L), -sin(B)}};
+        double[][] Error_r = new double[3][1];
+        Error_r[0][0] = Target_ECEF[0] - Satellite_ECEF[0];
+        Error_r[1][0] = Target_ECEF[1] - Satellite_ECEF[1];
+        Error_r[2][0] = Target_ECEF[2] - Satellite_ECEF[2];
+        double[][] Target_NED_mid = new double[3][1];
+        Target_NED_mid = MatrixMultiplication(R_ECEFToNED, Error_r);
+        double Ang_z = -PI / 2;
+        double[][] R_NEDToESD = {{cos(Ang_z), -sin(Ang_z), 0},
+                {sin(Ang_z), cos(Ang_z), 0},
+                {0, 0, 1}};
+        double[][] Target_ESD_mid = new double[3][1];
+        Target_ESD_mid = MatrixMultiplication(R_NEDToESD, Target_NED_mid);
+        Target_ESD[0] = Target_ESD_mid[0][0];
+        Target_ESD[1] = Target_ESD_mid[1][0];
+        Target_ESD[2] = Target_ESD_mid[2][0];
+    }
+
+    //地固坐标系到卫星东南地坐标系
+    private static void ECEFToESDForAvoidSunshine(double[] Satellite_LLA, double[] Target_ECEF, double[] Target_ESD) {
+        double[] Satellite_ECEF = new double[3];
+        LLAToECEF(Satellite_LLA, Satellite_ECEF);
 
         double B = Satellite_LLA[1] * Math.PI / 180.0;//经度
         double L = Satellite_LLA[0] * Math.PI / 180.0;//纬度

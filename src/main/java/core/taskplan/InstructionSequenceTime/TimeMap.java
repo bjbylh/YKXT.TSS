@@ -84,6 +84,16 @@ public class TimeMap {
         //任务恢复
         TCGFG07 tcgfg07 = new TCGFG07();
         timemap.put("TCGFG07", tcgfg07);
+
+        TCGFG07_A tcgfg07_a = new TCGFG07_A();
+        timemap.put("TCGFG07_A", tcgfg07_a);
+
+        TCGFG07_B tcgfg07_b = new TCGFG07_B();
+        timemap.put("TCGFG07_B", tcgfg07_b);
+
+        TCGFG07_AB tcgfg07_ab = new TCGFG07_AB();
+        timemap.put("TCGFG07_AB", tcgfg07_ab);
+
         TCDGG07 tcdgg07 = new TCDGG07();
         timemap.put("TCDGG07", tcdgg07);
 

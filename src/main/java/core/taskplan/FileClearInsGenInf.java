@@ -139,7 +139,7 @@ public class FileClearInsGenInf {
 
             //
             String TCA303 = "";
-            String APIDTCA303 = "0411";
+            String APIDTCA303 = "01E3";
             try {
                 if (Mission.get("clear_all").toString().equals("true")) {
                     TCA303 = "10028021010F3E0A00010000000000000000";
