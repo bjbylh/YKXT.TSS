@@ -1706,9 +1706,9 @@ public class InstructionGeneration {
                                                                         } else if (strtempH.length() > 8) {
                                                                             strtempH = strtempH.substring(strtempH.length() - 8);
                                                                         }
-                                                                        MetaHex = MetaHex + GazeStartTime +
-                                                                                GazeStartGap +
-                                                                                str_GazeTime +
+                                                                        MetaHex = MetaHex + str_GazeStartTime.toUpperCase() +
+                                                                                str_GazeStartGap.toUpperCase() +
+                                                                                str_GazeTime.toUpperCase() +
                                                                                 strtemplon +
                                                                                 strtemplat +
                                                                                 strtempH;
@@ -1892,7 +1892,10 @@ public class InstructionGeneration {
             MissionInstructionTimeUpdateStatus.clear();
 
             ArrayList<byte[]> InstructionArrayChild = new ArrayList<>();
+            int ii = 0;
             for (String ZhilingKuai_02 : MissionInstructionHexChild) {
+                ii++;
+                System.out.println(ii);
                 //String YingYongShuJu = KaiShiShiJian + ZhiLingID + ZhiLingNum + YouXiaoData;
                 String ShuJuQuTou = "100B8021";
                 int BaoChang = (ShuJuQuTou + ZhilingKuai_02).length() / 2 + 2 - 1;

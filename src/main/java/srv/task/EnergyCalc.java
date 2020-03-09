@@ -43,6 +43,8 @@ public class EnergyCalc {
 
     private MongoCollection<Document> satellite_energy = null;
 
+    private MongoCollection<Document> orbit_attitude = null;
+
     private MongoCollection<Document> range_sunlight = null;
 
 
@@ -66,6 +68,8 @@ public class EnergyCalc {
         satellite_energy = mongoDatabase.getCollection("satellite_energy");
 
         range_sunlight = mongoDatabase.getCollection("range_sunlight");
+
+        orbit_attitude = mongoDatabase.getCollection("orbit_attitude");
 
         loadConfig();
     }
@@ -296,7 +300,7 @@ public class EnergyCalc {
 
     }
 
-    public void energyReset(double value){
+    public void energyReset(double value) {
         Document d = new Document();
         d.append("time_point", Date.from(Instant.now()));
         d.append("energy", value);
@@ -393,6 +397,30 @@ public class EnergyCalc {
         } catch (Exception e) {
             e.printStackTrace();
             return power_capacity;
+        }
+    }
+
+    public double fetchInclination(Instant time) {
+
+        try {
+            Document query = new Document();
+            query.append("time_point", new Document().append("$lte", Date.from(time)));
+
+            Document sort = new Document();
+            sort.append("time_point", -1.0);
+
+            int limit = 1;
+
+            Document first = orbit_attitude.find(query).sort(sort).limit(limit).first();
+
+            if (first == null)
+                return Math.cos(Math.PI);
+
+            return Math.cos(Math.PI);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Math.cos(Math.PI);
         }
     }
 

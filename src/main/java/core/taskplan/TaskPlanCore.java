@@ -264,8 +264,8 @@ public class TaskPlanCore {
             try {
                 if (taskType == TaskType.REALTIME) {
                     //更新开始时间
-                    if (startTime.before(Date.from(Instant.now().plusSeconds(60 * 30))))
-                        startTime = Date.from(Instant.now().plusSeconds(60 * 30));
+                    if (startTime.before(Date.from(Instant.now())))
+                        startTime = Date.from(Instant.now());
 
                     MongoCollection<Document> Data_Missionjson = mongoDatabase.getCollection("image_mission");
                     FindIterable<Document> D_Missionjson = Data_Missionjson.find();
@@ -447,6 +447,8 @@ public class TaskPlanCore {
                             FindIterable<Document> firsts = image_mission.find(filter);
 
                             for (Document first : firsts) {
+
+                                first.append("mission_state","已作废");
 
                                 if (first != null && first.containsKey("instruction_info")) {
 
