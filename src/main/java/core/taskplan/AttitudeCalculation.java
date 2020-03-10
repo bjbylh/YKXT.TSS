@@ -1,6 +1,5 @@
 package core.taskplan;
 
-//import com.company.MangoDBConnector;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mongodb.MongoClient;
@@ -18,15 +17,6 @@ import java.util.Date;
 
 import static java.lang.Math.*;
 
-//import common.mongo.DbDefine;
-
-//import common.mongo.DbDefine;
-//import common.mongo.MangoDBConnector;
-
-//import common.mongo.MangoDBConnector;
-
-//import common.mongo.DbDefine;
-//import common.mongo.MangoDBConnector;
 
 public class AttitudeCalculation {
     //载荷变量

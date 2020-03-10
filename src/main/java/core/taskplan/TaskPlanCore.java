@@ -263,9 +263,22 @@ public class TaskPlanCore {
         private void initOrbit() {
             try {
                 if (taskType == TaskType.REALTIME) {
+                    double task_expect_start_time = 0.0;//分钟
+
+                    MongoCollection<Document> satellite_resource = mongoDatabase.getCollection("satellite_resource");
+
+                    Document first = satellite_resource.find().first();
+
+                    ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
+                    for (Document document : properties) {
+                        if (document.getString("key").equals("task_expect_start_time")) {
+                            task_expect_start_time = Double.parseDouble(document.getString("value"));
+                            break;
+                        }
+                    }
                     //更新开始时间
-                    if (startTime.before(Date.from(Instant.now())))
-                        startTime = Date.from(Instant.now());
+                    if (startTime.before(Date.from(Instant.now().plusSeconds((long) (60 * task_expect_start_time)))))
+                        startTime = Date.from(Instant.now().plusSeconds((long) (60 * task_expect_start_time)));
 
                     MongoCollection<Document> Data_Missionjson = mongoDatabase.getCollection("image_mission");
                     FindIterable<Document> D_Missionjson = Data_Missionjson.find();
@@ -448,7 +461,7 @@ public class TaskPlanCore {
 
                             for (Document first : firsts) {
 
-                                first.append("mission_state","已作废");
+                                first.append("mission_state", "已作废");
 
                                 if (first != null && first.containsKey("instruction_info")) {
 

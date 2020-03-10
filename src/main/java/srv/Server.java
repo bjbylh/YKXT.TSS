@@ -3,6 +3,7 @@ package srv;
 import common.def.Topic;
 import common.redis.TaskBuilderService;
 import common.redis.subscribe.RedisTaskSubscriber;
+import srv.task.FileOccupancyStatus;
 import srv.task.InitHistoryInstruction;
 import srv.task.InsAndFlashMontor;
 import srv.task.TaskMonitor;
@@ -33,5 +34,7 @@ public class Server {
 
         //指令状态及内存占用计算线程
         InsAndFlashMontor.getInstance().startup();
+
+        FileOccupancyStatus.getInstance().startup();
     }
 }

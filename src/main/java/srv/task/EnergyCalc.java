@@ -223,32 +223,32 @@ public class EnergyCalc {
                 MissionType missionType = getMissionType(t);
 
                 if (missionType == MissionType.HF) {
-                    initValue += (sailboard_current - hf_power_playback) * power_charge * 60.0 / 3600.0 / voltage;
+                    initValue += fetchInclination(t) * (sailboard_current - hf_power_playback) * power_charge * 60.0 / 3600.0 / voltage;
 
                     if (initValue > power_capacity)
                         initValue = power_capacity;
                 } else if (missionType == MissionType.JL) {
-                    initValue += (sailboard_current - jl_power_image) * power_charge * 60.0 / 3600.0 / voltage;
+                    initValue += fetchInclination(t) * (sailboard_current - jl_power_image) * power_charge * 60.0 / 3600.0 / voltage;
 
                     if (initValue > power_capacity)
                         initValue = power_capacity;
                 } else if (missionType == MissionType.JLHF) {
-                    initValue += (sailboard_current - record_play_power) * power_charge * 60.0 / 3600.0 / voltage;
+                    initValue += fetchInclination(t) * (sailboard_current - record_play_power) * power_charge * 60.0 / 3600.0 / voltage;
 
                     if (initValue > power_capacity)
                         initValue = power_capacity;
                 } else if (missionType == MissionType.SC) {
-                    initValue += (sailboard_current - sc_power_image) * power_charge * 60.0 / 3600.0 / voltage;
+                    initValue += fetchInclination(t) * (sailboard_current - sc_power_image) * power_charge * 60.0 / 3600.0 / voltage;
 
                     if (initValue > power_capacity)
                         initValue = power_capacity;
                 } else if (missionType == MissionType.SCHF) {
-                    initValue += (sailboard_current - schf_power_image) * power_charge * 60.0 / 3600.0 / voltage;
+                    initValue += fetchInclination(t) * (sailboard_current - schf_power_image) * power_charge * 60.0 / 3600.0 / voltage;
 
                     if (initValue > power_capacity)
                         initValue = power_capacity;
                 } else {
-                    initValue += (sailboard_current - average_power_standby) * power_charge * 60.0 / 3600.0 / voltage;
+                    initValue += fetchInclination(t) * (sailboard_current - average_power_standby) * power_charge * 60.0 / 3600.0 / voltage;
 
                     if (initValue > power_capacity)
                         initValue = power_capacity;
@@ -416,7 +416,7 @@ public class EnergyCalc {
             if (first == null)
                 return Math.cos(Math.PI);
 
-            return Math.cos(Math.PI);
+            return Math.abs(Math.cos(first.getDouble("solar_panel_Angle")));
 
         } catch (Exception e) {
             e.printStackTrace();

@@ -1317,8 +1317,8 @@ public class InsGenWithoutTaskPlanInf {
                                                                         float lon = (float) lonAll;
                                                                         float lat = (float) latAll;
                                                                         float H = 0;
-                                                                        float ddAng = (float) 0.2;
-                                                                        float dAng = (float) 1.0;
+                                                                        float ddAng = (float) 0.08;
+                                                                        float dAng = (float) 0.12;
                                                                         int it_theta = (new Float(t_theta)).intValue();
                                                                         byte[] it_thetaByte = new byte[]{(byte) ((it_theta >> 8) & 0xFF), (byte) ((it_theta) & 0xFF)};
                                                                         String st_thetaByte = bytesToHexString(it_thetaByte);
@@ -1498,12 +1498,32 @@ public class InsGenWithoutTaskPlanInf {
                                                                         } else if (strtempH.length() > 8) {
                                                                             strtempH = strtempH.substring(strtempH.length() - 8);
                                                                         }
-                                                                        MetaHex = MetaHex + GazeStartTime +
-                                                                                GazeStartGap +
-                                                                                str_GazeTime +
+                                                                        float ddAng = (float) 0.008;
+                                                                        float dAng = (float) 0.12;
+                                                                        String strtempddAng = Integer.toHexString(Float.floatToIntBits(ddAng));
+                                                                        if (strtempddAng.length() < 8) {
+                                                                            for (int j = strtempddAng.length() + 1; j <= 8; j++) {
+                                                                                strtempddAng = "0" + strtempddAng;
+                                                                            }
+                                                                        } else if (strtempddAng.length() > 8) {
+                                                                            strtempddAng = strtempddAng.substring(strtempddAng.length() - 8);
+                                                                        }
+                                                                        String strtempdAng = Integer.toHexString(Float.floatToIntBits(dAng));
+                                                                        if (strtempdAng.length() < 8) {
+                                                                            for (int j = strtempdAng.length() + 1; j <= 8; j++) {
+                                                                                strtempdAng = "0" + strtempdAng;
+                                                                            }
+                                                                        } else if (strtempdAng.length() > 8) {
+                                                                            strtempdAng = strtempdAng.substring(strtempdAng.length() - 8);
+                                                                        }
+                                                                        MetaHex = MetaHex + str_GazeStartTime.toUpperCase() +
+                                                                                str_GazeStartGap.toUpperCase() +
+                                                                                str_GazeTime.toUpperCase() +
                                                                                 strtemplon +
                                                                                 strtemplat +
-                                                                                strtempH;
+                                                                                strtempH+
+                                                                                strtempddAng+
+                                                                                strtempdAng;
                                                                     } else {
                                                                         break;
                                                                     }
