@@ -18,6 +18,7 @@ import java.util.*;
 import static java.lang.Math.*;
 
 //import common.mongo.DbDefine;
+//import com.sun.source.tree.Tree;
 
 //import common.mongo.MangoDBConnector;
 
@@ -928,7 +929,7 @@ public class VisibilityCalculation {
             Document modifiers = new Document();
             modifiers.append("$set", Missionjson.get(i));
             MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
-            System.out.println(Missionjson.get(i).toString());
+//            System.out.println(Missionjson.get(i).toString());
             image_mission.updateOne(new Document("mission_number", Missionjson.get(i).getString("mission_number")), modifiers, new UpdateOptions().upsert(true));
         }
 
@@ -1663,8 +1664,19 @@ public class VisibilityCalculation {
                                         break;
                                     }
                                 }
-                            } else if (Orbit_i == OrbitalDataNum - 1 && Flag_t == 1) {
+                            } else if (Orbit_i > OrbitalDataNum- OrbitalStepPlus - 1 && Flag_t == 1) {
                                 VisibilityTimeperiod_iiiList[1]=Orbit_i;
+                                for (int l = OrbitalDataNum-1; l > Orbit_i; l--) {
+                                    NowTime = OrbitTimeList.get(l);
+                                    SatPosition_LLA = OrbitSatPositionLLAList.get(l);
+                                    SatPosition_GEI = OrbitSatPositionGEIList.get(l);
+                                    SatVelocity_GEI = OrbitSatVelocityGEIList.get(l);
+                                    Visibility_Flag = VisibilityJudgeNormal(subMissionStarTime, subMissionStopTime, subMissionTargetArea, subMissionTargetHeight, Load_i, NowTime, SatPosition_LLA, SatPosition_GEI, SatVelocity_GEI,SatPosition_ECEF);
+                                    if (Visibility_Flag == 1) {
+                                        VisibilityTimeperiod_iiiList[1]=l;
+                                        break;
+                                    }
+                                }
                                 int[] VisibilityTimeperiod_iiiListMid=new int[2];
                                 VisibilityTimeperiod_iiiListMid[0]=VisibilityTimeperiod_iiiList[0];
                                 VisibilityTimeperiod_iiiListMid[1]=VisibilityTimeperiod_iiiList[1];
@@ -2172,7 +2184,7 @@ public class VisibilityCalculation {
             Document modifiers = new Document();
             modifiers.append("$set", MissionStarDocument.get(i));
             MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
-            System.out.println(MissionStarDocument.get(i).toString());
+//            System.out.println(MissionStarDocument.get(i).toString());
             image_mission.updateOne(new Document("mission_number", MissionStarDocument.get(i).getString("mission_number")), modifiers, new UpdateOptions().upsert(true));
         }
 
@@ -2260,9 +2272,9 @@ public class VisibilityCalculation {
                             continue;
                         }else if (SatelliteAngFlag==true) {
                             if (FlyOrientationFlag) {
-                                if (j == 1403) {
-                                    System.out.println(j);
-                                }
+//                                if (j == 1403) {
+//                                    System.out.println(j);
+//                                }
                                 boolean LimbVisibility_Flag= LimbVisibilityFlag(OrbitSatPositionGEIList.get(j),SatelliteAng);
                                 if (LimbVisibility_Flag) {
                                     if (j == OrbitSatPositionLLAList.size()-1) {
@@ -2392,7 +2404,7 @@ public class VisibilityCalculation {
             Document modifiers = new Document();
             modifiers.append("$set", MissionLimbDocument.get(i));
             MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
-            System.out.println(MissionLimbDocument.get(i).toString());
+//            System.out.println(MissionLimbDocument.get(i).toString());
             image_mission.updateOne(new Document("mission_number", MissionLimbDocument.get(i).getString("mission_number")), modifiers, new UpdateOptions().upsert(true));
         }
 
@@ -2569,9 +2581,9 @@ public class VisibilityCalculation {
                             continue;
                         }else if (SatelliteAngFlag==true) {
                             if (FlyOrientationFlag) {
-                                if (j == 1403) {
-                                    System.out.println(j);
-                                }
+//                                if (j == 1403) {
+//                                    System.out.println(j);
+//                                }
                                 boolean LimbVisibility_Flag= LimbVisibilityFlag(OrbitSatPositionGEIList.get(j),SatelliteAng);
                                 if (LimbVisibility_Flag) {
                                     if (j == OrbitSatPositionLLAList.size()-1) {

@@ -1072,12 +1072,14 @@ public class InsGenWithoutTaskPlanInf {
                                                                                 if (MetaParamsChild.containsKey("related_param_id")) {
                                                                                     String MetaParamsId = MetaParamsChild.get("related_param_id").toString();
                                                                                     //搜索任务中相应的id值
+                                                                                    boolean findIns = false;
                                                                                     for (Document MissionMetaParamsChildParamsChild : MissionInstructionArrayChild) {
                                                                                         if (MissionMetaParamsChildParamsChild.containsKey("code") && MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsId)) {
                                                                                             if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
-                                                                                                //System.out.println(MetaParamsId);
-                                                                                                float temeratureFloat = Float.parseFloat(MissionMetaParamsChildParamsChild.get("value").toString());
-                                                                                                String MetaParamsIdValue = TemperatureFlotToStr(temeratureFloat);
+
+                                                                                                findIns = true;//System.out.println(MetaParamsId);
+//                                                                                                float temeratureFloat = Float.parseFloat(MissionMetaParamsChildParamsChild.get("value").toString());
+                                                                                                String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("value").toString();
                                                                                                 int byteIndex = MetaParamsChild.getInteger("byte_index");
                                                                                                 int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                                 byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
@@ -1087,6 +1089,29 @@ public class InsGenWithoutTaskPlanInf {
                                                                                                     }
                                                                                                 }
                                                                                                 break;
+                                                                                            }
+                                                                                        }
+                                                                                    }
+
+
+                                                                                    if(!findIns){
+                                                                                        for (Document MissionMetaParamsChildParamsChild : MissionInstructionDefautArrayChild) {
+                                                                                            if (MissionMetaParamsChildParamsChild.containsKey("code") && MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsId)) {
+                                                                                                if (MissionMetaParamsChildParamsChild.containsKey("default_value") && !MissionMetaParamsChildParamsChild.get("default_value").equals("")) {
+                                                                                                    //System.out.println(MetaParamsId);
+                                                                                                    findIns = true;
+//                                                                            float temeratureFloat = Float.parseFloat(MissionMetaParamsChildParamsChild.get("default_value").toString());
+                                                                                                    String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("default_value").toString();
+                                                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                                    int byteLength = MetaParamsChild.getInteger("byte_length");
+                                                                                                    byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
+                                                                                                    for (int j = byteIndex; j < byteIndex + byteLength; j++) {
+                                                                                                        if (j < byteMetaHex.length && j - byteIndex < bytevalueHex.length) {
+                                                                                                            byteMetaHex[j] = bytevalueHex[j - byteIndex];
+                                                                                                        }
+                                                                                                    }
+                                                                                                    break;
+                                                                                                }
                                                                                             }
                                                                                         }
                                                                                     }
@@ -1767,15 +1792,30 @@ public class InsGenWithoutTaskPlanInf {
             }
             ImageMissionjson.get(i).append("instruction_info", InstructionInfojsonArry);
             ImageMissionjson.get(i).append("mission_params_after_planning", MissionInstructionAfterArray.get(i));
+            ImageMissionjson.get(i).append("mission_state", "待执行");
+
             Document modifiers = new Document();
             modifiers.append("$set", ImageMissionjson.get(i));
             MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
             image_mission.updateOne(new Document("mission_number", ImageMissionjson.get(i).get("mission_number").toString()), modifiers, new UpdateOptions().upsert(true));
 
+
+            MongoCollection<Document> Data_ImageOrderjson = mongoDatabase.getCollection("image_order");
+            FindIterable<Document> D_ImageOrderjson = Data_ImageOrderjson.find();
+
+            for (Document document : D_ImageOrderjson) {
+                if (document.get("order_number").equals(imageOrder.getString("order_number"))) {
+                    document.append("order_state", "待执行");
+                    Document modifiers_mid = new Document();
+                    modifiers_mid.append("$set", document);
+                    Data_ImageOrderjson.updateOne(new Document("order_number", imageOrder.getString("order_number")), modifiers_mid, new UpdateOptions().upsert(true));
+                }
+            }
+
             mongoClient.close();
 
             InstructionManager instructionManager = new InstructionManager();
-            instructionManager.addInstrctionInfo(InstructionInfojsonArry, ImageMissionjson.get(i).get("mission_number").toString(),ImageMissionjson.get(i).get("name").toString());
+            instructionManager.addInstrctionInfo(InstructionInfojsonArry, ImageMissionjson.get(i).get("mission_number").toString(), ImageMissionjson.get(i).get("name").toString());
             instructionManager.close();
 
             return FileFolder;
@@ -2800,8 +2840,20 @@ public class InsGenWithoutTaskPlanInf {
         image_mission.updateOne(new Document("transmission_number", Transmissionjson.get("transmission_number").toString()), modifiers2, new UpdateOptions().upsert(true));
         mongoClient.close();
 
+//        MongoCollection<Document> station_missions = mongoDatabase.getCollection("station_mission");
+        FindIterable<Document> D_station_missions = station_mission.find();
+
+        for (Document document : D_station_missions) {
+            if (document.get("mission_number").equals(StationMissionjson.getString("mission_number"))) {
+                document.append("tag", "待执行");
+                Document modifiers_mid = new Document();
+                modifiers_mid.append("$set", document);
+                station_mission.updateOne(new Document("mission_number", StationMissionjson.getString("mission_number")), modifiers_mid, new UpdateOptions().upsert(true));
+            }
+        }
+
         InstructionManager instructionManager = new InstructionManager();
-        instructionManager.addInstrctionInfo(InstructionInfojsonArry, Transmissionjson.get("transmission_number").toString(),"数传任务");
+        instructionManager.addInstrctionInfo(InstructionInfojsonArry, Transmissionjson.get("transmission_number").toString(), "数传任务");
         instructionManager.close();
 
         return FileFolder;

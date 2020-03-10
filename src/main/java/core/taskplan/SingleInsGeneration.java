@@ -805,7 +805,7 @@ public class SingleInsGeneration {
                             }
                             //执行该指令
                             if (InstCode != "") {
-                                System.out.println(InstCode);
+//                                System.out.println(InstCode);
                                 for (Document document4 : MetaInstrunctionjson) {
                                     if (document4.get("code").toString().equals(InstCode)) {
                                         if (InstCode.contains("NTCY200")) {
@@ -818,13 +818,15 @@ public class SingleInsGeneration {
                                                         //任务参数读取
                                                         if (MetaParamsChild.containsKey("related_param_id")) {
                                                             String MetaParamsId = MetaParamsChild.get("related_param_id").toString();
+                                                            boolean findIns = false;
                                                             //搜索任务中相应的id值
                                                             for (Document MissionMetaParamsChildParamsChild : MissionInstructionArrayChild) {
                                                                 if (MissionMetaParamsChildParamsChild.containsKey("code") && MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsId)) {
                                                                     if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
                                                                         //System.out.println(MetaParamsId);
-                                                                        float temeratureFloat = Float.parseFloat(MissionMetaParamsChildParamsChild.get("value").toString());
-                                                                        String MetaParamsIdValue = TemperatureFlotToStr(temeratureFloat);
+                                                                        findIns = true;
+//                                                                        float temeratureFloat = Float.parseFloat(MissionMetaParamsChildParamsChild.get("value").toString());
+                                                                        String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("default_value").toString();
                                                                         int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                         int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                         byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
@@ -834,6 +836,28 @@ public class SingleInsGeneration {
                                                                             }
                                                                         }
                                                                         break;
+                                                                    }
+                                                                }
+                                                            }
+
+                                                            if(!findIns){
+                                                                for (Document MissionMetaParamsChildParamsChild : MissionInstructionDefautArrayChild) {
+                                                                    if (MissionMetaParamsChildParamsChild.containsKey("code") && MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsId)) {
+                                                                        if (MissionMetaParamsChildParamsChild.containsKey("default_value") && !MissionMetaParamsChildParamsChild.get("default_value").equals("")) {
+                                                                            //System.out.println(MetaParamsId);
+                                                                            findIns = true;
+//                                                                            float temeratureFloat = Float.parseFloat(MissionMetaParamsChildParamsChild.get("default_value").toString());
+                                                                            String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("default_value").toString();
+                                                                            int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                            int byteLength = MetaParamsChild.getInteger("byte_length");
+                                                                            byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
+                                                                            for (int j = byteIndex; j < byteIndex + byteLength; j++) {
+                                                                                if (j < byteMetaHex.length && j - byteIndex < bytevalueHex.length) {
+                                                                                    byteMetaHex[j] = bytevalueHex[j - byteIndex];
+                                                                                }
+                                                                            }
+                                                                            break;
+                                                                        }
                                                                     }
                                                                 }
                                                             }

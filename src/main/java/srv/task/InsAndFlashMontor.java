@@ -523,6 +523,9 @@ public class InsAndFlashMontor {
                                 filePlayBackStatus.put(Integer.parseInt(file_no), FileType.INIT);
                             }
                         } else {
+
+                            if (!d.containsKey("image_window")) continue;
+
                             String file_no = d.getString("record_file_no");
 
                             ArrayList<Document> image_windows = (ArrayList<Document>) d.get("image_window");

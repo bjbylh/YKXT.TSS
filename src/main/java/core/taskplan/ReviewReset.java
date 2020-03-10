@@ -77,9 +77,10 @@ public class ReviewReset {
     private static String[] sensorCodes = new String[4];//存储相机code
 
     public static void ReviewResetII(Document Satllitejson, FindIterable<Document> Orbitjson, long OrbitDataCount, FindIterable<Document> Attitudejson, long AttitudeDataCount, ArrayList<Document> ImageMissionjson, Document TransmissionMissionJson, double DataStorageCapacitySur, double PowerCapacitySur) {
+        System.out.println("ReviewResetII输入参数(DataStorageCapacitySur)：" + DataStorageCapacitySur);
+        System.out.println("ReviewResetII输入参数(PowerCapacitySur)：" + PowerCapacitySur);
+
         //数据初始话
-        System.out.println("DataStorageCapacitySur:" + DataStorageCapacitySur);
-        System.out.println("PowerCapacitySur" + PowerCapacitySur);
         ImageMissionStatus = new int[(int) OrbitDataCount];
         StationMissionStatus = new int[(int) OrbitDataCount];
         for (int i = 0; i < (int) OrbitDataCount; i++) {
@@ -88,6 +89,9 @@ public class ReviewReset {
         }
         PowerStatus = new double[(int) OrbitDataCount];
         DataStatus = new double[(int) OrbitDataCount];
+
+        Boolean ESDStatus = true;
+        String AxisType = "";
 
         //读取卫星资源数据
         double v_playback = 600;
@@ -112,17 +116,11 @@ public class ReviewReset {
         PowerChargeEfficiency = power_charge;
         double max_discharge_depth = 0.80;
         double max_record_depth = 0.40;
-        double v_record_1 = 277.98;
-        double v_record_2 = 158.62;
-        double v_record_3 = 69.89;
-        double v_record_4 = 69.89;
         ArrayList<Document> properties = (ArrayList<Document>) Satllitejson.get("properties");
         for (Document document : properties) {
             try {
-                if (document.get("key").toString().equals("v_playback")) {
-                    v_playback = Double.parseDouble(document.get("value").toString());
-                } else if (document.get("key").toString().equals("storage_capacity")) {
-                    storage_capacity = Double.parseDouble(document.get("value").toString()) * 1024 * 1024;
+                if (document.get("key").toString().equals("storage_capacity")) {
+//                    storage_capacity = Double.parseDouble(document.get("value").toString()) * 1024 * 1024;
                     MemoryStorageCapacity = Double.parseDouble(document.get("value").toString()) * 1024 * 1024;
                 } else if (document.get("key").toString().equals("storage_threshold")) {
                     storage_threshold = Double.parseDouble(document.get("value").toString());
@@ -138,14 +136,6 @@ public class ReviewReset {
                     max_discharge_depth = Double.parseDouble(document.get("value").toString()) / 100;
                 } else if (document.get("key").toString().equals("max_record_depth")) {
                     max_record_depth = Double.parseDouble(document.get("value").toString()) / 100;
-                } else if (document.get("key").toString().equals("v_record_1")) {
-                    v_record_1 = Double.parseDouble(document.get("value").toString());
-                } else if (document.get("key").toString().equals("v_record_2")) {
-                    v_record_2 = Double.parseDouble(document.get("value").toString());
-                } else if (document.get("key").toString().equals("v_record_3")) {
-                    v_record_3 = Double.parseDouble(document.get("value").toString());
-                } else if (document.get("key").toString().equals("v_record_4")) {
-                    v_record_4 = Double.parseDouble(document.get("value").toString());
                 } else if (document.getString("key").equals("power_efficiency")) {
                     PowerEfficiency = Double.parseDouble(document.get("value").toString()) / 100;
                     power_efficiency = Double.parseDouble(document.get("value").toString()) / 100;
@@ -154,10 +144,10 @@ public class ReviewReset {
                     power_charge = Double.parseDouble(document.get("value").toString()) / 100;
                 } else if (document.getString("key").equals("sailboard_current")) {
                     PowerGenerationMax = Double.parseDouble(document.get("value").toString());
-                    sailboard_current = Double.parseDouble(document.get("value").toString());
+//                    sailboard_current = Double.parseDouble(document.get("value").toString());
                 } else if (document.getString("key").equals("power_capacity")) {
                     PowerCapacity = Double.parseDouble(document.get("value").toString());
-                    power_capacity = Double.parseDouble(document.get("value").toString());
+//                    power_capacity = Double.parseDouble(document.get("value").toString());
                 } else if (document.getString("key").equals("average_power_standby")) {
                     PowerAverage_Standby = Double.parseDouble(document.get("value").toString());
                 } else if (document.getString("key").equals("average_power_image")) {
@@ -176,6 +166,8 @@ public class ReviewReset {
                     Attitude_AngVelMax[0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
                 } else if (document.getString("key").equals("v_pitch_angle")) {
                     Attitude_AngVelMax[1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
+                } else if (document.getString("key").equals("axis")) {
+                    AxisType = document.getString("value");
                 } else
                     continue;
             } catch (Exception e) {
@@ -183,6 +175,8 @@ public class ReviewReset {
                 continue;
             }
         }
+        if (AxisType.contains("轨道"))
+            ESDStatus = false;
         for (Document document : properties) {//读取记录速度
             if (document.getString("key").equals("v_record_1") && document.getString("group").equals("payload1")) {
                 v_records[0] = Double.parseDouble(document.getString("value"));
@@ -351,6 +345,7 @@ public class ReviewReset {
                         } else {
                             ReviewResult.put(document.getString("mission_number"), false);
                             FalseMission[MissionNumber] = 0;
+                            MissionFalseResuFlag.add(0);
                         }
                         MissionName[MissionNumber] = document.getString("name");
                         ArrayList<String> MissionForOrderNumbers_i = new ArrayList<>();
@@ -508,7 +503,7 @@ public class ReviewReset {
                 if (i > Attitude_EulerAng.length) {
                     Attitude_EulerAngTemp = new double[]{0, 0, 0};
                 }
-                ChargeCurrent = ChargeCurrentCalculation(r_sun, Orbital_SatPosition[i], Orbital_SatVelocity[i], Attitude_EulerAngTemp, PowerChargeEfficiency, PowerGenerationMax);
+                ChargeCurrent = ChargeCurrentCalculation(Orbital_Time[i], r_sun, Orbital_SatPosition[i], Orbital_SatVelocity[i], Orbital_SatPositionLLA[i], Attitude_EulerAngTemp, PowerChargeEfficiency, PowerGenerationMax, ESDStatus);
             } else {
                 //处于阴影区
                 ChargeCurrent = 0;
@@ -524,13 +519,13 @@ public class ReviewReset {
                     DataUse = -MissionV_RecordList.get(ImageMissionStatus[i] - 1);
                     /*
                     if (ImageWindowLoad.get(ImageMissionStatus[i]-1)==1) {
-                        DataUse=-v_record_1;
+                        DataUse=DataUse;
                     }else if (ImageWindowLoad.get(ImageMissionStatus[i]-1)==2) {
-                        DataUse=-v_record_2;
+                        DataUse=0;
                     }else if (ImageWindowLoad.get(ImageMissionStatus[i]-1)==3) {
-                        DataUse=-v_record_3;
+                        DataUse=0;
                     }else if (ImageWindowLoad.get(ImageMissionStatus[i]-1)==4) {
-                        DataUse=-v_record_4;
+                        DataUse=DataUse;
                     }
                     */
                 }
@@ -539,10 +534,10 @@ public class ReviewReset {
                         PowerUse = average_power_image_JL;
                     } else if (ImageWorkModel.get(ImageMissionStatus[i] - 1) == 2) {
                         PowerUse = average_power_image_SC;
-                        //DataUse=0;
+                        DataUse = 0;
                     } else if (ImageWorkModel.get(ImageMissionStatus[i] - 1) == 3) {
                         PowerUse = average_power_image_SCHF;
-                        //DataUse=DataUse+v_playback;
+                        DataUse = 0;
                     } else if (ImageWorkModel.get(ImageMissionStatus[i] - 1) == 4) {
                         PowerUse = record_play_power;
                         //DataUse=DataUse+v_playback;
@@ -563,7 +558,7 @@ public class ReviewReset {
                 //回放功率
                 double SailBoard = ChargeCurrent;
                 double PowerUse = average_power_playback;
-                double DataUse = v_playback;
+                double DataUse = 0;
                 if (SailBoard >= PowerUse) {
                     //帆板供电大于载荷需求
                     PowerStatus[j] = PowerStatus[i] + (SailBoard - PowerUse) * power_charge;
@@ -616,6 +611,8 @@ public class ReviewReset {
             int MissionFalse;
             double PowerCapacityMin = (1 - max_discharge_depth) * PowerCapacity * 42 * 60 * 60;
             double MemoryStorageMin = (1 - max_record_depth) * MemoryStorageCapacity;
+            Boolean ThisBeforePowerFlag = true;
+            Boolean ThisBeforeDataFlag = true;
             if (PowerStatus[j] < PowerCapacityMin) {
                 for (int k = j; k >= 0; k--) {
                     if (StationMissionStatus[k] != 0) {
@@ -639,6 +636,8 @@ public class ReviewReset {
                                 j = TransmissionStarEndTime.get(index_mission)[0];
                                 TransmissionStarEndTime.get(index_mission)[0] = TransmissionStarEndTime.get(index_mission)[0] + index_long_Temp;
                                 TransmissionStarEndTime.get(index_mission)[1] = TransmissionStarEndTime.get(index_mission)[1] - index_long_Temp;
+
+                                ThisBeforePowerFlag = false;
                                 break;
                             } else {
                                 TransmissionCheckFlag.set(StationMissionStatus[k] - 1, false);
@@ -646,6 +645,8 @@ public class ReviewReset {
                                     StationMissionStatus[l] = 0;
                                 }
                                 j = TransmissionStarEndTime.get(index_mission)[0];
+
+                                ThisBeforePowerFlag = false;
                                 break;
                             }
                         }
@@ -658,24 +659,46 @@ public class ReviewReset {
                             }
                             MissionFalseResuFlag.set(index_mission, 2);
                             j = MissionStarEndTime.get(index_mission)[0];
+
+                            ThisBeforePowerFlag = false;
                             break;
                         }
                     }
                 }
             }
-            if (DataStatus[j] < MemoryStorageMin) {
-                for (int k = j; k >= 0; k--) {
-                    if (ImageMissionStatus[k] != 0) {
-                        if (MissionCheckFlag.size() >= ImageMissionStatus[k]) {
-                            MissionCheckFlag.set(ImageMissionStatus[k] - 1, false);
-                            int index_mission = ImageMissionStatus[k] - 1;
-                            for (int l = MissionStarEndTime.get(index_mission)[0]; l <= MissionStarEndTime.get(index_mission)[1]; l++) {
-                                ImageMissionStatus[l] = 0;
+
+            //判定任务是否全为实传任务
+            int ShiChuangFlag = 0;
+            for (int k = 0; k < MissionCheckFlag.size(); k++) {
+                if (MissionCheckFlag.get(k) && (ImageWorkModel.get(k) == 1 || ImageWorkModel.get(k) == 4)) {
+                    ShiChuangFlag = ShiChuangFlag + 1;
+                }
+            }
+            //数据复核
+            if (ShiChuangFlag != 0) {
+                if (DataStatus[j] < MemoryStorageMin) {
+                    for (int k = j; k >= 0; k--) {
+                        if (ImageMissionStatus[k] != 0) {
+                            if (MissionCheckFlag.size() >= ImageMissionStatus[k] && (ImageWorkModel.get(k) == 1 || ImageWorkModel.get(k) == 4)) {
+                                MissionCheckFlag.set(ImageMissionStatus[k] - 1, false);
+                                int index_mission = ImageMissionStatus[k] - 1;
+                                for (int l = MissionStarEndTime.get(index_mission)[0]; l <= MissionStarEndTime.get(index_mission)[1]; l++) {
+                                    ImageMissionStatus[l] = 0;
+                                }
+                                MissionFalseResuFlag.set(index_mission, 3);
+                                j = MissionStarEndTime.get(index_mission)[0];
+                                break;
                             }
-                            MissionFalseResuFlag.set(index_mission, 3);
-                            j = MissionStarEndTime.get(index_mission)[0];
-                            break;
                         }
+                    }
+                }
+            }
+
+            if (ThisBeforePowerFlag) {
+                for (int k = 0; k < MissionCheckFlag.size(); k++) {
+                    if (MissionCheckFlag.get(k)) {
+                        MissionCheckFlag.set(k, false);
+                        MissionFalseResuFlag.set(k, 2);
                     }
                 }
             }
@@ -1207,13 +1230,23 @@ public class ReviewReset {
     }
 
     //太阳帆板充电电流
-    private static double ChargeCurrentCalculation(double[] r_sun, double[] SatPosition_GEI, double[] SatVelocity_GEI, double[] Euler_BFToORF, double PowerEfficiency, double PowerGenerationMax) {
+    private static double ChargeCurrentCalculation(double Time[], double[] r_sun, double[] SatPosition_GEI, double[] SatVelocity_GEI, double[] SatPosition_LLA, double[] Euler_BFToORF, double PowerEfficiency, double PowerGenerationMax, Boolean ESDStatus) {
         double[] r_SatSun = {SatPosition_GEI[0] - r_sun[0], SatPosition_GEI[1] - r_sun[1], SatPosition_GEI[2] - r_sun[2]};
-        double[] r_SatSunORF = new double[3];
-        double[] r_SatSunBF = new double[3];
-        GEIToORF(SatPosition_GEI, SatVelocity_GEI, r_SatSun, r_SatSunORF);
-        ORFToBF(Euler_BFToORF, r_SatSunORF, r_SatSunBF);
-        double alpha = atan2(r_SatSunORF[1], r_SatSunORF[2]);
+        double[] r_SatSun_Axis = new double[3];
+        if (ESDStatus) {
+            //东南系
+            double[] r_sun_sat_ECEF = new double[3];
+            ICRSToECEF(Time, r_SatSun, r_sun_sat_ECEF);
+            ECEFToESD(SatPosition_LLA, r_sun_sat_ECEF, r_SatSun_Axis);
+        } else {
+            //轨道系
+            GEIToORF_Ellipse(SatPosition_GEI, SatVelocity_GEI, r_SatSun, r_SatSun_Axis);
+        }
+
+        double[] r_SatSun_Axis_n = new double[]{r_SatSun_Axis[0] / sqrt(r_SatSun_Axis[0] * r_SatSun_Axis[0] + r_SatSun_Axis[1] * r_SatSun_Axis[1] + r_SatSun_Axis[2] * r_SatSun_Axis[2]),
+                r_SatSun_Axis[1] / sqrt(r_SatSun_Axis[0] * r_SatSun_Axis[0] + r_SatSun_Axis[1] * r_SatSun_Axis[1] + r_SatSun_Axis[2] * r_SatSun_Axis[2]),
+                r_SatSun_Axis[2] / sqrt(r_SatSun_Axis[0] * r_SatSun_Axis[0] + r_SatSun_Axis[1] * r_SatSun_Axis[1] + r_SatSun_Axis[2] * r_SatSun_Axis[2])};
+        double alpha = asin(r_SatSun_Axis_n[1]);
         double ChargeCurrent = PowerGenerationMax * abs(cos(alpha)) * PowerEfficiency;
         return ChargeCurrent;
     }
@@ -1299,6 +1332,163 @@ public class ReviewReset {
         Position_BF[0] = B[0][0];
         Position_BF[1] = B[1][0];
         Position_BF[2] = B[2][0];
+    }
+
+    //惯性坐标系到地固坐标系转
+    private static void ICRSToECEF(double[] Time, double position_GEI[], double position_ECEF[]) {
+        double JD = JD(Time);
+        double T = (JD - 2451545.0) / 36525.0;
+
+        //岁差角
+        double Zeta_A = 2.5976176 + 2306.0809506 * T + 0.3019015 * T * T + 0.0179663 * T * T * T - 0.0000327 * T * T * T * T - 0.0000002 * T * T * T * T * T;//秒
+        double Theta_A = 2004.1917476 * T - 0.4269353 * T * T - 0.041825 * T * T * T - 0.0000601 * T * T * T * T - 0.0000001 * T * T * T * T * T;
+        double Z_A = -2.5976176 + 2306.0803226 * T + 1.094779 * T * T + 0.0182273 * T * T * T + 0.000047 * T * T * T * T - 0.0000003 * T * T * T * T * T;
+        Zeta_A = Zeta_A / 3600.0;//度
+        Theta_A = Theta_A / 3600.0;
+        Z_A = Z_A / 3600.0;
+        //岁差矩阵
+        double[][] R3Z_A = {{cos(-Z_A * PI / 180.0), sin(-Z_A * PI / 180.0), 0},
+                {-sin(-Z_A * PI / 180.0), cos(-Z_A * PI / 180.0), 0},
+                {0, 0, 1}};
+        double[][] R2Theta_A = {{cos(Theta_A * PI / 180.0), 0, -sin(Theta_A * PI / 180.0)},
+                {0, 1, 0},
+                {sin(Theta_A * PI / 180.0), 0, cos(Theta_A * PI / 180.0)}};
+        double[][] R3_Zeta_A = {{cos(-Zeta_A * PI / 180.0), sin(-Zeta_A * PI / 180.0), 0},
+                {-sin(-Zeta_A * PI / 180.0), cos(-Zeta_A * PI / 180.0), 0},
+                {0, 0, 1}};
+        double[][] PR = new double[3][3];
+        double[][] PR_mid = new double[3][3];
+        PR_mid = MatrixMultiplication(R3Z_A, R2Theta_A);
+        PR = MatrixMultiplication(PR_mid, R3_Zeta_A);
+
+        //章动计算
+        double Epsilon_A = 84381.448 - 46.8150 * T - 0.00059 * T * T + 0.001813 * T * T * T;
+        Epsilon_A = Epsilon_A / 3600.0;
+        // http://blog.sina.com.cn/s/blog_852e40660100w1m6.html
+        double L = 280.4665 + 36000.7698 * T;
+        double dL = 218.3165 + 481267.8813 * T;
+        double Omega = 125.04452 - 1934.136261 * T;
+        double DeltaPsi = -17.20 * sin(Omega * PI / 180.0) - 1.32 * sin(2 * L * PI / 180.0) - 0.23 * sin(2 * dL * PI / 180.0) + 0.21 * sin(2 * Omega * PI / 180.0);
+        double DeltaEpsilon = 9.20 * cos(Omega * PI / 180.0) + 0.57 * cos(2 * L * PI / 180.0) + 0.10 * cos(2 * dL * PI / 180.0) - 0.09 * cos(2 * Omega * PI / 180.0);
+        DeltaPsi = DeltaPsi / 3600.0;
+        DeltaEpsilon = DeltaEpsilon / 3600.0;
+
+        //章动矩阵
+        double[][] R1_DEA = {{1, 0, 0},
+                {0, cos(-(DeltaEpsilon + Epsilon_A) * PI / 180.0), sin(-(DeltaEpsilon + Epsilon_A) * PI / 180.0)},
+                {0, -sin(-(DeltaEpsilon + Epsilon_A) * PI / 180.0), cos(-(DeltaEpsilon + Epsilon_A) * PI / 180.0)}};
+        double[][] R3_DeltaPsi = {{cos(-DeltaPsi * PI / 180.0), sin(-DeltaPsi * PI / 180.0), 0},
+                {-sin(-DeltaPsi * PI / 180.0), cos(-DeltaPsi * PI / 180.0), 0},
+                {0, 0, 1}};
+        double[][] R1_Epsilon = {{1, 0, 0},
+                {0, cos(Epsilon_A * PI / 180.0), sin(Epsilon_A * PI / 180.0)},
+                {0, -sin(Epsilon_A * PI / 180.0), cos(Epsilon_A * PI / 180.0)}};
+        double[][] NR = new double[3][3];
+        double[][] NR_mid = new double[3][3];
+        NR_mid = MatrixMultiplication(R1_DEA, R3_DeltaPsi);
+        NR = MatrixMultiplication(NR_mid, R1_Epsilon);
+
+        //地球自转
+        double GMST = 280.46061837 + 360.98564736629 * (JD - 2451545.0) + 0.000387933 * T * T - T * T * T / 38710000.0;
+        GMST = GMST % 360;
+        double GAST = GMST + DeltaPsi * cos((DeltaEpsilon + Epsilon_A) * PI / 180.0);
+        GAST = GAST % 360;
+        double[][] ER = {{cos(GAST * PI / 180.0), sin(GAST * PI / 180.0), 0},
+                {-sin(GAST * PI / 180.0), cos(GAST * PI / 180.0), 0},
+                {0, 0, 1}};
+
+        //极移坐标
+        //  https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop.html
+        // https://datacenter.iers.org/data/html/finals.all.html
+        double Xp = 0.001674 * 0.955;
+        double Yp = 0.001462 * 0.955;
+        // 极移矩阵
+        double[][] R1_YP = {{1, 0, 0},
+                {0, cos(-Yp * PI / 180.0), sin(-Yp * PI / 180.0)},
+                {0, -sin(-Yp * PI / 180.0), cos(-Yp * PI / 180.0)}};
+        double[][] R2_XP = {{cos(-Xp * PI / 180.0), 0, -sin(-Xp * PI / 180.0)},
+                {0, 1, 0},
+                {sin(-Xp * PI / 180.0), 0, cos(-Xp * PI / 180.0)}};
+        double[][] EP = new double[3][3];
+        EP = MatrixMultiplication(R1_YP, R2_XP);
+
+        // 空固坐标系到地固坐标系的转换矩阵
+        double[][] EPER = new double[3][3];
+        double[][] EPERNR = new double[3][3];
+        double[][] ECEF;
+        EPER = MatrixMultiplication(EP, ER);
+        EPERNR = MatrixMultiplication(EPER, NR);
+        ECEF = MatrixMultiplication(EPERNR, PR);
+
+        double[][] p_GEI = {{position_GEI[0]}, {position_GEI[1]}, {position_GEI[2]}};
+        double[][] pp_ECEF = new double[3][1];
+        pp_ECEF = MatrixMultiplication(ECEF, p_GEI);
+
+        position_ECEF[0] = pp_ECEF[0][0];
+        position_ECEF[1] = pp_ECEF[1][0];
+        position_ECEF[2] = pp_ECEF[2][0];
+    }
+
+    //地固坐标系到卫星东南地坐标系
+    private static void ECEFToESD(double[] Satellite_LLA, double[] Target_ECEF, double[] Target_ESD) {
+        double[] Satellite_ECEF = new double[3];
+        LLAToECEF(Satellite_LLA, Satellite_ECEF);
+
+        double B = Satellite_LLA[1] * Math.PI / 180.0;//经度
+        double L = Satellite_LLA[0] * Math.PI / 180.0;//纬度
+        double[][] R_ECEFToNED = {{-sin(B) * cos(L), -sin(B) * sin(L), cos(B)},
+                {-sin(L), cos(L), 0},
+                {-cos(B) * cos(L), -cos(B) * sin(L), -sin(B)}};
+        double[][] Error_r = new double[3][1];
+        Error_r[0][0] = Target_ECEF[0] - Satellite_ECEF[0];
+        Error_r[1][0] = Target_ECEF[1] - Satellite_ECEF[1];
+        Error_r[2][0] = Target_ECEF[2] - Satellite_ECEF[2];
+        double[][] Target_NED_mid = new double[3][1];
+        Target_NED_mid = MatrixMultiplication(R_ECEFToNED, Error_r);
+        double Ang_z = -PI / 2;
+        double[][] R_NEDToESD = {{cos(Ang_z), -sin(Ang_z), 0},
+                {sin(Ang_z), cos(Ang_z), 0},
+                {0, 0, 1}};
+        double[][] Target_ESD_mid = new double[3][1];
+        Target_ESD_mid = MatrixMultiplication(R_NEDToESD, Target_NED_mid);
+        Target_ESD[0] = Target_ESD_mid[0][0];
+        Target_ESD[1] = Target_ESD_mid[1][0];
+        Target_ESD[2] = Target_ESD_mid[2][0];
+    }
+
+    //地固直角坐标系转换为地心地固坐标系
+    private static void LLAToECEF(double Position_LLA[], double Position_ECEF[]) {
+        double L = Position_LLA[0] * Math.PI / 180.0;
+        double B = Position_LLA[1] * Math.PI / 180.0;
+        double H = Position_LLA[2];
+
+        Position_ECEF[0] = (Re + H) * Math.cos(B) * Math.cos(L);
+        Position_ECEF[1] = (Re + H) * Math.cos(B) * Math.sin(L);
+        Position_ECEF[2] = (Re + H) * Math.sin(B);
+    }
+
+    //惯性坐标系转到轨道坐标系，大椭圆轨道
+    private static void GEIToORF_Ellipse(double SatPosition_GEI[], double SatVelocity_GEI[], double Position_GEI[], double Position_ORF[]) {
+        double r = Math.sqrt(Math.pow(SatPosition_GEI[0], 2) + Math.pow(SatPosition_GEI[1], 2) + Math.pow(SatPosition_GEI[2], 2));
+        double v = Math.sqrt(Math.pow(SatVelocity_GEI[0], 2) + Math.pow(SatVelocity_GEI[1], 2) + Math.pow(SatVelocity_GEI[2], 2));
+        double[] zs = {-SatPosition_GEI[0] / r, -SatPosition_GEI[1] / r, -SatPosition_GEI[2] / r};
+        double[] xs = {SatVelocity_GEI[0] / v, SatVelocity_GEI[1] / v, SatVelocity_GEI[2] / v};
+        double[] ys = new double[3];
+        ys = VectorCross(zs, xs);
+        double r_ys = sqrt(pow(ys[0], 2) + pow(ys[1], 2) + pow(ys[2], 2));
+        ys[0] = ys[0] / r_ys;
+        ys[1] = ys[1] / r_ys;
+        ys[2] = ys[2] / r_ys;
+        xs = VectorCross(ys, zs);
+        double[][] OR = {{xs[0], xs[1], xs[2]},
+                {ys[0], ys[1], ys[2]},
+                {zs[0], zs[1], zs[2]}};
+        double[][] pS_GEI = {{Position_GEI[0]}, {Position_GEI[1]}, {Position_GEI[2]}};
+        double[][] pS_ORF = new double[3][1];
+        pS_ORF = MatrixMultiplication(OR, pS_GEI);
+        Position_ORF[0] = pS_ORF[0][0];
+        Position_ORF[1] = pS_ORF[1][0];
+        Position_ORF[2] = pS_ORF[2][0];
     }
 
     //矩阵乘法

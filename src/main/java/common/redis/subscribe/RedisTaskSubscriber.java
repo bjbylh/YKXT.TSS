@@ -543,7 +543,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
         } catch (Exception e) {
             String message = e.getMessage();
-            RedisPublish.CommonReturn(id, false, message, MsgType.ORBIT_DATA_IMPORT_FINISHED);
+            RedisPublish.CommonReturn(id, false, message, MsgType.TRANSMISSION_EXPORT_FINISHED);
         }
     }
 
@@ -720,7 +720,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
                     interFaceFileType.setFileBody(fileBodyType);
 
-                    System.out.println(interFaceFileType.toString());
+//                    System.out.println(interFaceFileType.toString());
 
                     if (message_ser == MESSAGE_MAX)
                         message_ser = 0;
@@ -756,8 +756,8 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
             double trueAnomaly = MeanToTrueAnomaly.MeanToTrueAnomalyII(
                     Double.parseDouble(parser.get("A"))
-                    , Double.parseDouble(parser.get("e"))
-                    , Double.parseDouble(parser.get("i"))
+                    , Double.parseDouble(parser.get("E"))
+                    , Double.parseDouble(parser.get("I"))
                     , Double.parseDouble(parser.get("W"))
                     , Double.parseDouble(parser.get("O"))
                     , Double.parseDouble(parser.get("M")));

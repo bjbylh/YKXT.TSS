@@ -34,6 +34,7 @@ public class InstructionGeneration {
 
     public static void InstructionGenerationII(ArrayList<Document> ImageMissionjson, Document TransmissionMissionJson, ArrayList<Document> StationMissionjson, FindIterable<Document> Attitudejson, long AttitudeDataCount, String FilePath, Document CamStatus) {
         //序列时间设置
+        System.out.println("InstructionGenerationII输入参数(CamStatus)：" + CamStatus.toJson());
         TimeVariable timeVariable = new TimeVariable();
         timeVariable.TSC = 6 + 0.25 + 0.125 + 0.125 + 0.125 + 0.125 + 240 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 +
                 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 +
@@ -1064,7 +1065,7 @@ public class InstructionGeneration {
                                     } else {
                                         sequencecode = document1.get("sequence_code").toString();
                                     }
-                                    System.out.println("序列：" + sequencecode);
+//                                    System.out.println("序列：" + sequencecode);
                                     boolean MoreThanFlag = false;
                                     ArrayList<String> YouXiaoshujuList = new ArrayList<>();
                                     ArrayList<Byte> ZhiLingGeshuList = new ArrayList<>();
@@ -1255,12 +1256,14 @@ public class InstructionGeneration {
                                                                                 if (MetaParamsChild.containsKey("related_param_id")) {
                                                                                     String MetaParamsId = MetaParamsChild.get("related_param_id").toString();
                                                                                     //搜索任务中相应的id值
+                                                                                    boolean findIns = false;
                                                                                     for (Document MissionMetaParamsChildParamsChild : MissionInstructionArrayChild) {
                                                                                         if (MissionMetaParamsChildParamsChild.containsKey("code") && MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsId)) {
                                                                                             if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
                                                                                                 //System.out.println(MetaParamsId);
-                                                                                                float temeratureFloat = Float.parseFloat(MissionMetaParamsChildParamsChild.get("value").toString());
-                                                                                                String MetaParamsIdValue = TemperatureFlotToStr(temeratureFloat);
+//                                                                                                float temeratureFloat = Float.parseFloat(MissionMetaParamsChildParamsChild.get("value").toString());
+                                                                                                findIns = true;
+                                                                                                String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("value").toString();
                                                                                                 int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                                                 int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                                 byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
@@ -1273,6 +1276,28 @@ public class InstructionGeneration {
                                                                                             }
                                                                                         }
                                                                                     }
+                                                                                    if(!findIns){
+                                                                                        for (Document MissionMetaParamsChildParamsChild : MissionInstructionDefautArrayChild) {
+                                                                                            if (MissionMetaParamsChildParamsChild.containsKey("code") && MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsId)) {
+                                                                                                if (MissionMetaParamsChildParamsChild.containsKey("default_value") && !MissionMetaParamsChildParamsChild.get("default_value").equals("")) {
+                                                                                                    //System.out.println(MetaParamsId);
+                                                                                                    findIns = true;
+//                                                                            float temeratureFloat = Float.parseFloat(MissionMetaParamsChildParamsChild.get("default_value").toString());
+                                                                                                    String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("default_value").toString();
+                                                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                                    int byteLength = MetaParamsChild.getInteger("byte_length");
+                                                                                                    byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
+                                                                                                    for (int j = byteIndex; j < byteIndex + byteLength; j++) {
+                                                                                                        if (j < byteMetaHex.length && j - byteIndex < bytevalueHex.length) {
+                                                                                                            byteMetaHex[j] = bytevalueHex[j - byteIndex];
+                                                                                                        }
+                                                                                                    }
+                                                                                                    break;
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+
                                                                                 }
                                                                             }
                                                                         }
@@ -1877,8 +1902,8 @@ public class InstructionGeneration {
                         time_ZhiXing = time_ZhiXing.plusSeconds((long) (Integer.parseInt(KaiShiShiJian, 16)));
                         Date time_ZhixingDate = Date.from(time_ZhiXing);
                         MissionInstructionTimeChild.set(j, time_ZhixingDate);
-                        System.out.println("序列号：" + MissionInstructionCodeChild.get(j));
-                        System.out.println("执行时间：" + Integer.parseInt(KaiShiShiJian, 16));
+//                        System.out.println("序列号：" + MissionInstructionCodeChild.get(j));
+//                        System.out.println("执行时间：" + Integer.parseInt(KaiShiShiJian, 16));
 
                         it.put(MissionInstructionCodeChild.get(j) + "_" + Instant.now().toEpochMilli(), time_ZhixingDate.toString());
                         MissionInstructionTimeUpdateStatus.add(j);
@@ -1892,10 +1917,10 @@ public class InstructionGeneration {
             MissionInstructionTimeUpdateStatus.clear();
 
             ArrayList<byte[]> InstructionArrayChild = new ArrayList<>();
-            int ii = 0;
+//            int ii = 0;
             for (String ZhilingKuai_02 : MissionInstructionHexChild) {
-                ii++;
-                System.out.println(ii);
+//                ii++;
+//                System.out.println(ii);
                 //String YingYongShuJu = KaiShiShiJian + ZhiLingID + ZhiLingNum + YouXiaoData;
                 String ShuJuQuTou = "100B8021";
                 int BaoChang = (ShuJuQuTou + ZhilingKuai_02).length() / 2 + 2 - 1;

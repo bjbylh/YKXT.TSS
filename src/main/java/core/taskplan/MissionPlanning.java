@@ -7,6 +7,7 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.UpdateOptions;
+import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
 import javax.swing.*;
@@ -20,7 +21,6 @@ import java.util.Date;
 import static java.lang.Math.*;
 
 //import common.mongo.DbDefine;
-import common.mongo.MangoDBConnector;
 
 //import common.mongo.MangoDBConnector;
 
@@ -105,6 +105,7 @@ public class MissionPlanning {
 
 
     public static void MissionPlanningII(Document Satllitejson, ArrayList<Document> GroundStationjson, FindIterable<Document> Orbitjson, long OrbitDataCount, ArrayList<Document> ImageMissionjson, Document TransmissionMissionJson, ArrayList<Document> StationMissionJson,Document PoolFileJson) {
+        System.out.println("MissionPlanningII输入参数(PoolFileJson)：" + PoolFileJson.toJson());
         //载荷参数更新
         ArrayList<Document> properties = (ArrayList<Document>) Satllitejson.get("properties");
         Boolean ESDStatus = true;

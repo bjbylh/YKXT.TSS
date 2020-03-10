@@ -148,7 +148,7 @@ public class AttitudeCalculation {
         if (AxisType.contains("轨道"))
             ESDStatus = false;
 
-        System.out.println(ESDStatus);
+//        System.out.println(ESDStatus);
 
         //读入轨道数据
         String StringTime;
@@ -392,7 +392,7 @@ public class AttitudeCalculation {
             }
 
             if (Mission_FLag == 1) {
-                System.out.println(Math.acos(r_ORF_ESD_N[0])*180/PI);
+//                System.out.println(Math.acos(r_ORF_ESD_N[0])*180/PI);
                 //AttitudeCalculation(SatPosition_GEI[i], SatVelocity_GEI[i], Target_LLA, Time[i], LoadInstall[LoadNum - 1], SatAttitud[i]);
                 //北东地1-2-3
                 AttitudeCalculationTest(SatPosition_LLA[i], Target_LLA, LoadInstall[LoadNum - 1], SatAttitud[i], FlyOrientationFlag);

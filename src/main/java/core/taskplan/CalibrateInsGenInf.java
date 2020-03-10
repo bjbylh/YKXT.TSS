@@ -515,15 +515,17 @@ public class CalibrateInsGenInf {
                                                                         if (MetaParams.size() != 0) {
                                                                             for (Document MetaParamsChild : MetaParams) {
                                                                                 //任务参数读取
+                                                                                boolean findIns = false;
                                                                                 if (MetaParamsChild.containsKey("related_param_id")) {
                                                                                     String MetaParamsId = MetaParamsChild.get("related_param_id").toString();
                                                                                     //搜索任务中相应的id值
                                                                                     for (Document MissionMetaParamsChildParamsChild : MissionInstructionArrayChild) {
                                                                                         if (MissionMetaParamsChildParamsChild.containsKey("code") && MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsId)) {
                                                                                             if (MissionMetaParamsChildParamsChild.containsKey("value") && !MissionMetaParamsChildParamsChild.get("value").equals("")) {
+                                                                                                findIns = true;
                                                                                                 //System.out.println(MetaParamsId);
-                                                                                                float temeratureFloat = Float.parseFloat(MissionMetaParamsChildParamsChild.get("value").toString());
-                                                                                                String MetaParamsIdValue = TemperatureFlotToStr(temeratureFloat);
+//                                                                                                float temeratureFloat = Float.parseFloat(MissionMetaParamsChildParamsChild.get("value").toString());
+                                                                                                String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("value").toString();
                                                                                                 int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
                                                                                                 int byteLength = MetaParamsChild.getInteger("byte_length");
                                                                                                 byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
@@ -533,6 +535,28 @@ public class CalibrateInsGenInf {
                                                                                                     }
                                                                                                 }
                                                                                                 break;
+                                                                                            }
+                                                                                        }
+                                                                                    }
+
+                                                                                    if(!findIns){
+                                                                                        for (Document MissionMetaParamsChildParamsChild : MissionInstructionDefautArrayChild) {
+                                                                                            if (MissionMetaParamsChildParamsChild.containsKey("code") && MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsId)) {
+                                                                                                if (MissionMetaParamsChildParamsChild.containsKey("default_value") && !MissionMetaParamsChildParamsChild.get("default_value").equals("")) {
+                                                                                                    //System.out.println(MetaParamsId);
+                                                                                                    findIns = true;
+//                                                                            float temeratureFloat = Float.parseFloat(MissionMetaParamsChildParamsChild.get("default_value").toString());
+                                                                                                    String MetaParamsIdValue = MissionMetaParamsChildParamsChild.get("default_value").toString();
+                                                                                                    int byteIndex = MetaParamsChild.getInteger("byte_index") - 7;
+                                                                                                    int byteLength = MetaParamsChild.getInteger("byte_length");
+                                                                                                    byte[] bytevalueHex = hexStringToBytes(MetaParamsIdValue);
+                                                                                                    for (int j = byteIndex; j < byteIndex + byteLength; j++) {
+                                                                                                        if (j < byteMetaHex.length && j - byteIndex < bytevalueHex.length) {
+                                                                                                            byteMetaHex[j] = bytevalueHex[j - byteIndex];
+                                                                                                        }
+                                                                                                    }
+                                                                                                    break;
+                                                                                                }
                                                                                             }
                                                                                         }
                                                                                     }
@@ -938,8 +962,8 @@ public class CalibrateInsGenInf {
                                             MissionInstructionIdChild.add(ZhiLingIDNum);
                                             MissionInstructionTimeChild.add(time_ZhixingDate);
 
-                                            System.out.println("序列号：" + sequencecode);
-                                            System.out.println("执行时间：" + Integer.parseInt(KaiShiShiJian, 16));
+//                                            System.out.println("序列号：" + sequencecode);
+//                                            System.out.println("执行时间：" + Integer.parseInt(KaiShiShiJian, 16));
                                             it.put(sequencecode + "_" + Instant.now().toEpochMilli(), time_ZhixingDate.toString() + " 十六进制：" + KaiShiShiJian + " 十进制：" + (long) (Integer.parseInt(KaiShiShiJian, 16)));
 
                                         }
@@ -986,8 +1010,8 @@ public class CalibrateInsGenInf {
                                     MissionInstructionTimeChild.add(time_ZhixingDate);
                                     InstDelta_tAll = InstDelta_tAll + InstDelta_tLastAll;
 
-                                    System.out.println("序列号：" + sequencecode);
-                                    System.out.println("执行时间：" + Integer.parseInt(KaiShiShiJian, 16));
+//                                    System.out.println("序列号：" + sequencecode);
+//                                    System.out.println("执行时间：" + Integer.parseInt(KaiShiShiJian, 16));
                                     it.put(sequencecode + "_" + Instant.now().toEpochMilli(), time_ZhixingDate.toString() + " 十六进制：" + KaiShiShiJian + " 十进制：" + (long) (Integer.parseInt(KaiShiShiJian, 16)));
                                 }
                             }

@@ -198,11 +198,11 @@ public class OrderOverall {
                                 MissionParamsFlag=true;
                             }
                         }
-                        System.out.println(InstructionFlag);
-                        System.out.println(StationNumberFlag);
-                        System.out.println(RecordFileNoFlag);
-                        System.out.println(AutoAsignRecordFileFlag);
-                        System.out.println(MissionParamsFlag);
+//                        System.out.println(InstructionFlag);
+//                        System.out.println(StationNumberFlag);
+//                        System.out.println(RecordFileNoFlag);
+//                        System.out.println(AutoAsignRecordFileFlag);
+//                        System.out.println(MissionParamsFlag);
                         if (InstructionFlag &&
                                 StationNumberFlag &&
                                 RecordFileNoFlag &&

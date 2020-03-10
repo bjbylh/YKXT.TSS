@@ -96,7 +96,7 @@ public class OrbitCore {
             orbit_attitude.deleteMany(queryBson);
             orbit_attitude_sample.deleteMany(queryBson);
 
-            OrbitPredictionSD.OrbitPredictorII(start, OrbitPrediction.dateConvertToLocalDateTime(Date.from(start)), OrbitPrediction.dateConvertToLocalDateTime(Date.from(end)), 1, orbits, json);
+            OrbitPrediction.OrbitPredictorII(start, OrbitPrediction.dateConvertToLocalDateTime(Date.from(start)), OrbitPrediction.dateConvertToLocalDateTime(Date.from(end)), 1, orbits, json);
 
 
             MongoCollection<Document> Data_Orbitjson = mongoDatabase.getCollection("orbit_attitude");
