@@ -315,23 +315,23 @@ public class TaskPlanCore {
                     }
 
 
-                    MongoCollection<Document> transmission_misison = mongoDatabase.getCollection("transmission_mission");
-
-
-                    for (Document Transmissionjson : transmission_misison.find()) {
-
-                        if (Transmissionjson.containsKey("transmission_window")) {
-                            ArrayList<Document> transmission_window = (ArrayList<Document>) Transmissionjson.get("transmission_window");
-                            for (Document window : transmission_window) {
-
-                                if (window.get("start_time").getClass().getName().equals("java.util.Date") && window.get("end_time").getClass().getName().equals("java.util.Date")) {
-                                    if (window.getDate("start_time").before(Date.from(Instant.now())) && window.getDate("end_time").after(Date.from(Instant.now()))) {
-                                        startTime = window.getDate("end_time").after(startTime) ? window.getDate("end_time") : startTime;
-                                    }
-                                }
-                            }
-                        }
-                    }
+//                    MongoCollection<Document> transmission_misison = mongoDatabase.getCollection("transmission_mission");
+//
+//
+//                    for (Document Transmissionjson : transmission_misison.find()) {
+//
+//                        if (Transmissionjson.containsKey("transmission_window")) {
+//                            ArrayList<Document> transmission_window = (ArrayList<Document>) Transmissionjson.get("transmission_window");
+//                            for (Document window : transmission_window) {
+//
+//                                if (window.get("start_time").getClass().getName().equals("java.util.Date") && window.get("end_time").getClass().getName().equals("java.util.Date")) {
+//                                    if (window.getDate("start_time").before(Date.from(Instant.now())) && window.getDate("end_time").after(Date.from(Instant.now()))) {
+//                                        startTime = window.getDate("end_time").after(startTime) ? window.getDate("end_time") : startTime;
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
 
                     //更新结束时间
                     MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
@@ -552,17 +552,17 @@ public class TaskPlanCore {
 
             this.mission_numbners = OrderOverall.OrderOverallII(orders);
 
-            for (Document order : documents) {
-                if (orderList.contains(order.getString("order_number"))) {
-                    if (order.containsKey("_id"))
-                        order.remove("_id");
-                    order.append("order_state", "待规划");
-                    Document modifiers = new Document();
-                    modifiers.append("$set", order);
-                    image_order.updateOne(new Document("order_number", order.getString("order_number")), modifiers, new UpdateOptions().upsert(true));
-                }
-            }
 
+//            for (Document order : documents) {
+//                if (orderList.contains(order.getString("order_number"))) {
+//                    if (order.containsKey("_id"))
+//                        order.remove("_id");
+//                    order.append("order_state", "待规划");
+//                    Document modifiers = new Document();
+//                    modifiers.append("$set", order);
+//                    image_order.updateOne(new Document("order_number", order.getString("order_number")), modifiers, new UpdateOptions().upsert(true));
+//                }
+//            }
             initOrbit();
 
             updateSubStatus(subid, SubTaskStatus.SUSPEND);

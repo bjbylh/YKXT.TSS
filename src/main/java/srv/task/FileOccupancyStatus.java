@@ -69,6 +69,7 @@ public class FileOccupancyStatus {
 
             for (Document document : image_orders) {
                 if (document.getString("order_state").equals("待规划") || document.getString("order_state").equals("未提交")) {
+//                    System.out.println(document.toJson().toString());
                     if (document.containsKey("record_file_no") && !document.getString("record_file_no").equals("")) {
                         String fileno = document.getString("record_file_no");
 
@@ -92,18 +93,18 @@ public class FileOccupancyStatus {
             for (int i = 0; i < 64; i++) {
                 Document data = new Document();
                 if (files.contains(String.valueOf(i))) {
-                    data.append("size", 0.0);
+//                    data.append("size", 0.0);
                     data.append("valid", false);
                 } else {
-                    data.append("size", 0.0);
+//                    data.append("size", 0.0);
                     data.append("valid", true);
                 }
 
                 doc.append("file_" + i, data);
             }
-            doc.append("flash_usage", 0.0);
-
-            doc.append("replayed_size", 0.0);
+//            doc.append("flash_usage", 0.0);
+//
+//            doc.append("replayed_size", 0.0);
 
             stepRcd.add(doc);
 

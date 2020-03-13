@@ -10,8 +10,8 @@ public class K4420 implements SequenceTime {
             double time3=timeVariable.T1;
             double time=(time1<time2?time1:time2)<time3?(time1<time2?time1:time2):time3;//三个值取最小值
             time=time-5;
-            float f_time=(float) time;
-            int i_time= (int) Math.ceil(f_time);
+            //float f_time=(float) time;
+            int i_time= (int) Math.ceil(time);
 
             return Integer.toHexString(i_time);
         }else {

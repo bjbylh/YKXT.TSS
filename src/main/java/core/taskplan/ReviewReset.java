@@ -1,22 +1,23 @@
 package core.taskplan;
 
 //import com.company.MangoDBConnector;
+
 import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.UpdateOptions;
-//import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
 import javax.swing.*;
-import java.lang.reflect.Array;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.*;
 
 import static java.lang.Math.*;
+
+//import common.mongo.DbDefine;
 
 public class ReviewReset {
     private static double AUtokm = 1.49597870e8;
@@ -75,7 +76,7 @@ public class ReviewReset {
     private static Double[] v_records = new Double[4];//存储每个相机的记录速度
     private static String[] sensorCodes = new String[4];//存储相机code
 
-    public static void ReviewResetII(Document Satllitejson, FindIterable<Document> Orbitjson, long OrbitDataCount, FindIterable<Document> Attitudejson, long AttitudeDataCount, ArrayList<Document> ImageMissionjson, Document TransmissionMissionJson,double DataStorageCapacitySur,double PowerCapacitySur) {
+    public static void ReviewResetII(Document Satllitejson, FindIterable<Document> Orbitjson, long OrbitDataCount, FindIterable<Document> Attitudejson, long AttitudeDataCount, ArrayList<Document> ImageMissionjson, Document TransmissionMissionJson, double DataStorageCapacitySur, double PowerCapacitySur) {
         //数据初始话
         ImageMissionStatus = new int[(int) OrbitDataCount];
         StationMissionStatus = new int[(int) OrbitDataCount];
@@ -90,84 +91,84 @@ public class ReviewReset {
         String AxisType = "";
 
         //读取卫星资源数据
-        double v_playback=600;
-        double storage_capacity=2 * 1024 * 1024;
-        MemoryStorageCapacity=storage_capacity;
-        double storage_threshold=0.4;
-        double average_power_standby=1849.78;
-        double average_power_image_SCHF=2410.91;
-        double average_power_image_SC=2000;
-        double average_power_image_JL=2000;
-        double average_power_playback=2246.27;
-        PowerAverage_Playback=average_power_playback;
-        double record_play_power=2417.33;
-        PowerRecord_Play=record_play_power;
-        double sailboard_current=100;
-        PowerGenerationMax=sailboard_current;
-        double power_efficiency=0.94;
-        PowerEfficiency=power_efficiency;
-        double power_capacity=125;
-        PowerCapacity=power_capacity;
-        double power_charge=0.93;
-        PowerChargeEfficiency=power_charge;
-        double max_discharge_depth=0.80;
-        double max_record_depth=0.40;
-        double v_record_1=277.98;
-        double v_record_2=158.62;
-        double v_record_3=69.89;
-        double v_record_4=69.89;
+        double v_playback = 600;
+        double storage_capacity = 2 * 1024 * 1024;
+        MemoryStorageCapacity = storage_capacity;
+        double storage_threshold = 0.4;
+        double average_power_standby = 1849.78;
+        double average_power_image_SCHF = 2410.91;
+        double average_power_image_SC = 2000;
+        double average_power_image_JL = 2000;
+        double average_power_playback = 2246.27;
+        PowerAverage_Playback = average_power_playback;
+        double record_play_power = 2417.33;
+        PowerRecord_Play = record_play_power;
+        double sailboard_current = 100;
+        PowerGenerationMax = sailboard_current;
+        double power_efficiency = 0.94;
+        PowerEfficiency = power_efficiency;
+        double power_capacity = 125;
+        PowerCapacity = power_capacity;
+        double power_charge = 0.93;
+        PowerChargeEfficiency = power_charge;
+        double max_discharge_depth = 0.80;
+        double max_record_depth = 0.40;
+        double v_record_1 = 277.98;
+        double v_record_2 = 158.62;
+        double v_record_3 = 69.89;
+        double v_record_4 = 69.89;
         ArrayList<Document> properties = (ArrayList<Document>) Satllitejson.get("properties");
         for (Document document : properties) {
             try {
                 if (document.get("key").toString().equals("v_playback")) {
-                    v_playback=Double.parseDouble(document.get("value").toString());
-                }else if (document.get("key").toString().equals("storage_capacity")) {
-                    storage_capacity=Double.parseDouble(document.get("value").toString()) * 1024 * 1024;
-                    MemoryStorageCapacity=Double.parseDouble(document.get("value").toString()) * 1024 * 1024;
-                }else if (document.get("key").toString().equals("storage_threshold")) {
-                    storage_threshold=Double.parseDouble(document.get("value").toString());
-                }else if (document.get("key").toString().equals("average_power_standby")) {
-                    average_power_standby=Double.parseDouble(document.get("value").toString());
-                }else if (document.get("name").toString().equals("实传加回放功率")) {
-                    average_power_image_SCHF=Double.parseDouble(document.get("value").toString());
-                }else if (document.get("name").toString().equals("实传功率")) {
-                    average_power_image_SC=Double.parseDouble(document.get("value").toString());
-                }else if (document.get("name").toString().equals("记录功率")) {
-                    average_power_image_JL=Double.parseDouble(document.get("value").toString());
-                }else if (document.get("key").toString().equals("max_discharge_depth")) {
-                    max_discharge_depth=Double.parseDouble(document.get("value").toString())/100;
-                }else if (document.get("key").toString().equals("max_record_depth")) {
-                    max_record_depth=Double.parseDouble(document.get("value").toString())/100;
-                }else if (document.get("key").toString().equals("v_record_1")) {
-                    v_record_1=Double.parseDouble(document.get("value").toString());
-                }else if (document.get("key").toString().equals("v_record_2")) {
-                    v_record_2=Double.parseDouble(document.get("value").toString());
-                }else if (document.get("key").toString().equals("v_record_3")) {
-                    v_record_3=Double.parseDouble(document.get("value").toString());
-                }else if (document.get("key").toString().equals("v_record_4")) {
-                    v_record_4=Double.parseDouble(document.get("value").toString());
-                }else if (document.getString("key").equals("power_efficiency")) {
+                    v_playback = Double.parseDouble(document.get("value").toString());
+                } else if (document.get("key").toString().equals("storage_capacity")) {
+                    storage_capacity = Double.parseDouble(document.get("value").toString()) * 1024 * 1024;
+                    MemoryStorageCapacity = Double.parseDouble(document.get("value").toString()) * 1024 * 1024;
+                } else if (document.get("key").toString().equals("storage_threshold")) {
+                    storage_threshold = Double.parseDouble(document.get("value").toString());
+                } else if (document.get("key").toString().equals("average_power_standby")) {
+                    average_power_standby = Double.parseDouble(document.get("value").toString());
+                } else if (document.get("name").toString().equals("实传加回放功率")) {
+                    average_power_image_SCHF = Double.parseDouble(document.get("value").toString());
+                } else if (document.get("name").toString().equals("实传功率")) {
+                    average_power_image_SC = Double.parseDouble(document.get("value").toString());
+                } else if (document.get("name").toString().equals("记录功率")) {
+                    average_power_image_JL = Double.parseDouble(document.get("value").toString());
+                } else if (document.get("key").toString().equals("max_discharge_depth")) {
+                    max_discharge_depth = Double.parseDouble(document.get("value").toString()) / 100;
+                } else if (document.get("key").toString().equals("max_record_depth")) {
+                    max_record_depth = Double.parseDouble(document.get("value").toString()) / 100;
+                } else if (document.get("key").toString().equals("v_record_1")) {
+                    v_record_1 = Double.parseDouble(document.get("value").toString());
+                } else if (document.get("key").toString().equals("v_record_2")) {
+                    v_record_2 = Double.parseDouble(document.get("value").toString());
+                } else if (document.get("key").toString().equals("v_record_3")) {
+                    v_record_3 = Double.parseDouble(document.get("value").toString());
+                } else if (document.get("key").toString().equals("v_record_4")) {
+                    v_record_4 = Double.parseDouble(document.get("value").toString());
+                } else if (document.getString("key").equals("power_efficiency")) {
                     PowerEfficiency = Double.parseDouble(document.get("value").toString()) / 100;
-                    power_efficiency= Double.parseDouble(document.get("value").toString()) / 100;
+                    power_efficiency = Double.parseDouble(document.get("value").toString()) / 100;
                 } else if (document.getString("key").equals("power_charge")) {
                     PowerChargeEfficiency = Double.parseDouble(document.get("value").toString()) / 100;
-                    power_charge= Double.parseDouble(document.get("value").toString()) / 100;
+                    power_charge = Double.parseDouble(document.get("value").toString()) / 100;
                 } else if (document.getString("key").equals("sailboard_current")) {
                     PowerGenerationMax = Double.parseDouble(document.get("value").toString());
-                    sailboard_current= Double.parseDouble(document.get("value").toString());
+                    sailboard_current = Double.parseDouble(document.get("value").toString());
                 } else if (document.getString("key").equals("power_capacity")) {
                     PowerCapacity = Double.parseDouble(document.get("value").toString());
-                    power_capacity=Double.parseDouble(document.get("value").toString());
+                    power_capacity = Double.parseDouble(document.get("value").toString());
                 } else if (document.getString("key").equals("average_power_standby")) {
                     PowerAverage_Standby = Double.parseDouble(document.get("value").toString());
                 } else if (document.getString("key").equals("average_power_image")) {
                     PowerAverage_Image = Double.parseDouble(document.get("value").toString());
                 } else if (document.getString("key").equals("average_power_playback")) {
                     PowerAverage_Playback = Double.parseDouble(document.get("value").toString());
-                    average_power_playback=Double.parseDouble(document.get("value").toString());
+                    average_power_playback = Double.parseDouble(document.get("value").toString());
                 } else if (document.getString("key").equals("record_play_power")) {
                     PowerRecord_Play = Double.parseDouble(document.get("value").toString());
-                    record_play_power=Double.parseDouble(document.get("value").toString());
+                    record_play_power = Double.parseDouble(document.get("value").toString());
                 } else if (document.getString("key").equals("roll_angle_max")) {
                     Attitude_EulerMax[0] = Double.parseDouble(document.getString("value")) * PI / 180.0;
                 } else if (document.getString("key").equals("pitch_angle_max")) {
@@ -178,7 +179,7 @@ public class ReviewReset {
                     Attitude_AngVelMax[1] = Double.parseDouble(document.getString("value")) * PI / 180.0;
                 } else if (document.getString("key").equals("axis")) {
                     AxisType = document.getString("value");
-                }else
+                } else
                     continue;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -220,7 +221,7 @@ public class ReviewReset {
         Time_Point = new Date[(int) OrbitDataCount];
         Orbital_SatPositionLLA = new double[(int) OrbitDataCount][3];
         OrbitalDataNum = 0;
-        if (Orbitjson!=null) {
+        if (Orbitjson != null) {
             for (Document document : Orbitjson) {
                 try {
                     Date time_point = document.getDate("time_point");
@@ -251,7 +252,7 @@ public class ReviewReset {
 
                     OrbitalDataNum = OrbitalDataNum + 1;
 
-                    if(OrbitalDataNum >= OrbitDataCount)
+                    if (OrbitalDataNum >= OrbitDataCount)
                         break;
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -274,7 +275,7 @@ public class ReviewReset {
                     Attitude_AngVel[AttitudeDataNum][1] = Double.parseDouble(document.get("V_pitch_angle").toString());
                     Attitude_AngVel[AttitudeDataNum][2] = Double.parseDouble(document.get("V_yaw_angle").toString());
                     AttitudeDataNum = AttitudeDataNum + 1;
-                    if(AttitudeDataNum >= AttitudeDataCount)
+                    if (AttitudeDataNum >= AttitudeDataCount)
                         break;
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -289,26 +290,26 @@ public class ReviewReset {
         int[][] MissionStarEnd_Number = new int[ImageMissionjson.size()][2];
         int MissionChark_Number = 0;
         String[] MissionName = new String[ImageMissionjson.size()];
-        ArrayList<Integer> ImageWindowLoad=new ArrayList<>();
-        ArrayList<Integer> ImageWorkModel=new ArrayList<>();
+        ArrayList<Integer> ImageWindowLoad = new ArrayList<>();
+        ArrayList<Integer> ImageWorkModel = new ArrayList<>();
 
-        ArrayList<ArrayList<String>> MissionForOrderNumbers=new ArrayList<>();
-        ArrayList<Boolean> MissionCheckFlag=new ArrayList<>();
-        ArrayList<int[]> MissionStarEndTime=new ArrayList<>();
-        ArrayList<Integer> MissionFalseResuFlag=new ArrayList<>();
-        ArrayList<Double> MissionV_RecordList=new ArrayList<>();
-        ArrayList<Document> ImageMissionjsonNew=new ArrayList<>();
+        ArrayList<ArrayList<String>> MissionForOrderNumbers = new ArrayList<>();
+        ArrayList<Boolean> MissionCheckFlag = new ArrayList<>();
+        ArrayList<int[]> MissionStarEndTime = new ArrayList<>();
+        ArrayList<Integer> MissionFalseResuFlag = new ArrayList<>();
+        ArrayList<Double> MissionV_RecordList = new ArrayList<>();
+        ArrayList<Document> ImageMissionjsonNew = new ArrayList<>();
 
         try {
             if (ImageMissionjson != null) {
                 for (Document document : ImageMissionjson) {
                     try {
                         //获取数据写入速率
-                        double MissionV_RecordTemp=getSizePerSec(document);
-                        MissionV_RecordList.add(MissionNumber,MissionV_RecordTemp);
+                        double MissionV_RecordTemp = getSizePerSec(document);
+                        MissionV_RecordList.add(MissionNumber, MissionV_RecordTemp);
 
                         if (document.getString("mission_state").equals("待执行")) {
-                            ImageMissionjsonNew.add(MissionNumber,document);
+                            ImageMissionjsonNew.add(MissionNumber, document);
                             ArrayList<Document> available_window = (ArrayList<Document>) document.get("image_window");
                             for (Document document1 : available_window) {
                                 Date time_point = document1.getDate("start_time");
@@ -339,16 +340,16 @@ public class ReviewReset {
                                 int MissionEnd_Number = (int) ((JD(MissionEnd_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
                                 MissionStarEnd_Number[MissionNumber][0] = MissionStar_Number;
                                 MissionStarEnd_Number[MissionNumber][1] = MissionEnd_Number;
-                                int Load_numberTemp= 1;
-                                if (document1.containsKey("load_number") && document1.get("load_number")!=null) {
-                                    Load_numberTemp= Integer.parseInt(document1.get("load_number").toString());
+                                int Load_numberTemp = 1;
+                                if (document1.containsKey("load_number") && document1.get("load_number") != null) {
+                                    Load_numberTemp = Integer.parseInt(document1.get("load_number").toString());
                                 }
                                 ImageWindowLoad.add(Load_numberTemp);
                                 MissionChark_Number = MissionChark_Number + 1;
                                 for (int i = MissionStar_Number; i <= MissionEnd_Number; i++) {
                                     ImageMissionStatus[i] = MissionNumber + 1;
                                 }
-                                int[] MissionStarEndTimeChild=new int[]{MissionStar_Number,MissionEnd_Number};
+                                int[] MissionStarEndTimeChild = new int[]{MissionStar_Number, MissionEnd_Number};
                                 MissionStarEndTime.add(MissionStarEndTimeChild);
                                 MissionFalseResuFlag.add(0);
                             }
@@ -361,19 +362,19 @@ public class ReviewReset {
                             //MissionFalseResuFlag.add(0);
                         }
                         MissionName[MissionNumber] = document.getString("name");
-                        ArrayList<String> MissionForOrderNumbers_i=new ArrayList<>();
-                        MissionForOrderNumbers_i= (ArrayList<String>) document.get("order_numbers");
-                        MissionForOrderNumbers.add(MissionNumber,MissionForOrderNumbers_i);
-                        String work_mode=document.get("work_mode").toString();
-                        int work_modelTemp=1;
+                        ArrayList<String> MissionForOrderNumbers_i = new ArrayList<>();
+                        MissionForOrderNumbers_i = (ArrayList<String>) document.get("order_numbers");
+                        MissionForOrderNumbers.add(MissionNumber, MissionForOrderNumbers_i);
+                        String work_mode = document.get("work_mode").toString();
+                        int work_modelTemp = 1;
                         if (work_mode.equals("记录")) {
-                            work_modelTemp=1;
-                        }else if (work_mode.equals("实传")) {
-                            work_modelTemp=2;
-                        }else if (work_mode.equals("实传+回放")) {
-                            work_modelTemp=3;
-                        }else if (work_mode.equals("记录+回放")) {
-                            work_modelTemp=4;
+                            work_modelTemp = 1;
+                        } else if (work_mode.equals("实传")) {
+                            work_modelTemp = 2;
+                        } else if (work_mode.equals("实传+回放")) {
+                            work_modelTemp = 3;
+                        } else if (work_mode.equals("记录+回放")) {
+                            work_modelTemp = 4;
                         }
                         ImageWorkModel.add(work_modelTemp);
                         MissionCheckFlag.add(true);
@@ -389,20 +390,19 @@ public class ReviewReset {
         }
 
         //传输任务读入
-        ArrayList<Boolean> TransmissionCheckFlag=new ArrayList<>();
-        ArrayList<int[]> TransmissionStarEndTime=new ArrayList<>();
-        ArrayList<Document> TransmissionWindowArrayTemp=new ArrayList<>();
-        if(TransmissionMissionJson != null) {
+        ArrayList<Boolean> TransmissionCheckFlag = new ArrayList<>();
+        ArrayList<int[]> TransmissionStarEndTime = new ArrayList<>();
+        ArrayList<Document> TransmissionWindowArrayTemp = new ArrayList<>();
+        if (TransmissionMissionJson != null) {
             int StationMissionNumber = 0;
             try {
                 StationMissionNumber = 0;
-                Boolean fail_reasonFlag=TransmissionMissionJson.containsKey("fail_reason");
+                Boolean fail_reasonFlag = TransmissionMissionJson.containsKey("fail_reason");
                 if (fail_reasonFlag) {
                     if (TransmissionMissionJson.get("fail_reason").equals("不可见")) {
-                        fail_reasonFlag=true;
-                    }
-                    else {
-                        fail_reasonFlag=false;
+                        fail_reasonFlag = true;
+                    } else {
+                        fail_reasonFlag = false;
                     }
                 }
                 if (fail_reasonFlag == false) {
@@ -437,10 +437,10 @@ public class ReviewReset {
                             int MissionStar_Number = (int) ((JD(MissionStar_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
                             int MissionEnd_Number = (int) ((JD(MissionEnd_Time) - JD(Orbital_Time[0])) * (24 * 60 * 60) / Step);
                             for (int i = MissionStar_Number; i <= MissionEnd_Number; i++) {
-                                StationMissionStatus[i] = StationMissionNumber+1;
+                                StationMissionStatus[i] = StationMissionNumber + 1;
                             }
                             TransmissionCheckFlag.add(true);
-                            int[] TransmissionStarEndTimeChild=new int[]{MissionStar_Number,MissionEnd_Number};
+                            int[] TransmissionStarEndTimeChild = new int[]{MissionStar_Number, MissionEnd_Number};
                             TransmissionStarEndTime.add(TransmissionStarEndTimeChild);
                             TransmissionWindowArrayTemp.add(document);
                             StationMissionNumber = StationMissionNumber + 1;
@@ -462,14 +462,14 @@ public class ReviewReset {
         if ((int) OrbitDataCount > 0) {
             //PowerStatus[0] = BatteryCapacity;
             //DataStatus[0] = MemorySpace;
-            PowerStatus[0] = PowerCapacitySur* 42 * 60 * 60;
+            PowerStatus[0] = PowerCapacitySur * 42 * 60 * 60;
             DataStatus[0] = DataStorageCapacitySur;
         }
         FalseMissionNum = 0;
-        Boolean CheckFlag_now=true;
-        Boolean CheckFlag_next=true;
-        ArrayList<Double> ChargeCurrentArray=new ArrayList<>();
-        double ChargeCurrentSum=0;
+        Boolean CheckFlag_now = true;
+        Boolean CheckFlag_next = true;
+        ArrayList<Double> ChargeCurrentArray = new ArrayList<>();
+        double ChargeCurrentSum = 0;
         /*
         for (int i = 0; i < OrbitalDataNum; i++) {
             //计算太阳帆板充电量
@@ -500,7 +500,7 @@ public class ReviewReset {
         System.out.println(ChargeCurrentSum/OrbitalDataNum);
         */
 
-        if (ImageMissionjsonNew.size() > 0 || TransmissionWindowArrayTemp.size()>0) {
+        if (ImageMissionjsonNew.size() > 0 || TransmissionWindowArrayTemp.size() > 0) {
             for (int j = 1; j < OrbitalDataNum; j++) {
                 //System.out.println(j);
                 //计算太阳帆板充电量
@@ -513,11 +513,11 @@ public class ReviewReset {
                 double ChargeCurrent;
                 if (Eclipse_Flag == true) {
                     //处于光照区
-                    double[] Attitude_EulerAngTemp=new double[]{0,0,0};
+                    double[] Attitude_EulerAngTemp = new double[]{0, 0, 0};
                     if (i > Attitude_EulerAng.length) {
-                        Attitude_EulerAngTemp=new double[]{0,0,0};
+                        Attitude_EulerAngTemp = new double[]{0, 0, 0};
                     }
-                    ChargeCurrent=ChargeCurrentCalculation(Orbital_Time[i],r_sun, Orbital_SatPosition[i], Orbital_SatVelocity[i],Orbital_SatPositionLLA[i], Attitude_EulerAngTemp, PowerChargeEfficiency, PowerGenerationMax,ESDStatus);
+                    ChargeCurrent = ChargeCurrentCalculation(Orbital_Time[i], r_sun, Orbital_SatPosition[i], Orbital_SatVelocity[i], Orbital_SatPositionLLA[i], Attitude_EulerAngTemp, PowerChargeEfficiency, PowerGenerationMax, ESDStatus);
                 } else {
                     //处于阴影区
                     ChargeCurrent = 0;
@@ -526,77 +526,66 @@ public class ReviewReset {
                 //能量复核
                 if (ImageMissionStatus[i] != 0) {
                     //成像时间段
-                    double SailBoard=ChargeCurrent;
-                    double PowerUse=average_power_image_JL;
-                    double DataUse=0;
+                    double SailBoard = ChargeCurrent;
+                    double PowerUse = average_power_image_JL;
+                    double DataUse = 0;
                     if (ImageWindowLoad.size() >= ImageMissionStatus[i]) {
-                        DataUse=-MissionV_RecordList.get(ImageMissionStatus[i]-1);
-                    /*
-                    if (ImageWindowLoad.get(ImageMissionStatus[i]-1)==1) {
-                        DataUse=DataUse;
-                    }else if (ImageWindowLoad.get(ImageMissionStatus[i]-1)==2) {
-                        DataUse=0;
-                    }else if (ImageWindowLoad.get(ImageMissionStatus[i]-1)==3) {
-                        DataUse=0;
-                    }else if (ImageWindowLoad.get(ImageMissionStatus[i]-1)==4) {
-                        DataUse=DataUse;
+                        DataUse = -MissionV_RecordList.get(ImageMissionStatus[i] - 1);
                     }
-                    */
-                    }
-                    if (ImageWorkModel.size()>=ImageMissionStatus[i]) {
-                        if (ImageWorkModel.get(ImageMissionStatus[i]-1) == 1) {
-                            PowerUse=average_power_image_JL;
-                        }else if (ImageWorkModel.get(ImageMissionStatus[i]-1) == 2) {
-                            PowerUse=average_power_image_SC;
-                            DataUse=0;
-                        }else if (ImageWorkModel.get(ImageMissionStatus[i]-1) == 3) {
-                            PowerUse=average_power_image_SCHF;
-                            DataUse=0;
-                        }else if (ImageWorkModel.get(ImageMissionStatus[i]-1) == 4) {
-                            PowerUse=record_play_power;
+                    if (ImageWorkModel.size() >= ImageMissionStatus[i]) {
+                        if (ImageWorkModel.get(ImageMissionStatus[i] - 1) == 1) {
+                            PowerUse = average_power_image_JL;
+                        } else if (ImageWorkModel.get(ImageMissionStatus[i] - 1) == 2) {
+                            PowerUse = average_power_image_SC;
+                            DataUse = 0;
+                        } else if (ImageWorkModel.get(ImageMissionStatus[i] - 1) == 3) {
+                            PowerUse = average_power_image_SCHF;
+                            DataUse = 0;
+                        } else if (ImageWorkModel.get(ImageMissionStatus[i] - 1) == 4) {
+                            PowerUse = record_play_power;
                             //DataUse=DataUse+v_playback;
                         }
                     }
                     if (SailBoard >= PowerUse) {
                         //帆板供电大于载荷需求
-                        PowerStatus[j]= PowerStatus[i]+(SailBoard-PowerUse)*power_charge;
-                        if (PowerStatus[j]>BatteryCapacity) {
-                            PowerStatus[j]=BatteryCapacity;
+                        PowerStatus[j] = PowerStatus[i] + (SailBoard - PowerUse) * power_charge;
+                        if (PowerStatus[j] > BatteryCapacity) {
+                            PowerStatus[j] = BatteryCapacity;
                         }
-                    }else {
-                        PowerStatus[j]= PowerStatus[i]+(SailBoard-PowerUse)/power_efficiency;
+                    } else {
+                        PowerStatus[j] = PowerStatus[i] + (SailBoard - PowerUse) / power_efficiency;
                     }
                     //数据
                     DataStatus[j] = DataStatus[i] + DataUse;
-                }else if (StationMissionStatus[i] != 0) {
+                } else if (StationMissionStatus[i] != 0) {
                     //回放功率
-                    double SailBoard=ChargeCurrent;
-                    double PowerUse=average_power_playback;
-                    double DataUse=0;
+                    double SailBoard = ChargeCurrent;
+                    double PowerUse = average_power_playback;
+                    double DataUse = 0;
                     if (SailBoard >= PowerUse) {
                         //帆板供电大于载荷需求
-                        PowerStatus[j]= PowerStatus[i]+(SailBoard-PowerUse)*power_charge;
-                        if (PowerStatus[j]>BatteryCapacity) {
-                            PowerStatus[j]=BatteryCapacity;
+                        PowerStatus[j] = PowerStatus[i] + (SailBoard - PowerUse) * power_charge;
+                        if (PowerStatus[j] > BatteryCapacity) {
+                            PowerStatus[j] = BatteryCapacity;
                         }
-                    }else {
-                        PowerStatus[j]= PowerStatus[i]+(SailBoard-PowerUse)/power_efficiency;
+                    } else {
+                        PowerStatus[j] = PowerStatus[i] + (SailBoard - PowerUse) / power_efficiency;
                     }
                     //数据
                     DataStatus[j] = DataStatus[i] + DataUse;
-                }else {
+                } else {
                     //待机功率
-                    double SailBoard=ChargeCurrent;
-                    double PowerUse=average_power_standby;
-                    double DataUse=0;
+                    double SailBoard = ChargeCurrent;
+                    double PowerUse = average_power_standby;
+                    double DataUse = 0;
                     if (SailBoard >= PowerUse) {
                         //帆板供电大于载荷需求
-                        PowerStatus[j]= PowerStatus[i]+(SailBoard-PowerUse)*power_charge;
-                        if (PowerStatus[j]>BatteryCapacity) {
-                            PowerStatus[j]=BatteryCapacity;
+                        PowerStatus[j] = PowerStatus[i] + (SailBoard - PowerUse) * power_charge;
+                        if (PowerStatus[j] > BatteryCapacity) {
+                            PowerStatus[j] = BatteryCapacity;
                         }
-                    }else {
-                        PowerStatus[j]= PowerStatus[i]+(SailBoard-PowerUse)/power_efficiency;
+                    } else {
+                        PowerStatus[j] = PowerStatus[i] + (SailBoard - PowerUse) / power_efficiency;
                     }
                     //数据
                     DataStatus[j] = DataStatus[i] + DataUse;
@@ -623,58 +612,58 @@ public class ReviewReset {
                 //复核
                 //FalseMission[],表示任务状态，0表示规划失败，1表示规划完成，2表示能量不满足，3表示数据不满足，4表示姿态不满足
                 int MissionFalse;
-                double PowerCapacityMin = (1-max_discharge_depth) * PowerCapacity * 42 * 60 * 60;
-                double MemoryStorageMin = (1-max_record_depth) * MemoryStorageCapacity;
-                Boolean ThisBeforePowerFlag=true;
-                Boolean ThisBeforeDataFlag=true;
+                double PowerCapacityMin = (1 - max_discharge_depth) * PowerCapacity * 42 * 60 * 60;
+                double MemoryStorageMin = (1 - max_record_depth) * MemoryStorageCapacity;
+                Boolean ThisBeforePowerFlag = false;
+                Boolean ThisBeforeDataFlag = true;
                 if (PowerStatus[j] < PowerCapacityMin) {
                     for (int k = j; k >= 0; k--) {
-                        if (StationMissionStatus[k]!=0) {
-                            if (TransmissionCheckFlag.size()>=StationMissionStatus[k]) {
-                                int index_mission=StationMissionStatus[k]-1;
-                                int index_long=TransmissionStarEndTime.get(index_mission)[1]-TransmissionStarEndTime.get(index_mission)[0];
-                                if (index_long>600) {
-                                    int index_long_Temp=(int) (index_long/4);
-                                    Date TranWindowStartTime=TransmissionWindowArrayTemp.get(index_mission).getDate("start_time");
-                                    Date TranWindowEndTime=TransmissionWindowArrayTemp.get(index_mission).getDate("end_time");
-                                    TranWindowStartTime=new Date(TranWindowStartTime.getTime()+index_long_Temp*1000);
-                                    TranWindowEndTime=new Date(TranWindowEndTime.getTime()-index_long_Temp*1000);
-                                    TransmissionWindowArrayTemp.get(index_mission).append("start_time",TranWindowStartTime);
-                                    TransmissionWindowArrayTemp.get(index_mission).append("end_time",TranWindowEndTime);
-                                    for (int l = TransmissionStarEndTime.get(index_mission)[0]; l <= TransmissionStarEndTime.get(index_mission)[0]+index_long_Temp; l++) {
-                                        StationMissionStatus[l]=0;
+                        if (StationMissionStatus[k] != 0) {
+                            if (TransmissionCheckFlag.size() >= StationMissionStatus[k]) {
+                                int index_mission = StationMissionStatus[k] - 1;
+                                int index_long = TransmissionStarEndTime.get(index_mission)[1] - TransmissionStarEndTime.get(index_mission)[0];
+                                if (index_long > 600) {
+                                    int index_long_Temp = (int) (index_long / 4);
+                                    Date TranWindowStartTime = TransmissionWindowArrayTemp.get(index_mission).getDate("start_time");
+                                    Date TranWindowEndTime = TransmissionWindowArrayTemp.get(index_mission).getDate("end_time");
+                                    TranWindowStartTime = new Date(TranWindowStartTime.getTime() + index_long_Temp * 1000);
+                                    TranWindowEndTime = new Date(TranWindowEndTime.getTime() - index_long_Temp * 1000);
+                                    TransmissionWindowArrayTemp.get(index_mission).append("start_time", TranWindowStartTime);
+                                    TransmissionWindowArrayTemp.get(index_mission).append("end_time", TranWindowEndTime);
+                                    for (int l = TransmissionStarEndTime.get(index_mission)[0]; l <= TransmissionStarEndTime.get(index_mission)[0] + index_long_Temp; l++) {
+                                        StationMissionStatus[l] = 0;
                                     }
-                                    for (int l = TransmissionStarEndTime.get(index_mission)[1]-index_long_Temp; l <= TransmissionStarEndTime.get(index_mission)[1]; l++) {
-                                        StationMissionStatus[l]=0;
+                                    for (int l = TransmissionStarEndTime.get(index_mission)[1] - index_long_Temp; l <= TransmissionStarEndTime.get(index_mission)[1]; l++) {
+                                        StationMissionStatus[l] = 0;
                                     }
                                     j = TransmissionStarEndTime.get(index_mission)[0];
-                                    TransmissionStarEndTime.get(index_mission)[0]=TransmissionStarEndTime.get(index_mission)[0]+index_long_Temp;
-                                    TransmissionStarEndTime.get(index_mission)[1]=TransmissionStarEndTime.get(index_mission)[1]-index_long_Temp;
+                                    TransmissionStarEndTime.get(index_mission)[0] = TransmissionStarEndTime.get(index_mission)[0] + index_long_Temp;
+                                    TransmissionStarEndTime.get(index_mission)[1] = TransmissionStarEndTime.get(index_mission)[1] - index_long_Temp;
 
-                                    ThisBeforePowerFlag=false;
+                                    ThisBeforePowerFlag = false;
                                     break;
-                                }else {
-                                    TransmissionCheckFlag.set(StationMissionStatus[k]-1,false);
+                                } else {
+                                    TransmissionCheckFlag.set(StationMissionStatus[k] - 1, false);
                                     for (int l = TransmissionStarEndTime.get(index_mission)[0]; l <= TransmissionStarEndTime.get(index_mission)[1]; l++) {
-                                        StationMissionStatus[l]=0;
+                                        StationMissionStatus[l] = 0;
                                     }
                                     j = TransmissionStarEndTime.get(index_mission)[0];
 
-                                    ThisBeforePowerFlag=false;
+                                    ThisBeforePowerFlag = false;
                                     break;
                                 }
                             }
-                        }else if (ImageMissionStatus[k] != 0) {
-                            if (MissionCheckFlag.size()>=ImageMissionStatus[k]) {
-                                MissionCheckFlag.set(ImageMissionStatus[k]-1,false);
-                                int index_mission=ImageMissionStatus[k]-1;
+                        } else if (ImageMissionStatus[k] != 0) {
+                            if (MissionCheckFlag.size() >= ImageMissionStatus[k]) {
+                                MissionCheckFlag.set(ImageMissionStatus[k] - 1, false);
+                                int index_mission = ImageMissionStatus[k] - 1;
                                 for (int l = MissionStarEndTime.get(index_mission)[0]; l <= MissionStarEndTime.get(index_mission)[1]; l++) {
-                                    ImageMissionStatus[l]=0;
+                                    ImageMissionStatus[l] = 0;
                                 }
-                                MissionFalseResuFlag.set(index_mission,2);
-                                j=MissionStarEndTime.get(index_mission)[0];
+                                MissionFalseResuFlag.set(index_mission, 2);
+                                j = MissionStarEndTime.get(index_mission)[0];
 
-                                ThisBeforePowerFlag=false;
+                                ThisBeforePowerFlag = false;
                                 break;
                             }
                         }
@@ -682,10 +671,10 @@ public class ReviewReset {
                 }
 
                 //判定任务是否全为实传任务
-                int ShiChuangFlag=0;
+                int ShiChuangFlag = 0;
                 for (int k = 0; k < MissionCheckFlag.size(); k++) {
-                    if (MissionCheckFlag.get(k) && (ImageWorkModel.get(k)==1 || ImageWorkModel.get(k)==4)) {
-                        ShiChuangFlag=ShiChuangFlag+1;
+                    if (MissionCheckFlag.get(k) && (ImageWorkModel.get(k) == 1 || ImageWorkModel.get(k) == 4)) {
+                        ShiChuangFlag = ShiChuangFlag + 1;
                     }
                 }
                 //数据复核
@@ -693,14 +682,14 @@ public class ReviewReset {
                     if (DataStatus[j] < MemoryStorageMin) {
                         for (int k = j; k >= 0; k--) {
                             if (ImageMissionStatus[k] != 0) {
-                                if (MissionCheckFlag.size()>=ImageMissionStatus[k] && (ImageWorkModel.get(k)==1 || ImageWorkModel.get(k)==4)) {
-                                    MissionCheckFlag.set(ImageMissionStatus[k]-1,false);
-                                    int index_mission=ImageMissionStatus[k]-1;
+                                if (MissionCheckFlag.size() >= ImageMissionStatus[k] && (ImageWorkModel.get(ImageMissionStatus[k] - 1) == 1 || ImageWorkModel.get(ImageMissionStatus[k] - 1) == 4)) {
+                                    MissionCheckFlag.set(ImageMissionStatus[k] - 1, false);
+                                    int index_mission = ImageMissionStatus[k] - 1;
                                     for (int l = MissionStarEndTime.get(index_mission)[0]; l <= MissionStarEndTime.get(index_mission)[1]; l++) {
-                                        ImageMissionStatus[l]=0;
+                                        ImageMissionStatus[l] = 0;
                                     }
-                                    MissionFalseResuFlag.set(index_mission,3);
-                                    j=MissionStarEndTime.get(index_mission)[0];
+                                    MissionFalseResuFlag.set(index_mission, 3);
+                                    j = MissionStarEndTime.get(index_mission)[0];
                                     break;
                                 }
                             }
@@ -711,22 +700,22 @@ public class ReviewReset {
                 if (ThisBeforePowerFlag) {
                     for (int k = 0; k < MissionCheckFlag.size(); k++) {
                         if (MissionCheckFlag.get(k)) {
-                            MissionCheckFlag.set(k,false);
-                            MissionFalseResuFlag.set(k,2);
+                            MissionCheckFlag.set(k, false);
+                            MissionFalseResuFlag.set(k, 2);
                         }
                     }
                 }
 
                 //全部任务是否已完成复核
-                int SumFlag=0;
+                int SumFlag = 0;
                 for (int k = 0; k < MissionCheckFlag.size(); k++) {
                     if (MissionCheckFlag.get(k)) {
-                        SumFlag=SumFlag+1;
+                        SumFlag = SumFlag + 1;
                     }
                 }
                 for (int k = 0; k < TransmissionCheckFlag.size(); k++) {
                     if (TransmissionCheckFlag.get(k)) {
-                        SumFlag=SumFlag+1;
+                        SumFlag = SumFlag + 1;
                     }
                 }
                 if (SumFlag == 0) {
@@ -741,7 +730,7 @@ public class ReviewReset {
             String transmission_number = "tn_" + Instant.now().toEpochMilli();
             for (int i = 0; i < MissionNumber; i++) {
                 if (!MissionCheckFlag.get(i)) {
-                    if (MissionFalseResuFlag.get(i)==2) {
+                    if (MissionFalseResuFlag.get(i) == 2) {
                         ArrayList<Document> ImageWindowjsonArry = new ArrayList<>();
                         Document ImageWindowjsonObject = new Document();
                         ImageWindowjsonObject.append("load_number", "");
@@ -755,7 +744,7 @@ public class ReviewReset {
                         modifiers.append("$set", ImageMissionjsonNew.get(i));
                         MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
                         image_mission.updateOne(new Document("_id", ImageMissionjsonNew.get(i).getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
-                    }else if (MissionFalseResuFlag.get(i)==3) {
+                    } else if (MissionFalseResuFlag.get(i) == 3) {
                         ArrayList<Document> ImageWindowjsonArry = new ArrayList<>();
                         Document ImageWindowjsonObject = new Document();
                         ImageWindowjsonObject.append("load_number", "");
@@ -769,7 +758,7 @@ public class ReviewReset {
                         modifiers.append("$set", ImageMissionjsonNew.get(i));
                         MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
                         image_mission.updateOne(new Document("_id", ImageMissionjsonNew.get(i).getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
-                    }else {
+                    } else {
                         ArrayList<Document> ImageWindowjsonArry = new ArrayList<>();
                         Document ImageWindowjsonObject = new Document();
                         ImageWindowjsonObject.append("load_number", "");
@@ -785,20 +774,20 @@ public class ReviewReset {
                         image_mission.updateOne(new Document("_id", ImageMissionjsonNew.get(i).getObjectId("_id")), modifiers, new UpdateOptions().upsert(true));
                     }
                     //回溯订单
-                    ArrayList<String> MissionForOrderNumbers_i=new ArrayList<>();
-                    MissionForOrderNumbers_i=MissionForOrderNumbers.get(i);
-                    for (String OrderNumber:MissionForOrderNumbers_i) {
-                        MongoCollection<Document> Data_ImageOrderjson=mongoDatabase.getCollection("image_order");
-                        FindIterable<Document> D_ImageOrderjson=Data_ImageOrderjson.find();
-                        ArrayList<Document> ImageOrderjson =new ArrayList<>();
-                        for (Document document:D_ImageOrderjson) {
+                    ArrayList<String> MissionForOrderNumbers_i = new ArrayList<>();
+                    MissionForOrderNumbers_i = MissionForOrderNumbers.get(i);
+                    for (String OrderNumber : MissionForOrderNumbers_i) {
+                        MongoCollection<Document> Data_ImageOrderjson = mongoDatabase.getCollection("image_order");
+                        FindIterable<Document> D_ImageOrderjson = Data_ImageOrderjson.find();
+                        ArrayList<Document> ImageOrderjson = new ArrayList<>();
+                        for (Document document : D_ImageOrderjson) {
                             if (document.get("order_number").equals(OrderNumber)) {
-                                document.append("order_state","被退回");
-                                if(document.containsKey("_id"))
+                                document.append("order_state", "被退回");
+                                if (document.containsKey("_id"))
                                     document.remove("_id");
-                                Document modifiers_mid=new Document();
-                                modifiers_mid.append("$set",document);
-                                Data_ImageOrderjson.updateOne(new Document("order_number",OrderNumber),modifiers_mid,new UpdateOptions().upsert(true));
+                                Document modifiers_mid = new Document();
+                                modifiers_mid.append("$set", document);
+                                Data_ImageOrderjson.updateOne(new Document("order_number", OrderNumber), modifiers_mid, new UpdateOptions().upsert(true));
                             }
                         }
                     }
@@ -806,24 +795,47 @@ public class ReviewReset {
             }
             //传输任务
             if (TransmissionMissionJson != null) {
-                ArrayList<Document> TranWindowjsonArryAfter=new ArrayList<>();
+                ArrayList<Document> TranWindowjsonArryAfter = new ArrayList<>();
                 for (int j = 0; j < TransmissionCheckFlag.size(); j++) {
                     if (TransmissionCheckFlag.get(j)) {
-                        Document TranWindowjsonArryChild=TransmissionWindowArrayTemp.get(j);
+                        Document TranWindowjsonArryChild = TransmissionWindowArrayTemp.get(j);
                         TranWindowjsonArryAfter.add(TranWindowjsonArryChild);
                     }
                 }
                 //地面站，传输任务更新？？？？
-                if (TransmissionCheckFlag.size() >0 && TranWindowjsonArryAfter.size()==0) {
+                if (TransmissionCheckFlag.size() > 0 && TranWindowjsonArryAfter.size() == 0) {
                     TransmissionMissionJson.append("fail_reason", "能量不足");
                 }
                 TransmissionMissionJson.append("transmission_window", TranWindowjsonArryAfter);
-                if(TransmissionMissionJson.containsKey("_id"))
+                if (TransmissionMissionJson.containsKey("_id"))
                     TransmissionMissionJson.remove("_id");
                 MongoCollection<Document> transmission_mission = mongoDatabase.getCollection("transmission_mission");
                 Document modifiers = new Document();
                 modifiers.append("$set", TransmissionMissionJson);
                 transmission_mission.updateOne(new Document("transmission_number", TransmissionMissionJson.getString("transmission_number")), modifiers, new UpdateOptions().upsert(true));
+
+                if (TransmissionMissionJson.containsKey("mission_numbers")) {
+                    try {
+                        ArrayList<String> OrderNumbers = (ArrayList<String>) TransmissionMissionJson.get("mission_numbers");
+                        MongoCollection<Document> station_mission = mongoDatabase.getCollection("station_mission");
+                        FindIterable<Document> station_missions = station_mission.find();
+                        for (Document doc : station_missions) {
+                            if (OrderNumbers.contains(doc.get("mission_number"))) {
+                                if (TransmissionCheckFlag.size() > 0 && TranWindowjsonArryAfter.size() == 0) {
+                                    TransmissionMissionJson.append("fail_reason", "能量不足");
+                                    doc.append("tag", "被退回");
+                                } else
+                                    doc.append("tag", "待执行");
+                                if (doc.containsKey("_id"))
+                                    doc.remove("_id");
+                                Document modifiers_mid = new Document();
+                                modifiers_mid.append("$set", doc);
+                                station_mission.updateOne(new Document("mission_number", doc.get("mission_number")), modifiers_mid, new UpdateOptions().upsert(true));
+                            }
+                        }
+                    } catch (Exception e) {
+                    }
+                }
             }
             mongoClient.close();
         }
@@ -1244,7 +1256,7 @@ public class ReviewReset {
     }
 
     //太阳帆板充电电流
-    private static double ChargeCurrentCalculation(double Time[], double[] r_sun, double[] SatPosition_GEI, double[] SatVelocity_GEI,double[] SatPosition_LLA, double[] Euler_BFToORF, double PowerEfficiency, double PowerGenerationMax,Boolean ESDStatus) {
+    private static double ChargeCurrentCalculation(double Time[], double[] r_sun, double[] SatPosition_GEI, double[] SatVelocity_GEI, double[] SatPosition_LLA, double[] Euler_BFToORF, double PowerEfficiency, double PowerGenerationMax, Boolean ESDStatus) {
         double[] r_SatSun = {SatPosition_GEI[0] - r_sun[0], SatPosition_GEI[1] - r_sun[1], SatPosition_GEI[2] - r_sun[2]};
         double[] r_SatSun_Axis = new double[3];
         if (ESDStatus) {
@@ -1257,9 +1269,9 @@ public class ReviewReset {
             GEIToORF_Ellipse(SatPosition_GEI, SatVelocity_GEI, r_SatSun, r_SatSun_Axis);
         }
 
-        double[] r_SatSun_Axis_n=new double[]{r_SatSun_Axis[0]/sqrt(r_SatSun_Axis[0]*r_SatSun_Axis[0]+r_SatSun_Axis[1]*r_SatSun_Axis[1]+r_SatSun_Axis[2]*r_SatSun_Axis[2]),
-                r_SatSun_Axis[1]/sqrt(r_SatSun_Axis[0]*r_SatSun_Axis[0]+r_SatSun_Axis[1]*r_SatSun_Axis[1]+r_SatSun_Axis[2]*r_SatSun_Axis[2]),
-                r_SatSun_Axis[2]/sqrt(r_SatSun_Axis[0]*r_SatSun_Axis[0]+r_SatSun_Axis[1]*r_SatSun_Axis[1]+r_SatSun_Axis[2]*r_SatSun_Axis[2])};
+        double[] r_SatSun_Axis_n = new double[]{r_SatSun_Axis[0] / sqrt(r_SatSun_Axis[0] * r_SatSun_Axis[0] + r_SatSun_Axis[1] * r_SatSun_Axis[1] + r_SatSun_Axis[2] * r_SatSun_Axis[2]),
+                r_SatSun_Axis[1] / sqrt(r_SatSun_Axis[0] * r_SatSun_Axis[0] + r_SatSun_Axis[1] * r_SatSun_Axis[1] + r_SatSun_Axis[2] * r_SatSun_Axis[2]),
+                r_SatSun_Axis[2] / sqrt(r_SatSun_Axis[0] * r_SatSun_Axis[0] + r_SatSun_Axis[1] * r_SatSun_Axis[1] + r_SatSun_Axis[2] * r_SatSun_Axis[2])};
         double alpha = asin(r_SatSun_Axis_n[1]);
         double ChargeCurrent = PowerGenerationMax * abs(cos(alpha)) * PowerEfficiency;
         return ChargeCurrent;
@@ -1306,11 +1318,11 @@ public class ReviewReset {
         //System.out.println(Double.toString(xs[0])+","+Double.toString(xs[1])+","+Double.toString(xs[2]));
         //System.out.println(Double.toString(ys[0])+","+Double.toString(ys[1])+","+Double.toString(ys[2]));
         //System.out.println(Double.toString(zs[0])+","+Double.toString(zs[1])+","+Double.toString(zs[2]));
-        double r_ys=sqrt(pow(ys[0],2)+pow(ys[1],2)+pow(ys[2],2));
-        ys[0]=ys[0]/r_ys;
-        ys[1]=ys[1]/r_ys;
-        ys[2]=ys[2]/r_ys;
-        xs=VectorCross(ys,zs);
+        double r_ys = sqrt(pow(ys[0], 2) + pow(ys[1], 2) + pow(ys[2], 2));
+        ys[0] = ys[0] / r_ys;
+        ys[1] = ys[1] / r_ys;
+        ys[2] = ys[2] / r_ys;
+        xs = VectorCross(ys, zs);
         /*
         double[][] OR = {{xs[0], ys[0], zs[0]},
                 {xs[1], ys[1], zs[1]},

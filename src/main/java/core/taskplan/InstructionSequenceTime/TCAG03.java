@@ -11,7 +11,7 @@ public class TCAG03 implements SequenceTime {
             double time=(time1<time2?time1:time2)<time3?(time1<time2?time1:time2):time3;//三个值取最小值
             time=time-5-timeVariable.TSC;
             float f_time=(float) time;
-            int i_time= (int) Math.ceil(f_time);
+            int i_time= (int) Math.ceil(time);
 
             return Integer.toHexString(i_time);
         }else if (TaskName == "TASK10") {
@@ -19,7 +19,7 @@ public class TCAG03 implements SequenceTime {
             double time=time1<timeVariable.T1?time1:timeVariable.T1;
             time=time-5-timeVariable.TSC;
             float f_time=(float) time;
-            int i_time= (int) Math.ceil(f_time);
+            int i_time= (int) Math.ceil(time);
 
             return Integer.toHexString(i_time);
         }else {

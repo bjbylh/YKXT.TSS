@@ -10,8 +10,8 @@ public class TCKG01 implements SequenceTime {
             double time3 = timeVariable.T1;
             double time = (time1 < time2 ? time1 : time2) < time3 ? (time1 < time2 ? time1 : time2) : time3;//三个值取最小值
             time = time - 6 - timeVariable.TSC;
-            float f_time = (float) time;
-            int i_time = (int) Math.ceil(f_time);
+//            float f_time = (float) time;
+            int i_time = (int) Math.ceil(time);
 
             return Integer.toHexString(i_time);
         } else if (TaskName == "任务恢复") {
@@ -24,8 +24,8 @@ public class TCKG01 implements SequenceTime {
             return Integer.toHexString(i_time);
         } else if (TaskName == "TASK04") {
             double time = timeVariable.T1 - timeVariable.TTCAG04 - 5;
-            float f_time = (float) time;
-            int i_time = (int) Math.ceil(f_time);
+//            float f_time = (float) time;
+            int i_time = (int) Math.ceil(time);
 
             return Integer.toHexString(i_time);
         } else {

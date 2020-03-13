@@ -7,6 +7,7 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.UpdateOptions;
+import common.ConfigManager;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
@@ -251,6 +252,8 @@ public class MissionPlanning {
 
                         MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
                         image_mission.insertOne(FileClearMissionjson);
+
+                        FileClearInsGenInf.FileClearInsGenInfII(FileClearMissionjson, ConfigManager.getInstance().fetchInsFilePath());
 
                         mongoClient.close();
                     }

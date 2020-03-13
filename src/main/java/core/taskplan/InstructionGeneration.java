@@ -8,12 +8,12 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.UpdateOptions;
 import common.FilePathUtil;
 import common.mongo.MangoDBConnector;
-import com.mongodb.MongoClient;
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.UpdateOptions;
+import core.taskplan.InstructionSequenceTime.SequenceID;
+import core.taskplan.InstructionSequenceTime.SequenceTime;
+import core.taskplan.InstructionSequenceTime.TimeMap;
+import core.taskplan.InstructionSequenceTime.TimeVariable;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import javax.swing.*;
 import java.io.*;
@@ -39,8 +39,8 @@ public class InstructionGeneration {
         System.out.println("InstructionGenerationII输入参数(CamStatus)：" + CamStatus.toJson());
         TimeVariable timeVariable = new TimeVariable();
         timeVariable.TSC = 6 + 0.25 + 0.125 + 0.125 + 0.125 + 0.125 + 240 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 +
-                0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 +
-                0.125 + 8 + 0.125 + 0.125 + 0.125 + 8;
+                        0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 +
+                        0.125 + 8 + 0.125 + 0.125 + 0.125 + 8;
         timeVariable.TGF = 600 + 600 + 2 + 2 + 20 + 20 + 2 + 2 + 2 + 2 + 2 + 2 + 90 + 70 + 90 + 600 + 90 + 70 + 90 + 90 + 70 + 90 + 600 + 90 + 70 + 90 + 10 + 10 + 10;
         timeVariable.TGF2 = 4;
         timeVariable.TDG1 = 600 + 2 + 20 + 2 + 20 + 2 + 50 + 90 + 2 + 2 + 2 + 2 + 2 + 32 + 2 + 14 + 2 + 2 + 2 + 2 + 2 + 32 + 2 + 14 + 2 + 2 + 2 + 2 + 2 + 32 + 2 + 14 +
@@ -99,6 +99,7 @@ public class InstructionGeneration {
             if (document.getString("key").equals("t0")) {
                 zerostart = document.getDate("value").toInstant();
                 LocalDateTime zerostart0 = LocalDateTime.ofInstant(zerostart, ZoneOffset.UTC);
+                ZeroTimeIns=zerostart;
                 ZeroTime[0] = zerostart0.getYear();
                 ZeroTime[1] = zerostart0.getMonthValue();
                 ZeroTime[2] = zerostart0.getDayOfMonth();
@@ -1669,7 +1670,7 @@ public class InstructionGeneration {
                                                                         MetaHex = MetaHex + "A400";
                                                                     } else if (InstCode.equals("K4425")) {
                                                                         MetaHex = "100280210118";
-                                                                        MetaHex = MetaHex + "A81C";
+                                                                        MetaHex = MetaHex + "A824";
                                                                         double GazeStartTime = timeVariableT0K4425;
                                                                         String str_GazeStartTime = Long.toHexString(Double.doubleToLongBits(GazeStartTime));
                                                                         if (str_GazeStartTime.length() < 16) {
@@ -2135,6 +2136,7 @@ public class InstructionGeneration {
         for (Document document : properties) {
             if (document.getString("key").equals("t0")) {
                 zerostart = document.getDate("value").toInstant();
+                ZeroTimeIns=zerostart;
                 LocalDateTime zerostart0 = LocalDateTime.ofInstant(zerostart, ZoneOffset.UTC);
                 ZeroTime[0] = zerostart0.getYear();
                 ZeroTime[1] = zerostart0.getMonthValue();
@@ -3249,7 +3251,8 @@ public class InstructionGeneration {
         TimeStarTime[3] = Double.parseDouble(StringTime.substring(11, 13));
         TimeStarTime[4] = Double.parseDouble(StringTime.substring(14, 16));
         TimeStarTime[5] = Double.parseDouble(StringTime.substring(17, 19));
-        int TimeMiddle = new Double((JD(TimeStarTime) - JD(ZeroTime)) * 24 * 60 * 60).intValue();
+        //int TimeMiddle = new Double((JD(TimeStarTime) - JD(ZeroTime)) * 24 * 60 * 60).intValue();
+        int TimeMiddle = (int) Duration.between(ZeroTimeIns, time_point.toInstant()).getSeconds();
         String KaiShiShiJian = Integer.toHexString(TimeMiddle);
 
         return KaiShiShiJian;
@@ -3272,7 +3275,8 @@ public class InstructionGeneration {
         TimeStarTime[4] = Double.parseDouble(StringTime.substring(14, 16));
         TimeStarTime[5] = Double.parseDouble(StringTime.substring(17, 19));
         double[] ZeroTimeK4425 = {2018, 1, 1, 0, 0, 0};//参考时间
-        double TimeMiddle = (JD(TimeStarTime) - JD(ZeroTimeK4425)) * 24 * 60 * 60 * 1000000;
+        //double TimeMiddle = (JD(TimeStarTime) - JD(ZeroTimeK4425)) * 24 * 60 * 60 * 1000000;
+        double TimeMiddle=Duration.between(ZeroTimeIns, time_point.toInstant()).getSeconds();
 
         return TimeMiddle;
     }
@@ -3293,7 +3297,8 @@ public class InstructionGeneration {
         TimeStarTime[3] = Double.parseDouble(StringTime.substring(11, 13));
         TimeStarTime[4] = Double.parseDouble(StringTime.substring(14, 16));
         TimeStarTime[5] = Double.parseDouble(StringTime.substring(17, 19));
-        double TimeMiddle = (JD(TimeStarTime) - JD(ZeroTime)) * 24 * 60 * 60;
+        double TimeMiddle=Duration.between(ZeroTimeIns, time_point.toInstant()).getSeconds();
+        //double TimeMiddle = (JD(TimeStarTime) - JD(ZeroTime)) * 24 * 60 * 60;
 
         return TimeMiddle;
     }

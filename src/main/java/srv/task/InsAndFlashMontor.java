@@ -145,9 +145,31 @@ public class InsAndFlashMontor {
                                     document.append("mission_state", "已执行");
                                     Document modifiers = new Document();
                                     modifiers.append("$set", document);
+                                    if (document.containsKey("_id"))
+                                        document.remove("_id");
                                     image_mission.updateOne(new Document("mission_number", document.getString("mission_number")), modifiers, new UpdateOptions().upsert(true));
+
+                                    if (document.containsKey("order_numbers")) {
+                                        try {
+                                            ArrayList<String> OrderNumbers = (ArrayList<String>) document.get("order_numbers");
+                                            MongoCollection<Document> Data_ImageOrderjson = mongoDatabase.getCollection("image_order");
+                                            FindIterable<Document> D_ImageOrderjson = Data_ImageOrderjson.find();
+                                            for (Document doc : D_ImageOrderjson) {
+                                                if (OrderNumbers.contains(doc.get("order_number"))) {
+                                                    doc.append("order_state", "已执行");
+                                                    if (doc.containsKey("_id"))
+                                                        doc.remove("_id");
+                                                    Document modifiers_mid = new Document();
+                                                    modifiers_mid.append("$set", doc);
+                                                    Data_ImageOrderjson.updateOne(new Document("order_number", doc.get("order_number")), modifiers_mid, new UpdateOptions().upsert(true));
+                                                }
+                                            }
+                                        } catch (Exception e) {
+                                        }
+                                    }
                                 }
                             }
+
                         } else {
 
                             if (document.containsKey("expected_start_time") && document.getDate("expected_start_time") != null) {
@@ -158,7 +180,28 @@ public class InsAndFlashMontor {
                                     document.append("mission_state", "已执行");
                                     Document modifiers = new Document();
                                     modifiers.append("$set", document);
+                                    if (document.containsKey("_id"))
+                                        document.remove("_id");
                                     image_mission.updateOne(new Document("mission_number", document.getString("mission_number")), modifiers, new UpdateOptions().upsert(true));
+
+                                    if (document.containsKey("order_numbers")) {
+                                        try {
+                                            ArrayList<String> OrderNumbers = (ArrayList<String>) document.get("order_numbers");
+                                            MongoCollection<Document> Data_ImageOrderjson = mongoDatabase.getCollection("image_order");
+                                            FindIterable<Document> D_ImageOrderjson = Data_ImageOrderjson.find();
+                                            for (Document doc : D_ImageOrderjson) {
+                                                if (OrderNumbers.contains(doc.get("order_number"))) {
+                                                    doc.append("order_state", "已执行");
+                                                    if (doc.containsKey("_id"))
+                                                        doc.remove("_id");
+                                                    Document modifiers_mid = new Document();
+                                                    modifiers_mid.append("$set", doc);
+                                                    Data_ImageOrderjson.updateOne(new Document("order_number", doc.get("order_number")), modifiers_mid, new UpdateOptions().upsert(true));
+                                                }
+                                            }
+                                        } catch (Exception e) {
+                                        }
+                                    }
                                 }
                             }
                         }

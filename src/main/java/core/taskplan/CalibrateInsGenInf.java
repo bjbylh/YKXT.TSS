@@ -17,6 +17,7 @@ import org.bson.conversions.Bson;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -41,8 +42,8 @@ public class CalibrateInsGenInf {
         //序列时间设置
         TimeVariable timeVariable = new TimeVariable();
         timeVariable.TSC = 6 + 0.25 + 0.125 + 0.125 + 0.125 + 0.125 + 240 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 +
-                0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 +
-                0.125 + 8 + 0.125 + 0.125 + 0.125 + 8;
+                        0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 +
+                        0.125 + 8 + 0.125 + 0.125 + 0.125 + 8;
         timeVariable.TGF = 600 + 600 + 2 + 2 + 20 + 20 + 2 + 2 + 2 + 2 + 2 + 2 + 90 + 70 + 90 + 600 + 90 + 70 + 90 + 90 + 70 + 90 + 600 + 90 + 70 + 90 + 10 + 10 + 10;
         timeVariable.TDG1 = 600 + 2 + 20 + 2 + 20 + 2 + 50 + 90 + 2 + 2 + 2 + 2 + 2 + 32 + 2 + 14 + 2 + 2 + 2 + 2 + 2 + 32 + 2 + 14 + 2 + 2 + 2 + 2 + 2 + 32 + 2 + 14 +
                 2 + 2 + 2 + 2 + 2 + 32 + 90 + 600 + 2 + 14 + 90 + 2 + 2 + 2 + 2 + 2 + 32 + 2 + 14 + 2 + 2 + 2 + 2 + 2 + 32 + 2 + 14 + 2 + 2 + 2 + 2 + 2 + 32 + 2 + 14 + 2 + 2 +
@@ -53,7 +54,7 @@ public class CalibrateInsGenInf {
         timeVariable.T4401 = 720;
         timeVariable.P24 = 720;
         timeVariable.P29 = 100;
-        timeVariable.TTCAG04 = 6 + 0.25 + 0.125 + 0.125 + 0.125 + 0.125 + 1 + 1 + 1 + 1 + 1 + 1 + 1;
+        timeVariable.TTCAG04 =6 + 0.25 + 0.125 + 0.125 + 0.125 + 0.125 + 1 + 1 + 1 + 1 + 1 + 1 + 1;
 
         HashMap<String, SequenceTime> timeHashMap = new TimeMap().timeHashMap();
         //读入模板
@@ -94,6 +95,7 @@ public class CalibrateInsGenInf {
         for (Document document : properties) {
             if (document.getString("key").equals("t0")) {
                 zerostart = document.getDate("value").toInstant();
+                ZeroTimeIns=zerostart;
                 LocalDateTime zerostart0 = LocalDateTime.ofInstant(zerostart, ZoneOffset.UTC);
                 ZeroTime[0] = zerostart0.getYear();
                 ZeroTime[1] = zerostart0.getMonthValue();
@@ -1335,7 +1337,8 @@ public class CalibrateInsGenInf {
         TimeStarTime[3] = Double.parseDouble(StringTime.substring(11, 13));
         TimeStarTime[4] = Double.parseDouble(StringTime.substring(14, 16));
         TimeStarTime[5] = Double.parseDouble(StringTime.substring(17, 19));
-        double TimeMiddle = (JD(TimeStarTime) - JD(ZeroTime)) * 24 * 60 * 60;
+        //double TimeMiddle = (JD(TimeStarTime) - JD(ZeroTime)) * 24 * 60 * 60;
+        double TimeMiddle= Duration.between(ZeroTimeIns, time_point.toInstant()).getSeconds();
 
         return TimeMiddle;
     }

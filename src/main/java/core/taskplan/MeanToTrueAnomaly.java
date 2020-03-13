@@ -23,7 +23,6 @@ public class MeanToTrueAnomaly {
                 EsFlag = false;
             }
         }
-        System.out.println(Es * 180 / Math.PI);
         double TrueAnomaly = 0;
         double y = Math.sqrt(1 - Eccentricity * Eccentricity) * Math.sin(Es);
         double x = Math.cos(Es) - Eccentricity;
@@ -32,7 +31,7 @@ public class MeanToTrueAnomaly {
     }
 
     public static void main(String[] args) {
-        double v = MeanToTrueAnomaly.MeanToTrueAnomalyII(24628.1, 0.72072, 19.6, 290.0, 20.0, 0.0);
+        double v = MeanToTrueAnomaly.MeanToTrueAnomalyII(0.0, 0.719646, 0.0, 0.0, 0.0, 178.691);
         System.out.println(v);
     }
 }

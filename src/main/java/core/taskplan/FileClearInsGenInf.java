@@ -146,7 +146,18 @@ public class FileClearInsGenInf {
                 } else {
                     TCA303 = "10028021010F3E0A0002";
                     ArrayList<String> filenos = (ArrayList<String>) Mission.get("clear_filenos");
-                    String TCA303Child = "";
+
+                    int size = filenos.size();
+
+                    String empty = "";
+
+                    if (size < 8) {
+                        for (int i = 0; i < 8 - size; i++) {
+                            empty += "00";
+                        }
+                    }
+
+                    String TCA303Child = empty;
                     for (String string : filenos) {
                         if (!string.equals("")) {
                             int fileId = Integer.parseInt(string);
@@ -365,7 +376,7 @@ public class FileClearInsGenInf {
             image_mission.updateOne(new Document("mission_number", Mission.get("mission_number").toString()), modifiers, new UpdateOptions().upsert(true));
 
             InstructionManager instructionManager = new InstructionManager();
-            instructionManager.addInstrctionInfo(InstructionInfojsonArry, Mission.get("mission_number").toString(),Mission.get("name").toString());
+            instructionManager.addInstrctionInfo(InstructionInfojsonArry, Mission.get("mission_number").toString(), Mission.get("name").toString());
             instructionManager.close();
         }
 
