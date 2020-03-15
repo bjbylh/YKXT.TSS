@@ -1,5 +1,7 @@
 package common;
 
+import java.time.Instant;
+
 /**
  * Created by lihan on 2018/3/1.
  */
@@ -12,10 +14,7 @@ public class FilePathUtil {
     }
 
     public static void main(String[] args) {
-        String s = FilePathUtil.FILE_SEPARATOR;
-        System.out.println(s);
-        String p = "D:\\\\A//A//B";
-        p = FilePathUtil.getRealFilePath(p);
-        System.out.println(p);
+        long t = 1584168147305l;
+        System.out.println(Instant.ofEpochMilli(t).toString());
     }
 }

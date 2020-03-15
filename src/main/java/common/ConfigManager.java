@@ -70,6 +70,6 @@ public class ConfigManager {
     }
 
     public String fetch502FilePath() {
-        return bundle.getString("502_PATH");
+        return "";
     }
 }

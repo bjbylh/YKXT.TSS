@@ -84,8 +84,6 @@ public class FileOccupancyStatus {
 
 
             long pool_size = 64;
-            double flash_usage;
-            double allsize = 0.0;
 
             Document doc = new Document();
             doc.append("time_stamp", Date.from(Instant.now()));

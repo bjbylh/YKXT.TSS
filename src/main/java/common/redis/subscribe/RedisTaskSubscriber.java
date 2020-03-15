@@ -99,6 +99,10 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
                 procTransmissionExport(json, id);
 
+            } else if (asString.equals(MsgType.TRANSMISSION_CANCEL.name())) {
+
+                procTransmissionExportCancel(json, id);
+
             } else if (asString.equals(MsgType.BLACK_CALI.name())) {
 
                 procBlackCali(json, id);
@@ -432,6 +436,129 @@ public class RedisTaskSubscriber extends JedisPubSub {
         }
     }
 
+    private void procTransmissionExportCancel(JsonObject json, String id) {
+        try {
+            Instant createTime = Instant.now();
+            LocalDateTime localDateTime = LocalDateTime.now();
+            String dir = String.valueOf(createTime.toEpochMilli());
+            String f = ConfigManager.getInstance().fetchXmlFilePath() + dir;
+
+            File mulu = new File(f);
+
+            if (mulu.exists())
+                mulu.delete();
+
+            mulu.mkdir();
+
+            String ids = json.get("content").getAsString();
+            String[] transmission_numbers_array = ids.split(",");
+
+            ArrayList<String> transmission_numbers = new ArrayList<>();
+            for (String s : transmission_numbers_array) {
+                transmission_numbers.add(s);
+            }
+
+            MongoClient mongoClient = MangoDBConnector.getClient();
+            //获取名为"temp"的数据库
+            MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+
+            MongoCollection<Document> sate_res = mongoDatabase.getCollection("satellite_resource");
+
+            String sat_code = "XY-6";
+
+            Document first = sate_res.find().first();
+            ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
+            for (Document document : properties) {
+                if (document.getString("key").equals("sat_name")) {
+                    sat_code = document.getString("value");
+                    break;
+                }
+            }
+            //卫星资源表
+            FindIterable<Document> transmission_missions = mongoDatabase.getCollection("transmission_mission").find();
+
+            for (Document transmission_mission : transmission_missions) {
+                if (transmission_numbers.contains(transmission_mission.getString("transmission_number"))) {
+
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+                    sb.append("<InterFaceFile>");
+
+                    sb.append("<FileHeader>");
+
+                    sb.append("<messageType>").append("TRCANCEL").append("</messageType>");
+                    sb.append("<messageID>").append(transmission_mission.getString("messageID")).append("</messageID>");
+                    sb.append("<originatorAddress>").append("MPSS").append("</originatorAddress>");
+                    sb.append("<recipientAddress>").append("YGJD-01").append("</recipientAddress>");
+                    sb.append("<creationTime>").append(localDateTime.toString()).append("</creationTime>");
+
+                    sb.append("</FileHeader>");
+
+                    sb.append("<FileBody>");
+
+                    sb.append("<trPlanID>").append(transmission_mission.getString("trPlanID")).append("</trPlanID>");
+
+                    sb.append("<adjustReason>").append("</adjustReason>");
+
+                    sb.append("</FileBody>");
+
+                    sb.append("</InterFaceFile>");
+                    String date = String.valueOf(localDateTime.getYear()) + String.format("%02d", localDateTime.getMonth().getValue()) + String.format("%02d", localDateTime.getDayOfMonth());
+                    String filename = "MPSS_YGJD-01_" + sat_code + "_" + date + "_" + transmission_mission.getString("messageID") + ".TRCANCEL";
+
+                    File file = new File(FilePathUtil.getRealFilePath(f + "//" + filename));
+
+                    if (file.exists())
+                        file.delete();
+
+                    file.createNewFile();
+                    Writer w = new FileWriter(file);
+                    w.write(sb.toString());
+                    w.close();
+
+                    if (message_ser == MESSAGE_MAX)
+                        message_ser = 0;
+                    else message_ser++;
+
+                    if (transmission_mission.containsKey("mission_numbers")) {
+                        try {
+                            ArrayList<String> OrderNumbers = (ArrayList<String>) transmission_mission.get("mission_numbers");
+                            MongoCollection<Document> station_mission = mongoDatabase.getCollection("station_mission");
+                            FindIterable<Document> station_missions = station_mission.find();
+                            for (Document doc : station_missions) {
+                                if (OrderNumbers.contains(doc.get("mission_number"))) {
+                                    doc.append("tag", "已撤销");
+                                    if (doc.containsKey("_id"))
+                                        doc.remove("_id");
+                                    Document modifiers_mid = new Document();
+                                    modifiers_mid.append("$set", doc);
+                                    station_mission.updateOne(new Document("mission_number", doc.getString("mission_number")), modifiers_mid, new UpdateOptions().upsert(true));
+                                }
+                            }
+                        } catch (Exception e) {
+                        }
+                    }
+
+
+                    Document modifiers_mid = new Document();
+
+                    modifiers_mid.append("$unset", new Document("messageID", 1));
+                    MongoCollection<Document> transmission_mission1 = mongoDatabase.getCollection("transmission_mission");
+                    transmission_mission1.updateOne(new Document("transmission_number", transmission_mission.getString("transmission_number")), modifiers_mid, new UpdateOptions().upsert(true));
+
+                    modifiers_mid = new Document();
+                    modifiers_mid.append("$unset", new Document("trPlanID", 1));
+                    transmission_mission1.updateOne(new Document("transmission_number", transmission_mission.getString("transmission_number")), modifiers_mid, new UpdateOptions().upsert(true));
+                }
+            }
+
+            mongoClient.close();
+            RedisPublish.CommonReturn(id, true, f, MsgType.TRANSMISSION_CANCEL_FINISHED);
+        } catch (Exception e) {
+            String message = e.getMessage();
+            RedisPublish.CommonReturn(id, false, message, MsgType.TRANSMISSION_CANCEL_FINISHED);
+        }
+    }
 
     private void procTransmissionExport(JsonObject json, String id) {
         try {
@@ -461,9 +588,17 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
             MongoCollection<Document> sate_res = mongoDatabase.getCollection("satellite_resource");
 
-            String sat_code = sate_res.find().first().getString("sat_code");
+            Document first = sate_res.find().first();
 
+            String sat_code = "XY-6";
 
+            ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
+            for (Document document : properties) {
+                if (document.getString("key").equals("sat_name")) {
+                    sat_code = document.getString("value");
+                    break;
+                }
+            }
             //卫星资源表
             FindIterable<Document> transmission_missions = mongoDatabase.getCollection("transmission_mission").find();
 
@@ -490,14 +625,6 @@ public class RedisTaskSubscriber extends JedisPubSub {
                             FileBodyType fileBodyType = objectFactory.createFileBodyType();
                             fileBodyType.setTrPlanID(String.format("%09d", message_ser));
                             fileBodyType.setSatellite(sat_code);
-                            fileBodyType.setTmType("2");
-                            fileBodyType.setSensorType("GF/DGP");
-                            fileBodyType.setDownlinkChannel("7");
-                            fileBodyType.setReceptionType("LIVERECEPTION");
-                            fileBodyType.setOrbitID("0");
-                            fileBodyType.setIsQuickView("FALSE");
-                            fileBodyType.setIsCloud("FALSE");
-
                             String start_time = window.getDate("start_time").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().toString();
                             String end_time = window.getDate("end_time").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().toString();
 
@@ -511,7 +638,6 @@ public class RedisTaskSubscriber extends JedisPubSub {
                             fileBodyType.setSatelliteCaptureStartTime(start_time);
                             fileBodyType.setReceiveStopTime(end_time);
                             fileBodyType.setSatelliteCaptureStopTime(end_time);
-                            fileBodyType.setTaskCount("1");
 
                             interFaceFileType.setFileBody(fileBodyType);
 
@@ -527,6 +653,13 @@ public class RedisTaskSubscriber extends JedisPubSub {
                             Writer w = new FileWriter(file);
                             w.write(interFaceFileType.toString());
                             w.close();
+
+                            transmission_mission.append("messageID", String.format("%06d", message_ser));
+                            transmission_mission.append("trPlanID", String.format("%09d", message_ser));
+
+                            Document modifiers_mid = new Document();
+                            modifiers_mid.append("$set", transmission_mission);
+                            mongoDatabase.getCollection("transmission_mission").updateOne(new Document("transmission_number", transmission_mission.get("transmission_number")), modifiers_mid, new UpdateOptions().upsert(true));
 
                             if (message_ser == MESSAGE_MAX)
                                 message_ser = 0;
@@ -569,11 +702,18 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
             Document first = sate_res.find().first();
 
-            String sat_code = first.getString("sat_code");
+            String sat_code = "XY-6";
+
+            ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
+            for (Document document : properties) {
+                if (document.getString("key").equals("sat_name")) {
+                    sat_code = document.getString("value");
+                    break;
+                }
+            }
 
             Instant start = Instant.now();
 
-            ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
             double[] orbits = new double[6];
             for (Document document : properties) {
 

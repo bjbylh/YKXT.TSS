@@ -155,13 +155,13 @@ public class InsAndFlashMontor {
                                             MongoCollection<Document> Data_ImageOrderjson = mongoDatabase.getCollection("image_order");
                                             FindIterable<Document> D_ImageOrderjson = Data_ImageOrderjson.find();
                                             for (Document doc : D_ImageOrderjson) {
-                                                if (OrderNumbers.contains(doc.get("order_number"))) {
+                                                if (OrderNumbers.contains(doc.getString("order_number"))) {
                                                     doc.append("order_state", "已执行");
                                                     if (doc.containsKey("_id"))
                                                         doc.remove("_id");
                                                     Document modifiers_mid = new Document();
                                                     modifiers_mid.append("$set", doc);
-                                                    Data_ImageOrderjson.updateOne(new Document("order_number", doc.get("order_number")), modifiers_mid, new UpdateOptions().upsert(true));
+                                                    Data_ImageOrderjson.updateOne(new Document("order_number", doc.getString("order_number")), modifiers_mid, new UpdateOptions().upsert(true));
                                                 }
                                             }
                                         } catch (Exception e) {
@@ -190,13 +190,13 @@ public class InsAndFlashMontor {
                                             MongoCollection<Document> Data_ImageOrderjson = mongoDatabase.getCollection("image_order");
                                             FindIterable<Document> D_ImageOrderjson = Data_ImageOrderjson.find();
                                             for (Document doc : D_ImageOrderjson) {
-                                                if (OrderNumbers.contains(doc.get("order_number"))) {
+                                                if (OrderNumbers.contains(doc.getString("order_number"))) {
                                                     doc.append("order_state", "已执行");
                                                     if (doc.containsKey("_id"))
                                                         doc.remove("_id");
                                                     Document modifiers_mid = new Document();
                                                     modifiers_mid.append("$set", doc);
-                                                    Data_ImageOrderjson.updateOne(new Document("order_number", doc.get("order_number")), modifiers_mid, new UpdateOptions().upsert(true));
+                                                    Data_ImageOrderjson.updateOne(new Document("order_number", doc.getString("order_number")), modifiers_mid, new UpdateOptions().upsert(true));
                                                 }
                                             }
                                         } catch (Exception e) {

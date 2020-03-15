@@ -8,7 +8,7 @@ public class TCKG01_A implements SequenceTime {
             double time2 = timeVariable.T0 - timeVariable.TDG1 - timeVariable.TDG2;
             double time3 = timeVariable.T1;
             double time = (time1 < time2 ? time1 : time2) < time3 ? (time1 < time2 ? time1 : time2) : time3;//三个值取最小值
-            time = time - 6 - timeVariable.TSC;
+            time = time - 8 - timeVariable.TSC;
 //            float f_time = (float) time;
             int i_time = (int) Math.ceil(time);
 
@@ -16,7 +16,7 @@ public class TCKG01_A implements SequenceTime {
         } else if (TaskName == "TASK10") {
             double time1 = timeVariable.T0 - 8;
             double time = time1 < timeVariable.T1 ? time1 : timeVariable.T1;
-            time = time - 6 - timeVariable.TSC;
+            time = time - 8 - timeVariable.TSC;
 //            float f_time = (float) time;
             int i_time = (int) Math.ceil(time);
 

@@ -4,7 +4,6 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.UpdateOptions;
 import common.FilePathUtil;
 import common.mongo.MangoDBConnector;
@@ -13,7 +12,6 @@ import core.taskplan.InstructionSequenceTime.SequenceTime;
 import core.taskplan.InstructionSequenceTime.TimeMap;
 import core.taskplan.InstructionSequenceTime.TimeVariable;
 import org.bson.Document;
-import org.bson.conversions.Bson;
 
 import javax.swing.*;
 import java.io.*;
@@ -39,8 +37,8 @@ public class InstructionGeneration {
         System.out.println("InstructionGenerationII输入参数(CamStatus)：" + CamStatus.toJson());
         TimeVariable timeVariable = new TimeVariable();
         timeVariable.TSC = 6 + 0.25 + 0.125 + 0.125 + 0.125 + 0.125 + 240 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 +
-                        0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 +
-                        0.125 + 8 + 0.125 + 0.125 + 0.125 + 8;
+                0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 +
+                0.125 + 8 + 0.125 + 0.125 + 0.125 + 8;
         timeVariable.TGF = 600 + 600 + 2 + 2 + 20 + 20 + 2 + 2 + 2 + 2 + 2 + 2 + 90 + 70 + 90 + 600 + 90 + 70 + 90 + 90 + 70 + 90 + 600 + 90 + 70 + 90 + 10 + 10 + 10;
         timeVariable.TGF2 = 4;
         timeVariable.TDG1 = 600 + 2 + 20 + 2 + 20 + 2 + 50 + 90 + 2 + 2 + 2 + 2 + 2 + 32 + 2 + 14 + 2 + 2 + 2 + 2 + 2 + 32 + 2 + 14 + 2 + 2 + 2 + 2 + 2 + 32 + 2 + 14 +
@@ -99,7 +97,7 @@ public class InstructionGeneration {
             if (document.getString("key").equals("t0")) {
                 zerostart = document.getDate("value").toInstant();
                 LocalDateTime zerostart0 = LocalDateTime.ofInstant(zerostart, ZoneOffset.UTC);
-                ZeroTimeIns=zerostart;
+                ZeroTimeIns = zerostart;
                 ZeroTime[0] = zerostart0.getYear();
                 ZeroTime[1] = zerostart0.getMonthValue();
                 ZeroTime[2] = zerostart0.getDayOfMonth();
@@ -1279,7 +1277,7 @@ public class InstructionGeneration {
                                                                                             }
                                                                                         }
                                                                                     }
-                                                                                    if(!findIns){
+                                                                                    if (!findIns) {
                                                                                         for (Document MissionMetaParamsChildParamsChild : MissionInstructionDefautArrayChild) {
                                                                                             if (MissionMetaParamsChildParamsChild.containsKey("code") && MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsId)) {
                                                                                                 if (MissionMetaParamsChildParamsChild.containsKey("default_value") && !MissionMetaParamsChildParamsChild.get("default_value").equals("")) {
@@ -1488,7 +1486,7 @@ public class InstructionGeneration {
                                                                     //添加特殊指令
                                                                     String MetaHex = "";
                                                                     if (InstCode.equals("K4401")) {
-                                                                        if (MissionImageModel.get(i).equals("凝视")) {
+                                                                        if (false) {
                                                                             MetaHex = "100280210118";
                                                                             MetaHex = MetaHex + "AA180055";
                                                                             ArrayList<double[]> MissionTargetArea_iList = MissionTargetAreaList.get(i);
@@ -1547,7 +1545,7 @@ public class InstructionGeneration {
                                                                                     strtempdAng;
                                                                         } else {
                                                                             MetaHex = "100280210118";
-                                                                            MetaHex = MetaHex + "AA1800AA";
+                                                                            MetaHex = MetaHex + "AA1400AA";
                                                                             float GDAtt = (float) FYGDAttitude[0];
                                                                             float FYAtt = (float) FYGDAttitude[1];
                                                                             float t_theta = (float) timeVariable.T4401;
@@ -1606,10 +1604,6 @@ public class InstructionGeneration {
                                                                         MetaHex = "100280210118";
                                                                         MetaHex = MetaHex + "A002";
                                                                         MetaHex = MetaHex + "0303";
-                                                                    } else if (InstCode.equals("K4404")) {
-                                                                        MetaHex = "100280210118";
-                                                                        MetaHex = MetaHex + "A002";
-                                                                        MetaHex = MetaHex + "0303";
                                                                     } else if (InstCode.equals("K4405")) {
                                                                         MetaHex = "100280210118";
                                                                         MetaHex = MetaHex + "A002";
@@ -1658,10 +1652,10 @@ public class InstructionGeneration {
                                                                         MetaHex = "100280210118";
                                                                         MetaHex = MetaHex + "A102";
                                                                         MetaHex = MetaHex + "0707";
-                                                                        //} else if (InstCode.equals("K4418")) {
-                                                                        //    MetaHex = "100280210118";
-                                                                        //    MetaHex = MetaHex + "A102";
-                                                                        //    MetaHex = MetaHex + "0808";
+                                                                    } else if (InstCode.equals("K4417")) {
+                                                                        MetaHex = "100280210118";
+                                                                        MetaHex = MetaHex + "A102";
+                                                                        MetaHex = MetaHex + "0808";
                                                                     } else if (InstCode.equals("K4419")) {
                                                                         MetaHex = "100280210118";
                                                                         MetaHex = MetaHex + "A200";
@@ -1757,8 +1751,8 @@ public class InstructionGeneration {
                                                                                 str_GazeTime.toUpperCase() +
                                                                                 strtemplon +
                                                                                 strtemplat +
-                                                                                strtempH+
-                                                                                strtempddAng+
+                                                                                strtempH +
+                                                                                strtempddAng +
                                                                                 strtempdAng;
                                                                     }
                                                                     /*
@@ -1883,7 +1877,8 @@ public class InstructionGeneration {
                                     InstDelta_tAll = InstDelta_tAll + InstDelta_tLastAll;
 
                                     //更新时间
-                                    if (sequencecode.contains("TCAG01")) {
+                                    if (sequencecode.contains("TCAG01") || sequencecode.contains("TCAG02") ||
+                                            sequencecode.contains("TCAG03") || sequencecode.contains("TCAG05")) {
                                         timeVariable.TSC = InstDelta_tLastAll;
                                     } else if (sequencecode.contains("TCGFG01")) {
                                         timeVariable.TGF = InstDelta_tLastAll;
@@ -2136,7 +2131,7 @@ public class InstructionGeneration {
         for (Document document : properties) {
             if (document.getString("key").equals("t0")) {
                 zerostart = document.getDate("value").toInstant();
-                ZeroTimeIns=zerostart;
+                ZeroTimeIns = zerostart;
                 LocalDateTime zerostart0 = LocalDateTime.ofInstant(zerostart, ZoneOffset.UTC);
                 ZeroTime[0] = zerostart0.getYear();
                 ZeroTime[1] = zerostart0.getMonthValue();
@@ -2816,6 +2811,54 @@ public class InstructionGeneration {
                                                                     for (int j = 13; j <= 258; j++) {
                                                                         MetaHex = MetaHex + "00";
                                                                     }
+                                                                } else if (InstCode.equals("K4401")) {
+                                                                    MetaHex = "100280210118";
+                                                                    MetaHex = MetaHex + "AA1400AA";
+                                                                    float GDAtt = (float) 0.0;
+                                                                    float FYAtt = (float) 0.0;
+                                                                    float t_theta = (float) timeVariable.T4401;
+                                                                    float ddAng = (float) 0.08;
+                                                                    float dAng = (float) 0.12;
+                                                                    int it_theta = (new Float(t_theta)).intValue();
+                                                                    byte[] it_thetaByte = new byte[]{(byte) ((it_theta >> 8) & 0xFF), (byte) ((it_theta) & 0xFF)};
+                                                                    String st_thetaByte = bytesToHexString(it_thetaByte);
+                                                                    String strtempGD = Integer.toHexString(Float.floatToIntBits(GDAtt));
+                                                                    if (strtempGD.length() < 8) {
+                                                                        for (int j = strtempGD.length() + 1; j <= 8; j++) {
+                                                                            strtempGD = "0" + strtempGD;
+                                                                        }
+                                                                    } else if (strtempGD.length() > 8) {
+                                                                        strtempGD = strtempGD.substring(strtempGD.length() - 8);
+                                                                    }
+                                                                    String strtempFY = Integer.toHexString(Float.floatToIntBits(FYAtt));
+                                                                    if (strtempFY.length() < 8) {
+                                                                        for (int j = strtempFY.length() + 1; j <= 8; j++) {
+                                                                            strtempFY = "0" + strtempFY;
+                                                                        }
+                                                                    } else if (strtempFY.length() > 8) {
+                                                                        strtempFY = strtempFY.substring(strtempFY.length() - 8);
+                                                                    }
+                                                                    String strtempddAng = Integer.toHexString(Float.floatToIntBits(ddAng));
+                                                                    if (strtempddAng.length() < 8) {
+                                                                        for (int j = strtempddAng.length() + 1; j <= 8; j++) {
+                                                                            strtempddAng = "0" + strtempddAng;
+                                                                        }
+                                                                    } else if (strtempddAng.length() > 8) {
+                                                                        strtempddAng = strtempddAng.substring(strtempddAng.length() - 8);
+                                                                    }
+                                                                    String strtempdAng = Integer.toHexString(Float.floatToIntBits(dAng));
+                                                                    if (strtempdAng.length() < 8) {
+                                                                        for (int j = strtempdAng.length() + 1; j <= 8; j++) {
+                                                                            strtempdAng = "0" + strtempdAng;
+                                                                        }
+                                                                    } else if (strtempdAng.length() > 8) {
+                                                                        strtempdAng = strtempdAng.substring(strtempdAng.length() - 8);
+                                                                    }
+                                                                    MetaHex = MetaHex + st_thetaByte +
+                                                                            strtempGD +
+                                                                            strtempFY +
+                                                                            strtempddAng +
+                                                                            strtempdAng;
                                                                 } else {
                                                                     break;
                                                                 }
@@ -2924,6 +2967,22 @@ public class InstructionGeneration {
                                 MissionInstructionIdChild.add(ZhiLingIDNum);
                                 MissionInstructionTimeChild.add(time_ZhixingDate);
                                 InstDelta_tAll = InstDelta_tAll + InstDelta_tLastAll;
+
+                                //更新时间
+                                if (sequencecode.contains("TCAG01") || sequencecode.contains("TCAG02") ||
+                                        sequencecode.contains("TCAG03") || sequencecode.contains("TCAG05")) {
+                                    timeVariable.TSC = InstDelta_tLastAll;
+                                } else if (sequencecode.contains("TCGFG01")) {
+                                    timeVariable.TGF = InstDelta_tLastAll;
+                                } else if (sequencecode.contains("TCDGG01")) {
+                                    timeVariable.TDG1 = InstDelta_tLastAll;
+                                } else if (sequencecode.contains("TCDGG02")) {
+                                    timeVariable.TDG2 = InstDelta_tLastAll;
+                                } else if (sequencecode.contains("TCAG04")) {
+                                    timeVariable.TTCAG04 = InstDelta_tLastAll;
+                                } else if (sequencecode.contains("TCGFG02")) {
+                                    timeVariable.TGF2 = InstDelta_tLastAll;
+                                }
                             }
                         }
                         break;
@@ -3276,7 +3335,7 @@ public class InstructionGeneration {
         TimeStarTime[5] = Double.parseDouble(StringTime.substring(17, 19));
         double[] ZeroTimeK4425 = {2018, 1, 1, 0, 0, 0};//参考时间
         //double TimeMiddle = (JD(TimeStarTime) - JD(ZeroTimeK4425)) * 24 * 60 * 60 * 1000000;
-        double TimeMiddle=Duration.between(ZeroTimeIns, time_point.toInstant()).getSeconds();
+        double TimeMiddle = Duration.between(ZeroTimeIns, time_point.toInstant()).getSeconds();
 
         return TimeMiddle;
     }
@@ -3297,7 +3356,7 @@ public class InstructionGeneration {
         TimeStarTime[3] = Double.parseDouble(StringTime.substring(11, 13));
         TimeStarTime[4] = Double.parseDouble(StringTime.substring(14, 16));
         TimeStarTime[5] = Double.parseDouble(StringTime.substring(17, 19));
-        double TimeMiddle=Duration.between(ZeroTimeIns, time_point.toInstant()).getSeconds();
+        double TimeMiddle = Duration.between(ZeroTimeIns, time_point.toInstant()).getSeconds();
         //double TimeMiddle = (JD(TimeStarTime) - JD(ZeroTime)) * 24 * 60 * 60;
 
         return TimeMiddle;

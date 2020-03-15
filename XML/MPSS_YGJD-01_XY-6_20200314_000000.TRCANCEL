@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<InterFaceFile>
+    <FileHeader>
+        <messageType>TRCANCEL</messageType>
+        <messageID>000000</messageID>
+        <originatorAddress>MPSS</originatorAddress>
+        <recipientAddress>YGJD-01</recipientAddress>
+        <creationTime>2020-03-14T15:28:35.492</creationTime>
+    </FileHeader>
+    <FileBody>
+        <trPlanID>000000000</trPlanID>
+        <adjustReason></adjustReason>
+    </FileBody>
+</InterFaceFile>

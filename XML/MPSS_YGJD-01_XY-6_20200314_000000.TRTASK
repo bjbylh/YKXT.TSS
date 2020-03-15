@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<InterFaceFile>
+    <FileHeader>
+        <messageType>TRTASK</messageType>
+        <messageID>000000</messageID>
+        <originatorAddress>MPSS</originatorAddress>
+        <recipientAddress>YGJD-01</recipientAddress>
+        <creationTime>2020-03-14T15:28:28.231</creationTime>
+    </FileHeader>
+    <FileBody>
+        <trPlanID>000000000</trPlanID>
+        <satellite>XY-6</satellite>
+        <receiveStartTime>2020-03-15T17:10:08</receiveStartTime>
+        <receiveStopTime>2020-03-15T22:24:25</receiveStopTime>
+        <satelliteCaptureStartTime>2020-03-15T17:10:08</satelliteCaptureStartTime>
+        <satelliteCaptureStopTime>2020-03-15T22:24:25</satelliteCaptureStopTime>
+    </FileBody>
+</InterFaceFile>

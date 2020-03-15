@@ -95,18 +95,18 @@ public class InterFaceFileType {
 
         sb.append("<trPlanID>").append(fileBody.getTrPlanID()).append("</trPlanID>");
         sb.append("<satellite>").append(fileBody.getSatellite()).append("</satellite>");
-        sb.append("<tmType>").append(fileBody.getTmType()).append("</tmType>");
-        sb.append("<sensorType>").append(fileBody.getSensorType()).append("</sensorType>");
-        sb.append("<downlinkChannel>").append(fileBody.getDownlinkChannel()).append("</downlinkChannel>");
-        sb.append("<receptionType>").append(fileBody.getReceptionType()).append("</receptionType>");
-        sb.append("<orbitID>").append(fileBody.getOrbitID()).append("</orbitID>");
-        sb.append("<isQuickView>").append(fileBody.getIsQuickView()).append("</isQuickView>");
-        sb.append("<isCloud>").append(fileBody.getIsCloud()).append("</isCloud>");
+//        sb.append("<tmType>").append(fileBody.getTmType()).append("</tmType>");
+//        sb.append("<sensorType>").append(fileBody.getSensorType()).append("</sensorType>");
+//        sb.append("<downlinkChannel>").append(fileBody.getDownlinkChannel()).append("</downlinkChannel>");
+//        sb.append("<receptionType>").append(fileBody.getReceptionType()).append("</receptionType>");
+//        sb.append("<orbitID>").append(fileBody.getOrbitID()).append("</orbitID>");
+//        sb.append("<isQuickView>").append(fileBody.getIsQuickView()).append("</isQuickView>");
+//        sb.append("<isCloud>").append(fileBody.getIsCloud()).append("</isCloud>");
         sb.append("<receiveStartTime>").append(fileBody.getReceiveStartTime()).append("</receiveStartTime>");
         sb.append("<receiveStopTime>").append(fileBody.getReceiveStopTime()).append("</receiveStopTime>");
         sb.append("<satelliteCaptureStartTime>").append(fileBody.getSatelliteCaptureStartTime()).append("</satelliteCaptureStartTime>");
         sb.append("<satelliteCaptureStopTime>").append(fileBody.getSatelliteCaptureStopTime()).append("</satelliteCaptureStopTime>");
-        sb.append("<taskCount>").append(fileBody.getTaskCount()).append("</taskCount>");
+//        sb.append("<taskCount>").append(fileBody.getTaskCount()).append("</taskCount>");
 
         sb.append("</FileBody>");
 

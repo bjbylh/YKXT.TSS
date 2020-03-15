@@ -63,9 +63,9 @@ public class InsGenWithoutTaskPlanInf {
 
         //序列时间设置
         TimeVariable timeVariable = new TimeVariable();
-        timeVariable.TSC =6 + 0.25 + 0.125 + 0.125 + 0.125 + 0.125 + 240 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 +
-                        0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 +
-                        0.125 + 8 + 0.125 + 0.125 + 0.125 + 8;
+        timeVariable.TSC = 6 + 0.25 + 0.125 + 0.125 + 0.125 + 0.125 + 240 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 +
+                0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 + 0.125 +
+                0.125 + 8 + 0.125 + 0.125 + 0.125 + 8;
         timeVariable.TGF = 600 + 600 + 2 + 2 + 20 + 20 + 2 + 2 + 2 + 2 + 2 + 2 + 90 + 70 + 90 + 600 + 90 + 70 + 90 + 90 + 70 + 90 + 600 + 90 + 70 + 90 + 10 + 10 + 10;
         timeVariable.TGF2 = 4;
         timeVariable.TDG1 = 600 + 2 + 20 + 2 + 20 + 2 + 50 + 90 + 2 + 2 + 2 + 2 + 2 + 32 + 2 + 14 + 2 + 2 + 2 + 2 + 2 + 32 + 2 + 14 + 2 + 2 + 2 + 2 + 2 + 32 + 2 + 14 +
@@ -116,7 +116,7 @@ public class InsGenWithoutTaskPlanInf {
         for (Document document : properties) {
             if (document.getString("key").equals("t0")) {
                 zerostart = document.getDate("value").toInstant();
-                ZeroTimeIns=zerostart;
+                ZeroTimeIns = zerostart;
                 LocalDateTime zerostart0 = LocalDateTime.ofInstant(zerostart, ZoneOffset.UTC);
                 ZeroTime[0] = zerostart0.getYear();
                 ZeroTime[1] = zerostart0.getMonthValue();
@@ -324,6 +324,176 @@ public class InsGenWithoutTaskPlanInf {
             }
             ArrayList<Document> MissionInstructionDefautArrayChild = (ArrayList<Document>) MissionInstructionDefautArray.get(i);
             ArrayList<Document> MissionInstructionAfterPara = new ArrayList<>();
+
+            //读取K4401、K4425参数
+            HashMap<String, Float> K4401Map = new HashMap<>();
+            HashMap<String, Float> K4425Map = new HashMap<>();
+            //mission_params
+            for (Document TaskParams : MissionInstructionArrayChild) {
+                if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P20")) {
+                    if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                        float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        K4401Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P21")) {
+                    if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                        float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        K4401Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P22")) {
+                    if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                        float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        K4401Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P27")) {
+                    if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                        float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        K4401Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P28")) {
+                    if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                        float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        K4401Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P23")) {
+                    if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                        float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P24")) {
+                    if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                        float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P25")) {
+                    if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                        float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P26_1")) {
+                    if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                        float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P26_2")) {
+                    if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                        float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P26_3")) {
+                    if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                        float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P27")) {
+                    if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                        float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P28")) {
+                    if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                        float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                    }
+                }
+            }
+            //default_mission_params
+            for (Document TaskParams : MissionInstructionDefautArrayChild) {
+                if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P20")) {
+                    if (!K4401Map.containsKey("P20")) {
+                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                            K4401Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                        }
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P21")) {
+                    if (!K4401Map.containsKey("P21")) {
+                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                            K4401Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                        }
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P22")) {
+                    if (!K4401Map.containsKey("P22")) {
+                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                            K4401Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                        }
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P27")) {
+                    if (!K4401Map.containsKey("P27")) {
+                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                            K4401Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                        }
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P28")) {
+                    if (!K4401Map.containsKey("P28")) {
+                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                            K4401Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                        }
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P23")) {
+                    if (!K4425Map.containsKey("P23")) {
+                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                            K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                        }
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P24")) {
+                    if (!K4425Map.containsKey("P24")) {
+                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                            K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                        }
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P25")) {
+                    if (!K4425Map.containsKey("P25")) {
+                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                            K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                        }
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P26_1")) {
+                    if (!K4425Map.containsKey("P26_1")) {
+                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                            K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                        }
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P26_2")) {
+                    if (!K4425Map.containsKey("P26_2")) {
+                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                            K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                        }
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P26_3")) {
+                    if (!K4425Map.containsKey("P26_3")) {
+                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                            K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                        }
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P27")) {
+                    if (!K4425Map.containsKey("P27")) {
+                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                            K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                        }
+                    }
+                } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P28")) {
+                    if (!K4425Map.containsKey("P28")) {
+                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                            K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
+                        }
+                    }
+                }
+            }
+
+
             //P07
             boolean ChildIdFlagP07 = true;
             boolean ChildIdFlagP19 = true;
@@ -1095,7 +1265,7 @@ public class InsGenWithoutTaskPlanInf {
                                                                                     }
 
 
-                                                                                    if(!findIns){
+                                                                                    if (!findIns) {
                                                                                         for (Document MissionMetaParamsChildParamsChild : MissionInstructionDefautArrayChild) {
                                                                                             if (MissionMetaParamsChildParamsChild.containsKey("code") && MissionMetaParamsChildParamsChild.get("code").toString().equals(MetaParamsId)) {
                                                                                                 if (MissionMetaParamsChildParamsChild.containsKey("default_value") && !MissionMetaParamsChildParamsChild.get("default_value").equals("")) {
@@ -1304,59 +1474,61 @@ public class InsGenWithoutTaskPlanInf {
                                                                     String MetaHex = "";
                                                                     if (InstCode.equals("K4401")) {
                                                                         MetaHex = "100280210118";
-                                                                        MetaHex = MetaHex + "AA180055";
-                                                                        ArrayList<double[]> MissionTargetArea_iList = MissionTargetAreaList.get(i);
-                                                                        double lonAll = 0;
-                                                                        double latAll = 0;
-                                                                        for (double[] lonlat : MissionTargetArea_iList) {
-                                                                            lonAll = lonAll + lonlat[0];
-                                                                            latAll = latAll + lonlat[1];
-                                                                        }
-                                                                        lonAll = lonAll / MissionTargetArea_iList.size();
-                                                                        latAll = latAll / MissionTargetArea_iList.size();
-                                                                        float t_theta = (float) timeVariable.T0;
-                                                                        float lon = (float) lonAll;
-                                                                        float lat = (float) latAll;
-                                                                        float H = 0;
+                                                                        MetaHex = MetaHex + "AA1400AA";
+                                                                        float GDAtt = (float) 0.0;
+                                                                        float FYAtt = (float) 0.0;
+                                                                        float t_theta = (float) timeVariable.T4401;
                                                                         float ddAng = (float) 0.08;
                                                                         float dAng = (float) 0.12;
+                                                                        if (K4401Map.containsKey("P20")) {
+                                                                            t_theta = K4401Map.get("P20");
+                                                                        } else if (K4401Map.containsKey("P21")) {
+                                                                            FYAtt = K4401Map.get("P21");
+                                                                        } else if (K4401Map.containsKey("P22")) {
+                                                                            GDAtt = K4401Map.get("P22");
+                                                                        } else if (K4401Map.containsKey("P27")) {
+                                                                            ddAng = K4401Map.get("P27");
+                                                                        } else if (K4401Map.containsKey("P28")) {
+                                                                            dAng = K4401Map.get("P28");
+                                                                        }
                                                                         int it_theta = (new Float(t_theta)).intValue();
                                                                         byte[] it_thetaByte = new byte[]{(byte) ((it_theta >> 8) & 0xFF), (byte) ((it_theta) & 0xFF)};
                                                                         String st_thetaByte = bytesToHexString(it_thetaByte);
-                                                                        String strtemplon = Integer.toHexString(Float.floatToIntBits(lon));
-                                                                        if (strtemplon.length() < 8) {
-                                                                            for (int j = strtemplon.length() + 1; j <= 8; j++) {
-                                                                                strtemplon = "0" + strtemplon;
+                                                                        String strtempGD = Integer.toHexString(Float.floatToIntBits(GDAtt));
+                                                                        if (strtempGD.length() < 8) {
+                                                                            for (int j = strtempGD.length() + 1; j <= 8; j++) {
+                                                                                strtempGD = "0" + strtempGD;
                                                                             }
+                                                                        } else if (strtempGD.length() > 8) {
+                                                                            strtempGD = strtempGD.substring(strtempGD.length() - 8);
                                                                         }
-                                                                        String strtemplat = Integer.toHexString(Float.floatToIntBits(lat));
-                                                                        if (strtemplat.length() < 8) {
-                                                                            for (int j = strtemplat.length() + 1; j <= 8; j++) {
-                                                                                strtemplat = "0" + strtemplat;
+                                                                        String strtempFY = Integer.toHexString(Float.floatToIntBits(FYAtt));
+                                                                        if (strtempFY.length() < 8) {
+                                                                            for (int j = strtempFY.length() + 1; j <= 8; j++) {
+                                                                                strtempFY = "0" + strtempFY;
                                                                             }
-                                                                        }
-                                                                        String strtempH = Integer.toHexString(Float.floatToIntBits(H));
-                                                                        if (strtempH.length() < 8) {
-                                                                            for (int j = strtempH.length() + 1; j <= 8; j++) {
-                                                                                strtempH = "0" + strtempH;
-                                                                            }
+                                                                        } else if (strtempFY.length() > 8) {
+                                                                            strtempFY = strtempFY.substring(strtempFY.length() - 8);
                                                                         }
                                                                         String strtempddAng = Integer.toHexString(Float.floatToIntBits(ddAng));
                                                                         if (strtempddAng.length() < 8) {
                                                                             for (int j = strtempddAng.length() + 1; j <= 8; j++) {
                                                                                 strtempddAng = "0" + strtempddAng;
                                                                             }
+                                                                        } else if (strtempddAng.length() > 8) {
+                                                                            strtempddAng = strtempddAng.substring(strtempddAng.length() - 8);
                                                                         }
                                                                         String strtempdAng = Integer.toHexString(Float.floatToIntBits(dAng));
                                                                         if (strtempdAng.length() < 8) {
                                                                             for (int j = strtempdAng.length() + 1; j <= 8; j++) {
                                                                                 strtempdAng = "0" + strtempdAng;
                                                                             }
+                                                                        } else if (strtempdAng.length() > 8) {
+                                                                            strtempdAng = strtempdAng.substring(strtempdAng.length() - 8);
                                                                         }
                                                                         MetaHex = MetaHex + st_thetaByte +
-                                                                                strtemplon +
-                                                                                strtemplat +
-                                                                                strtempH +
+                                                                                strtempGD +
+                                                                                strtempFY +
                                                                                 strtempddAng +
                                                                                 strtempdAng;
                                                                     } else if (InstCode.equals("K4402")) {
@@ -1423,10 +1595,10 @@ public class InsGenWithoutTaskPlanInf {
                                                                         MetaHex = "100280210118";
                                                                         MetaHex = MetaHex + "A102";
                                                                         MetaHex = MetaHex + "0707";
-                                                                        //}else if (InstCode.equals("K4418")) {
-                                                                        //    MetaHex="100280210118";
-                                                                        //    MetaHex=MetaHex+"A102";
-                                                                        //    MetaHex=MetaHex+"0808";
+                                                                    } else if (InstCode.equals("K4417")) {
+                                                                        MetaHex = "100280210118";
+                                                                        MetaHex = MetaHex + "A102";
+                                                                        MetaHex = MetaHex + "0808";
                                                                     } else if (InstCode.equals("K4419")) {
                                                                         MetaHex = "100280210118";
                                                                         MetaHex = MetaHex + "A200";
@@ -1437,32 +1609,8 @@ public class InsGenWithoutTaskPlanInf {
                                                                         MetaHex = "100280210118";
                                                                         MetaHex = MetaHex + "A824";
                                                                         double GazeStartTime = timeVariableT0K4425;
-                                                                        String str_GazeStartTime = Long.toHexString(Double.doubleToLongBits(GazeStartTime));
-                                                                        if (str_GazeStartTime.length() < 16) {
-                                                                            for (int j = str_GazeStartTime.length() + 1; j <= 16; j++) {
-                                                                                str_GazeStartTime = "0" + str_GazeStartTime;
-                                                                            }
-                                                                        } else if (str_GazeStartTime.length() < 16) {
-                                                                            str_GazeStartTime = str_GazeStartTime.substring(str_GazeStartTime.length() - 16);
-                                                                        }
                                                                         float GazeStartGap = 720 * 1000000;
-                                                                        String str_GazeStartGap = Integer.toHexString(Float.floatToIntBits(GazeStartGap));
-                                                                        if (str_GazeStartGap.length() < 8) {
-                                                                            for (int j = str_GazeStartGap.length() + 1; j <= 8; j++) {
-                                                                                str_GazeStartGap = "0" + str_GazeStartGap;
-                                                                            }
-                                                                        } else if (str_GazeStartGap.length() > 8) {
-                                                                            str_GazeStartGap = str_GazeStartGap.substring(str_GazeStartGap.length() - 8);
-                                                                        }
                                                                         float GazeTime = (float) timeVariableGazeTimeK4425;
-                                                                        String str_GazeTime = Integer.toHexString(Float.floatToIntBits(GazeTime));
-                                                                        if (str_GazeTime.length() < 8) {
-                                                                            for (int j = str_GazeTime.length() + 1; j <= 8; j++) {
-                                                                                str_GazeTime = "0" + str_GazeTime;
-                                                                            }
-                                                                        } else if (str_GazeTime.length() > 8) {
-                                                                            str_GazeTime = str_GazeTime.substring(str_GazeTime.length() - 8);
-                                                                        }
                                                                         ArrayList<double[]> MissionTargetArea_iList = MissionTargetAreaList.get(i);
                                                                         double lonAll = 0;
                                                                         double latAll = 0;
@@ -1475,6 +1623,53 @@ public class InsGenWithoutTaskPlanInf {
                                                                         float lon = (float) lonAll;
                                                                         float lat = (float) latAll;
                                                                         float H = 0;
+                                                                        float ddAng = (float) 0.008;
+                                                                        float dAng = (float) 0.12;
+                                                                        if (K4425Map.containsKey("P23")) {
+                                                                            GazeStartTime = K4425Map.get("P23");
+                                                                        } else if (K4425Map.containsKey("P24")) {
+                                                                            GazeStartGap = K4425Map.get("P24");
+                                                                        } else if (K4425Map.containsKey("P25")) {
+                                                                            GazeTime = K4425Map.get("P25");
+                                                                        } else if (K4425Map.containsKey("P26_1")) {
+                                                                            lon = K4425Map.get("P26_1");
+                                                                        } else if (K4425Map.containsKey("P26_2")) {
+                                                                            lat = K4425Map.get("P26_2");
+                                                                        } else if (K4425Map.containsKey("P26_3")) {
+                                                                            H = K4425Map.get("P26_3");
+                                                                        } else if (K4425Map.containsKey("P27")) {
+                                                                            ddAng = K4425Map.get("P27");
+                                                                        } else if (K4425Map.containsKey("P28")) {
+                                                                            dAng = K4425Map.get("P28");
+                                                                        }
+
+                                                                        String str_GazeStartTime = Long.toHexString(Double.doubleToLongBits(GazeStartTime));
+                                                                        if (str_GazeStartTime.length() < 16) {
+                                                                            for (int j = str_GazeStartTime.length() + 1; j <= 16; j++) {
+                                                                                str_GazeStartTime = "0" + str_GazeStartTime;
+                                                                            }
+                                                                        } else if (str_GazeStartTime.length() < 16) {
+                                                                            str_GazeStartTime = str_GazeStartTime.substring(str_GazeStartTime.length() - 16);
+                                                                        }
+
+                                                                        String str_GazeStartGap = Integer.toHexString(Float.floatToIntBits(GazeStartGap));
+                                                                        if (str_GazeStartGap.length() < 8) {
+                                                                            for (int j = str_GazeStartGap.length() + 1; j <= 8; j++) {
+                                                                                str_GazeStartGap = "0" + str_GazeStartGap;
+                                                                            }
+                                                                        } else if (str_GazeStartGap.length() > 8) {
+                                                                            str_GazeStartGap = str_GazeStartGap.substring(str_GazeStartGap.length() - 8);
+                                                                        }
+
+                                                                        String str_GazeTime = Integer.toHexString(Float.floatToIntBits(GazeTime));
+                                                                        if (str_GazeTime.length() < 8) {
+                                                                            for (int j = str_GazeTime.length() + 1; j <= 8; j++) {
+                                                                                str_GazeTime = "0" + str_GazeTime;
+                                                                            }
+                                                                        } else if (str_GazeTime.length() > 8) {
+                                                                            str_GazeTime = str_GazeTime.substring(str_GazeTime.length() - 8);
+                                                                        }
+
                                                                         String strtemplon = Integer.toHexString(Float.floatToIntBits(lon));
                                                                         if (strtemplon.length() < 8) {
                                                                             for (int j = strtemplon.length() + 1; j <= 8; j++) {
@@ -1499,8 +1694,7 @@ public class InsGenWithoutTaskPlanInf {
                                                                         } else if (strtempH.length() > 8) {
                                                                             strtempH = strtempH.substring(strtempH.length() - 8);
                                                                         }
-                                                                        float ddAng = (float) 0.008;
-                                                                        float dAng = (float) 0.12;
+
                                                                         String strtempddAng = Integer.toHexString(Float.floatToIntBits(ddAng));
                                                                         if (strtempddAng.length() < 8) {
                                                                             for (int j = strtempddAng.length() + 1; j <= 8; j++) {
@@ -1522,8 +1716,8 @@ public class InsGenWithoutTaskPlanInf {
                                                                                 str_GazeTime.toUpperCase() +
                                                                                 strtemplon +
                                                                                 strtemplat +
-                                                                                strtempH+
-                                                                                strtempddAng+
+                                                                                strtempH +
+                                                                                strtempddAng +
                                                                                 strtempdAng;
                                                                     } else {
                                                                         break;
@@ -1635,7 +1829,8 @@ public class InsGenWithoutTaskPlanInf {
                                     InstDelta_tAll = InstDelta_tAll + InstDelta_tLastAll;
 
                                     //更新时间
-                                    if (sequencecode.contains("TCAG01")) {
+                                    if (sequencecode.contains("TCAG01") || sequencecode.contains("TCAG02") ||
+                                            sequencecode.contains("TCAG03") || sequencecode.contains("TCAG05")) {
                                         timeVariable.TSC = InstDelta_tLastAll;
                                     } else if (sequencecode.contains("TCGFG01")) {
                                         timeVariable.TGF = InstDelta_tLastAll;
@@ -2685,7 +2880,8 @@ public class InsGenWithoutTaskPlanInf {
                                 InstDelta_tAll = InstDelta_tAll + InstDelta_tLastAll;
 
                                 //更新时间
-                                if (sequencecode.contains("TCAG01")) {
+                                if (sequencecode.contains("TCAG01") || sequencecode.contains("TCAG02") ||
+                                        sequencecode.contains("TCAG03") || sequencecode.contains("TCAG05")) {
                                     timeVariable.TSC = InstDelta_tLastAll;
                                 } else if (sequencecode.contains("TCGFG01")) {
                                     timeVariable.TGF = InstDelta_tLastAll;
@@ -3010,7 +3206,7 @@ public class InsGenWithoutTaskPlanInf {
         TimeStarTime[5] = Double.parseDouble(StringTime.substring(17, 19));
         double[] ZeroTimeK4425 = {2018, 1, 1, 0, 0, 0};//参考时间
         //double TimeMiddle = (JD(TimeStarTime) - JD(ZeroTimeK4425)) * 24 * 60 * 60 * 1000000;
-        double TimeMiddle= Duration.between(ZeroTimeIns, time_point.toInstant()).getSeconds();
+        double TimeMiddle = Duration.between(ZeroTimeIns, time_point.toInstant()).getSeconds();
 
         return TimeMiddle;
     }
@@ -3032,7 +3228,7 @@ public class InsGenWithoutTaskPlanInf {
         TimeStarTime[4] = Double.parseDouble(StringTime.substring(14, 16));
         TimeStarTime[5] = Double.parseDouble(StringTime.substring(17, 19));
         //double TimeMiddle = (JD(TimeStarTime) - JD(ZeroTime)) * 24 * 60 * 60;
-        double TimeMiddle= Duration.between(ZeroTimeIns, time_point.toInstant()).getSeconds();
+        double TimeMiddle = Duration.between(ZeroTimeIns, time_point.toInstant()).getSeconds();
 
         return TimeMiddle;
     }
