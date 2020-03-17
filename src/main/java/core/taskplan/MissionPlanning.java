@@ -3,14 +3,17 @@ package core.taskplan;
 //import com.company.MangoDBConnector;
 //import com.company.MangoDBConnector;
 
+
 import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.UpdateOptions;
 import common.ConfigManager;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import javax.swing.*;
 import java.text.SimpleDateFormat;
@@ -85,7 +88,11 @@ public class MissionPlanning {
     //任务变量
     private static int MissionNumber;                   //任务数量
     private static int[] MissionTargetNum;
-    private static String[] MissionSerialNumber = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"};        //任务编号
+    private static String[] MissionSerialNumber = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+            "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
+            "21", "22", "23", "24", "25", "26", "27", "28", "29", "30",
+            "31", "32", "33", "34", "35", "36", "37", "38", "39", "40",
+            "41", "42", "43", "44", "45", "46", "47", "48", "49", "50"};        //任务编号
     private static int[] MissionImagingMode;            //成像模式，格式：每行代表一个任务。1：常规模式，2：凝视模式，3：定标模式
     private static int[] MissionTargetType;             //成像目标类型，格式：每行代表一个任务。1：点目标，2：区域目标
     private static double[][] MissionTargetArea;        //成像区域描述，格式：每行代表一个任务，每行格式[经度，纬度，经度，纬度，……]
@@ -114,6 +121,7 @@ public class MissionPlanning {
         String AxisType = "";
         int ii = 0;
         String auto_obliterateFlag = "false";
+        Instant start = Instant.now();
         for (Document document : properties) {
             if (document.getString("key").equals("amount_load")) {
                 LoadNumber = Integer.parseInt(document.get("value").toString());
@@ -189,6 +197,8 @@ public class MissionPlanning {
                 auto_obliterateFlag = document.get("value").toString();
             } else if (document.getString("key").equals("axis")) {
                 AxisType = document.getString("value");
+            } else if (document.getString("key").equals("update_time")) {
+                start = document.getDate("value").toInstant();
             } else
                 continue;
         }
@@ -309,11 +319,13 @@ public class MissionPlanning {
         OrbitalDataNum = 0;
 
         ArrayList<double[]> OrbitTimeList = new ArrayList<>();
+        ArrayList<Date> OrbitTimeDateList = new ArrayList<>();
         ArrayList<double[]> OrbitSatPositionGEIList = new ArrayList<>();
         ArrayList<double[]> OrbitSatVelocityGEIList = new ArrayList<>();
         ArrayList<double[]> OrbitSatPositionLLAList = new ArrayList<>();
         for (Document document : Orbitjson) {
             Date time_point = document.getDate("time_point");
+            OrbitTimeDateList.add(OrbitalDataNum, time_point);
             //时间转换为doubule型
             String StringTime;
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -828,13 +840,13 @@ public class MissionPlanning {
                 Satellite_LLA[2] = Orbital_SatPositionLLA[VisibilityTimePeriodAll[i][2 * j]][2];
                 double[] Satellite_ECEF = new double[3];
                 LLAToECEF(Satellite_LLA, Satellite_ECEF);
-                VisibilityAngle_j = DoublePointToAngle(Satellite_ECEF, TargetPosition_ECEF);
+                VisibilityAngle_j = DoublePointToAngle_ORF(Satellite_ECEF, TargetPosition_ECEF);
                 for (int j_k = VisibilityTimePeriodAll[i][2 * j]; j_k <= VisibilityTimePeriodAll[i][2 * j + 1]; j_k++) {
                     Satellite_LLA[0] = Orbital_SatPositionLLA[j_k][0];
                     Satellite_LLA[1] = Orbital_SatPositionLLA[j_k][1];
                     Satellite_LLA[2] = Orbital_SatPositionLLA[j_k][2];
                     LLAToECEF(Satellite_LLA, Satellite_ECEF);
-                    double VisibilityAngle_j_k = DoublePointToAngle(Satellite_ECEF, TargetPosition_ECEF);
+                    double VisibilityAngle_j_k = DoublePointToAngle_ORF(Satellite_ECEF, TargetPosition_ECEF);
                     if (VisibilityAngle_j_k < VisibilityAngle_j) {
                         VisibilityAngle_j = VisibilityAngle_j_k;
                     }
@@ -845,13 +857,13 @@ public class MissionPlanning {
                     Satellite_LLA[1] = Orbital_SatPositionLLA[VisibilityTimePeriodAll[i][2 * k]][1];
                     Satellite_LLA[2] = Orbital_SatPositionLLA[VisibilityTimePeriodAll[i][2 * k]][2];
                     LLAToECEF(Satellite_LLA, Satellite_ECEF);
-                    VisibilityAngle_k = DoublePointToAngle(Satellite_ECEF, TargetPosition_ECEF);
+                    VisibilityAngle_k = DoublePointToAngle_ORF(Satellite_ECEF, TargetPosition_ECEF);
                     for (int k_k = VisibilityTimePeriodAll[i][2 * k]; k_k <= VisibilityTimePeriodAll[i][2 * k + 1]; k_k++) {
                         Satellite_LLA[0] = Orbital_SatPositionLLA[k_k][0];
                         Satellite_LLA[1] = Orbital_SatPositionLLA[k_k][1];
                         Satellite_LLA[2] = Orbital_SatPositionLLA[k_k][2];
                         LLAToECEF(Satellite_LLA, Satellite_ECEF);
-                        double VisibilityAngle_k_k = DoublePointToAngle(Satellite_ECEF, TargetPosition_ECEF);
+                        double VisibilityAngle_k_k = DoublePointToAngle_ORF(Satellite_ECEF, TargetPosition_ECEF);
                         if (VisibilityAngle_k_k < VisibilityAngle_j) {
                             VisibilityAngle_k = VisibilityAngle_k_k;
                         }
@@ -912,6 +924,43 @@ public class MissionPlanning {
                 PlanningFlag[j] = 100;
             }
         }
+
+        //读取阳光规避弧段
+        try {
+            //连接数据库
+            MongoClient mongoClient = MangoDBConnector.getClient();
+            //获取名为"temp"的数据库
+            MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");
+            //阳光规避表
+            MongoCollection<Document> Data_AvoidanceSunlightjson = mongoDatabase.getCollection("avoidance_sunlight");
+            Bson queryBsonOrder = Filters.eq("time_point", start);
+            Document D_AvoidanceSunlightjson = Data_AvoidanceSunlightjson.find(queryBsonOrder).first();
+            if (D_AvoidanceSunlightjson != null) {
+                ArrayList<Document> Sun_avoid_window = (ArrayList<Document>) D_AvoidanceSunlightjson.get("avoid_window");
+
+                ArrayList<Instant[]> SunAvoidWindowList = new ArrayList<>();
+                for (Document document : Sun_avoid_window) {
+                    Date start_time=document.getDate("start_time");
+                    Date end_time=document.getDate("end_time");
+                    Instant[] SunAvoidWindowList_i=new Instant[]{start_time.toInstant().plusSeconds(-180),end_time.toInstant().plusSeconds(180)};
+                    SunAvoidWindowList.add(SunAvoidWindowList_i);
+                }
+
+                for (int i = 0; i < (int) OrbitDataCount; i++) {
+                    for (int j = 0; j < SunAvoidWindowList.size(); j++) {
+                        //System.out.println(OrbitTimeDateList.get(i).toInstant().isAfter(SunAvoidWindowList.get(j)[0]));
+                        //System.out.println(OrbitTimeDateList.get(i).toInstant().isBefore(SunAvoidWindowList.get(j)[1]));
+                        if (OrbitTimeDateList.get(i).toInstant().isAfter(SunAvoidWindowList.get(j)[0]) &&
+                                OrbitTimeDateList.get(i).toInstant().isBefore(SunAvoidWindowList.get(j)[1])) {
+                            PlanningFlag[i] = 100;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
 
         //启发式算法分配任务
         PlanningMissionTimePeriod = new int[MissionNumber][2];
@@ -977,14 +1026,14 @@ public class MissionPlanning {
                 Satellite_LLA[2] = Orbital_SatPositionLLA[VisibilityTimePeriodAll[i][2 * j]][2];
                 double[] Satellite_ECEF = new double[3];
                 LLAToECEF(Satellite_LLA, Satellite_ECEF);
-                VisibilityAngle_j = DoublePointToAngle(Satellite_ECEF, TargetPosition_ECEF);
+                VisibilityAngle_j = DoublePointToAngle_ORF(Satellite_ECEF, TargetPosition_ECEF);
                 MiddTimePeriod = VisibilityTimePeriodAll[i][2 * j];
                 for (int j_k = VisibilityTimePeriodAll[i][2 * j]; j_k <= VisibilityTimePeriodAll[i][2 * j + 1]; j_k++) {
                     Satellite_LLA[0] = Orbital_SatPositionLLA[j_k][0];
                     Satellite_LLA[1] = Orbital_SatPositionLLA[j_k][1];
                     Satellite_LLA[2] = Orbital_SatPositionLLA[j_k][2];
                     LLAToECEF(Satellite_LLA, Satellite_ECEF);
-                    double VisibilityAngle_j_k = DoublePointToAngle(Satellite_ECEF, TargetPosition_ECEF);
+                    double VisibilityAngle_j_k = DoublePointToAngle_ORF(Satellite_ECEF, TargetPosition_ECEF);
                     if (VisibilityAngle_j_k < VisibilityAngle_j) {
                         VisibilityAngle_j = VisibilityAngle_j_k;
                         MiddTimePeriod = j_k;
@@ -1330,13 +1379,89 @@ public class MissionPlanning {
                                             ArrayList<String> mission_numberArray = (ArrayList<String>) document1.get("mission_number");
                                             for (String document2 : mission_numberArray) {
                                                 if (document2.equals(StationMissionNumberList.get(i))) {
-                                                    if (document1.containsKey("window_start_time") && document1.get("window_start_time") != null) {
-                                                        Document TranWindowjsonObject = new Document();
-                                                        TranWindowjsonObject.append("station_name", document.get("station_name").toString());
-                                                        TranWindowjsonObject.append("start_time", document1.getDate("window_start_time"));
-                                                        TranWindowjsonObject.append("end_time", document1.getDate("window_end_time"));
-                                                        //TranWindowjsonObject.append("mission_number", StationMissionNumberList.get(i));
-                                                        TranWindowjsonArry.add(TranWindowjsonObject);
+                                                    if (document1.containsKey("window_start_time") && document1.get("window_start_time") != null && OrbitTimeDateList.size()>0) {
+                                                        Date window_start_time=document1.getDate("window_start_time");
+                                                        Date window_end_time=document1.getDate("window_end_time");
+                                                        int window_start_time_int= (int) Duration.between(OrbitTimeDateList.get(0).toInstant(), window_start_time.toInstant()).getSeconds();
+                                                        int window_end_time_int=(int) Duration.between(OrbitTimeDateList.get(0).toInstant(), window_end_time.toInstant()).getSeconds();
+                                                        if (window_end_time_int < OrbitTimeDateList.size() && window_start_time_int>=0) {
+                                                            Boolean Useflag_before=false;
+                                                            Boolean Useflag_now=false;
+                                                            int[] windos_mid=new int[2];
+                                                            for (int j = window_start_time_int; j <= window_end_time_int; j++) {
+                                                                if (j < PlanningFlag.length && PlanningFlag[j]==0) {
+                                                                    Useflag_before=Useflag_now;
+                                                                    Useflag_now=true;
+                                                                }else {
+                                                                    Useflag_before=Useflag_now;
+                                                                    Useflag_now=false;
+                                                                }
+                                                                if (Useflag_before == false && Useflag_now==true) {
+                                                                    windos_mid[0]=j;
+                                                                    int sum_Flag=0;
+                                                                    for (int k = j-9; k < j; k++) {
+                                                                        if (k >= 0 && k<PlanningFlag.length) {
+                                                                            sum_Flag=sum_Flag+PlanningFlag[k];
+                                                                        }
+                                                                    }
+                                                                    if (sum_Flag != 0) {
+                                                                        windos_mid[0]=j+(int) (ImageTimeMin/2);
+                                                                    }
+                                                                }else if (Useflag_before == true && Useflag_now==false) {
+                                                                    windos_mid[1]=j-1;
+                                                                    int sum_Flag=0;
+                                                                    for (int k = j; k < j+10; k++) {
+                                                                        if (k >= 0 && k<PlanningFlag.length) {
+                                                                            sum_Flag=sum_Flag+PlanningFlag[k];
+                                                                        }
+                                                                    }
+                                                                    if (sum_Flag != 0) {
+                                                                        windos_mid[1]=j-(int) (ImageTimeMin/2);
+                                                                    }
+                                                                    if (windos_mid[0] < OrbitTimeDateList.size() && windos_mid[1]<OrbitTimeDateList.size() &&
+                                                                            (windos_mid[1]-windos_mid[0]>=10)) {
+                                                                        int[] windos_midmid=new int[]{windos_mid[0],windos_mid[1]};
+                                                                        Document TranWindowjsonObject = new Document();
+                                                                        TranWindowjsonObject.append("station_name", document.get("station_name").toString());
+                                                                        TranWindowjsonObject.append("start_time", OrbitTimeDateList.get(windos_midmid[0]));
+                                                                        TranWindowjsonObject.append("end_time", OrbitTimeDateList.get(windos_midmid[1]));
+                                                                        //TranWindowjsonObject.append("mission_number", StationMissionNumberList.get(i));
+                                                                        TranWindowjsonArry.add(TranWindowjsonObject);
+                                                                        for (int k = windos_mid[0]-(int) (ImageTimeMin/2); k <= windos_mid[1]+(int) (ImageTimeMin/2); k++) {
+                                                                            if (k >=0 && k<PlanningFlag.length) {
+                                                                                PlanningFlag[k]=101;
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }else if (j == window_end_time_int && Useflag_now==true) {
+                                                                    windos_mid[1]=j;
+                                                                    int sum_Flag=0;
+                                                                    for (int k = j; k < j+10; k++) {
+                                                                        if (k >= 0 && k<PlanningFlag.length) {
+                                                                            sum_Flag=sum_Flag+PlanningFlag[k];
+                                                                        }
+                                                                    }
+                                                                    if (sum_Flag != 0) {
+                                                                        windos_mid[1]=j-(int) (ImageTimeMin/2);
+                                                                    }
+                                                                    if (windos_mid[0] < OrbitTimeDateList.size() && windos_mid[1]<OrbitTimeDateList.size() &&
+                                                                            ((windos_mid[1]-windos_mid[0]>=10))) {
+                                                                        int[] windos_midmid=new int[]{windos_mid[0],windos_mid[1]};
+                                                                        Document TranWindowjsonObject = new Document();
+                                                                        TranWindowjsonObject.append("station_name", document.get("station_name").toString());
+                                                                        TranWindowjsonObject.append("start_time", OrbitTimeDateList.get(windos_midmid[0]));
+                                                                        TranWindowjsonObject.append("end_time", OrbitTimeDateList.get(windos_midmid[1]));
+                                                                        //TranWindowjsonObject.append("mission_number", StationMissionNumberList.get(i));
+                                                                        TranWindowjsonArry.add(TranWindowjsonObject);
+                                                                        for (int k = windos_mid[0]-(int) (ImageTimeMin/2); k <= windos_mid[1]+(int) (ImageTimeMin/2); k++) {
+                                                                            if (k >=0 && k<PlanningFlag.length) {
+                                                                                PlanningFlag[k]=101;
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
@@ -3279,6 +3404,20 @@ public class MissionPlanning {
         double a = Error[0] * Target_ECEF[0] + Error[1] * Target_ECEF[1] + Error[2] * Target_ECEF[2];
         double b = sqrt(Error[0] * Error[0] + Error[1] * Error[1] + Error[2] * Error[2]);
         double c = sqrt(Target_ECEF[0] * Target_ECEF[0] + Target_ECEF[1] * Target_ECEF[1] + Target_ECEF[2] * Target_ECEF[2]);
+
+        double Ang = acos(a / (b * c));
+        return Ang;
+    }
+
+    private static double DoublePointToAngle_ORF(double[] Satellite_ECEF, double[] Target_ECEF) {
+        double[] Error = new double[3];
+        Error[0] = Satellite_ECEF[0] - Target_ECEF[0];
+        Error[1] = Satellite_ECEF[1] - Target_ECEF[1];
+        Error[2] = Satellite_ECEF[2] - Target_ECEF[2];
+
+        double a = Error[0] * Satellite_ECEF[0] + Error[1] * Satellite_ECEF[1] + Error[2] * Satellite_ECEF[2];
+        double b = sqrt(Error[0] * Error[0] + Error[1] * Error[1] + Error[2] * Error[2]);
+        double c = sqrt(Satellite_ECEF[0] * Satellite_ECEF[0] + Satellite_ECEF[1] * Satellite_ECEF[1] + Satellite_ECEF[2] * Satellite_ECEF[2]);
 
         double Ang = acos(a / (b * c));
         return Ang;

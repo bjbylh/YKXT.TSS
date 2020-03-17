@@ -1671,7 +1671,7 @@ public class InstructionGeneration {
                                                                             for (int j = str_GazeStartTime.length() + 1; j <= 16; j++) {
                                                                                 str_GazeStartTime = "0" + str_GazeStartTime;
                                                                             }
-                                                                        } else if (str_GazeStartTime.length() < 16) {
+                                                                        } else if (str_GazeStartTime.length() > 16) {
                                                                             str_GazeStartTime = str_GazeStartTime.substring(str_GazeStartTime.length() - 16);
                                                                         }
                                                                         float GazeStartGap = 720 * 1000000;

@@ -401,92 +401,92 @@ public class InsGenWithoutTaskPlanInf {
             for (Document TaskParams : MissionInstructionDefautArrayChild) {
                 if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P20")) {
                     if (!K4401Map.containsKey("P20")) {
-                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
-                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("default_value").toString());
                             K4401Map.put(TaskParams.get("code").toString(), P_value_Temp);
                         }
                     }
                 } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P21")) {
                     if (!K4401Map.containsKey("P21")) {
-                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
-                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("default_value").toString());
                             K4401Map.put(TaskParams.get("code").toString(), P_value_Temp);
                         }
                     }
                 } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P22")) {
                     if (!K4401Map.containsKey("P22")) {
-                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
-                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("default_value").toString());
                             K4401Map.put(TaskParams.get("code").toString(), P_value_Temp);
                         }
                     }
                 } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P27")) {
                     if (!K4401Map.containsKey("P27")) {
-                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
-                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("default_value").toString());
                             K4401Map.put(TaskParams.get("code").toString(), P_value_Temp);
                         }
                     }
                 } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P28")) {
                     if (!K4401Map.containsKey("P28")) {
-                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
-                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("default_value").toString());
                             K4401Map.put(TaskParams.get("code").toString(), P_value_Temp);
                         }
                     }
                 } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P23")) {
                     if (!K4425Map.containsKey("P23")) {
-                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
-                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("default_value").toString());
                             K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
                         }
                     }
                 } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P24")) {
                     if (!K4425Map.containsKey("P24")) {
-                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
-                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("default_value").toString());
                             K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
                         }
                     }
                 } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P25")) {
                     if (!K4425Map.containsKey("P25")) {
-                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
-                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("default_value").toString());
                             K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
                         }
                     }
                 } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P26_1")) {
                     if (!K4425Map.containsKey("P26_1")) {
-                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
-                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("default_value").toString());
                             K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
                         }
                     }
                 } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P26_2")) {
                     if (!K4425Map.containsKey("P26_2")) {
-                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
-                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("default_value").toString());
                             K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
                         }
                     }
                 } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P26_3")) {
                     if (!K4425Map.containsKey("P26_3")) {
-                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
-                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("default_value").toString());
                             K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
                         }
                     }
                 } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P27")) {
                     if (!K4425Map.containsKey("P27")) {
-                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
-                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("default_value").toString());
                             K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
                         }
                     }
                 } else if (TaskParams.containsKey("code") && TaskParams.get("code").toString().equals("P28")) {
                     if (!K4425Map.containsKey("P28")) {
-                        if (TaskParams.containsKey("value") && TaskParams.get("value").toString() != null) {
-                            float P_value_Temp = Float.parseFloat(TaskParams.get("value").toString());
+                        if (TaskParams.containsKey("default_value") && TaskParams.get("default_value").toString() != null) {
+                            float P_value_Temp = Float.parseFloat(TaskParams.get("default_value").toString());
                             K4425Map.put(TaskParams.get("code").toString(), P_value_Temp);
                         }
                     }
@@ -1648,7 +1648,7 @@ public class InsGenWithoutTaskPlanInf {
                                                                             for (int j = str_GazeStartTime.length() + 1; j <= 16; j++) {
                                                                                 str_GazeStartTime = "0" + str_GazeStartTime;
                                                                             }
-                                                                        } else if (str_GazeStartTime.length() < 16) {
+                                                                        } else if (str_GazeStartTime.length() > 16) {
                                                                             str_GazeStartTime = str_GazeStartTime.substring(str_GazeStartTime.length() - 16);
                                                                         }
 

@@ -123,15 +123,18 @@ public class OrbitCore {
     }
 
     public static void main(String[] args) {
-//        OrbitCore orbitCore = new OrbitCore("5d4bd356de590f3744f9c708");
-//        orbitCore.startup();
-//
-//        JsonArray jsonArray = new JsonArray();
-//
-//        for (JsonElement jsonElement : jsonArray) {
-//            Document document = new Document();
-//            document = Document.parse(jsonElement.getAsJsonObject().toString());
-//            document.getDate("time_point");
-//        }
+        String s = "0303";
+        Integer integer = Integer.valueOf(s.trim(), 16);
+        System.out.println(integer);
+
+        String s2 = "1800";//0001100000000000
+        Integer integer2 = Integer.valueOf(s2.trim(), 16);
+        System.out.println(integer2 & 0xFC00);
+
+        int i = integer + integer2;
+
+        System.out.println(Integer.toHexString(i));
+//        Float f=0.008f;
+//        System.out.println(Integer.toHexString(Float.floatToIntBits(f)));
     }
 }
