@@ -46,11 +46,6 @@ public class RedisDataEntity {
         data.addProperty("firsttime", Instant.now().toString());
         data.addProperty("cycle", "3600*24");
         data.addProperty("count", "0");
-        //data.addProperty("content","XXXXX");
-//        String imageorder = "20190903095709744,20190903095709745,20190903095709746,20190903095709747,20190903095709748";
-//        String stationmission = "11";
-//        data.addProperty("imageorder", imageorder);
-//        data.addProperty("stationmission", stationmission);
         ret.add("Head", head);
         ret.add("Data", data);
         return ret.toString();
@@ -60,7 +55,7 @@ public class RedisDataEntity {
         JsonObject ret = new JsonObject();
         JsonObject head = GenHead(MsgType.CHECK_QUERY, "MAG", "TSS", "");
         JsonObject data = new JsonObject();
-        String imageorder = "20190903095709744,20190903095709745,20190903095709746,20190903095709747,20190903095709748";
+        String imageorder = "20200812092447914";
         String stationmission = "11";
         data.addProperty("imageorder", imageorder);
         data.addProperty("stationmission", stationmission);
@@ -164,6 +159,6 @@ public class RedisDataEntity {
     }
 
     public static void main(String[] args) {
-        System.out.println(GenDbRefreshData("33131"));
+        GenNewTaskErcy();
     }
 }

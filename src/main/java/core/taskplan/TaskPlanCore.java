@@ -243,9 +243,7 @@ public class TaskPlanCore {
                 e.printStackTrace();
             }
 
-            System.out.println("[" + Instant.now().
-
-                    toString() + "] " + "Finished");
+            System.out.println("[" + Instant.now().toString() + "] " + "Finished");
             if (TaskType.CRONTAB == taskType)
 
                 updateMainStatus(id, MainTaskStatus.SUSPEND);
@@ -341,9 +339,7 @@ public class TaskPlanCore {
                     saleChannel.add(MainTaskStatus.NEW.name());
                     saleChannel.add(MainTaskStatus.SUSPEND.name());
                     saleChannel.add(MainTaskStatus.RUNNING.name());
-                    query.put("status", new
-
-                            BasicDBObject("$in", saleChannel));
+                    query.put("status", new BasicDBObject("$in", saleChannel));
 
 
                     FindIterable<Document> main_task = tasks.find(query);
