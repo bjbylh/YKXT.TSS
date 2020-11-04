@@ -21,16 +21,18 @@ import static java.lang.Math.*;
 public class AttitudeCalculation {
     //载荷变量
     // 载荷安装 矩阵，格式：每行代表一个载荷，每行格式[光轴与本体系x轴夹角，光轴与本体系y轴夹角，光轴与本体系z轴夹角]，单位：弧度
-    private static int LoadNumber = 4;                    //载荷数量
+    private static int LoadNumber = 5;                    //载荷数量
     private static double[][] LoadInstall = {{90 * Math.PI * 180.0, 86.3 * Math.PI * 180.0, 3.7 * Math.PI * 180.0},
             {90 * Math.PI * 180.0, 93.7 * Math.PI * 180.0, 3.7 * Math.PI * 180.0},
             {90 * Math.PI * 180.0, 85.6 * Math.PI * 180.0, 3.7 * Math.PI * 180.0},
-            {90 * Math.PI * 180.0, 94.4 * Math.PI * 180.0, 3.7 * Math.PI * 180.0}};
+            {90 * Math.PI * 180.0, 94.4 * Math.PI * 180.0, 3.7 * Math.PI * 180.0},
+            {90 * Math.PI / 180.0, 90 * Math.PI / 180.0, 0 * Math.PI / 180.0}};
     //载荷视场角，格式：每行代表一个载荷，每行格式[内视角，外视角，上视角，下视角]，单位：弧度
     private static double[][] LoadViewAng = {{3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0},
             {3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0},
             {3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0},
-            {3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0}};
+            {3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0},
+            {0.1 * Math.PI / 180.0, 0.1 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 / Math.PI / 180.0}};
 
     //卫星变量
     //卫星最大机动能力，最大机动欧拉角，格式[绕x轴最大机动角度，绕y轴最大机动角度，绕z轴最大机动角度]，单位：弧度
@@ -276,6 +278,9 @@ public class AttitudeCalculation {
                 if (document.getString("image_type").equals("Point")) {
                     MissionTargetType[MissionNumber] = 1;
                 }
+                if (document.getString("image_type").equals("LineString") && document.getString("image_mode").equals("指向切换")) {
+                    MissionTargetType[MissionNumber] = 3;
+                }
                 MisssionTargetHeight[MissionNumber][0] = Double.parseDouble(document.getString("min_height_orbit"));
                 MisssionTargetHeight[MissionNumber][1] = Double.parseDouble(document.getString("max_height_orbit"));
                 MissionNumber = MissionNumber + 1;
@@ -335,18 +340,57 @@ public class AttitudeCalculation {
                         Mission_FLag = 1;
                         break;
                     } else {
-                        double latSum = 0;
-                        double lonSum = 0;
-                        for (int k = 0; k < TargetNum[j]; k++) {
-                            latSum = latSum + MissionTargetArea[j][2 * k];
-                            lonSum = lonSum + MissionTargetArea[j][2 * k + 1];
+                        if (MissionTargetType[j] == 3) {
+                            double timelong=(StopTime_JD-StarTime_JD)*(24*60*60);
+                            if (timelong <= ((TargetNum[j]-1)*100)) {
+                                double latSum = 0;
+                                double lonSum = 0;
+                                for (int k = 0; k < TargetNum[j]; k++) {
+                                    latSum = latSum + MissionTargetArea[j][2 * k];
+                                    lonSum = lonSum + MissionTargetArea[j][2 * k + 1];
+                                }
+                                Target_LLA[0] = latSum / TargetNum[j];
+                                Target_LLA[1] = lonSum / TargetNum[j];
+                                Target_LLA[2] = 0;
+                                LoadNum = PlanningMissionLoad[j];
+                                Mission_FLag = 1;
+                                break;
+                            }else {
+                                double timelongOne=(timelong-((TargetNum[j]-1)*100))/(TargetNum[j]*1.0);
+                                double Nowtime=(NowTime_JD-StarTime_JD)*(24*60*60);
+                                int TargetInx= (int) Math.floor(Nowtime/(timelongOne+100));
+                                if ((Nowtime-(TargetInx*(timelongOne+100))) <= timelongOne) {
+                                    Target_LLA[0] = MissionTargetArea[j][2 * TargetInx];
+                                    Target_LLA[1] = MissionTargetArea[j][2 * TargetInx + 1];
+                                    Target_LLA[2] = 0;
+                                }else {
+                                    double timeadd=(Nowtime-(TargetInx*(timelongOne+100)))-timelongOne;
+                                    double lon2=MissionTargetArea[j][2 * TargetInx+2];
+                                    double lon1=MissionTargetArea[j][2 * TargetInx];
+                                    double lat2=MissionTargetArea[j][2 * TargetInx + 3];
+                                    double lat1=MissionTargetArea[j][2 * TargetInx + 1];
+                                    Target_LLA[0] = lon1+(((lon2-lon1)/100.0)*timeadd);
+                                    Target_LLA[1] = lat1+(((lat2-lat1)/100.0)*timeadd);
+                                    Target_LLA[2] = 0;
+                                }
+                                LoadNum = PlanningMissionLoad[j];
+                                Mission_FLag = 1;
+                                break;
+                            }
+                        }else {
+                            double latSum = 0;
+                            double lonSum = 0;
+                            for (int k = 0; k < TargetNum[j]; k++) {
+                                latSum = latSum + MissionTargetArea[j][2 * k];
+                                lonSum = lonSum + MissionTargetArea[j][2 * k + 1];
+                            }
+                            Target_LLA[0] = latSum / TargetNum[j];
+                            Target_LLA[1] = lonSum / TargetNum[j];
+                            Target_LLA[2] = 0;
+                            LoadNum = PlanningMissionLoad[j];
+                            Mission_FLag = 1;
+                            break;
                         }
-                        Target_LLA[0] = latSum / TargetNum[j];
-                        Target_LLA[1] = lonSum / TargetNum[j];
-                        Target_LLA[2] = 0;
-                        LoadNum = PlanningMissionLoad[j];
-                        Mission_FLag = 1;
-                        break;
                     }
                 }
             }
@@ -750,7 +794,7 @@ public class AttitudeCalculation {
     }
 
     //临边观测、恒星定标模式姿态角计算
-    private static void StarLimbAttitudeCalculation(ArrayList<Document> MissionStarDocument, ArrayList<Document> MissionLimbDocument,ArrayList<Document> MissionCalibrateDocument, double[][] Time, double[][] SatPosition_GEI, double[][] SatVelocity_GEI, double[][] SatPosition_LLA, Date[] Time_Point) {
+    private static void StarLimbAttitudeCalculation(ArrayList<Document> MissionStarDocument, ArrayList<Document> MissionLimbDocument, ArrayList<Document> MissionCalibrateDocument, double[][] Time, double[][] SatPosition_GEI, double[][] SatVelocity_GEI, double[][] SatPosition_LLA, Date[] Time_Point) {
         MongoClient mongoClient = MangoDBConnector.getClient();
         //获取名为"temp"的数据库
         //MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);

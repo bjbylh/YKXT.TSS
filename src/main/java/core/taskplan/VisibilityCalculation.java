@@ -1,6 +1,7 @@
 package core.taskplan;
 
 //import com.company.MangoDBConnector;
+
 import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -16,15 +17,6 @@ import java.time.Instant;
 import java.util.*;
 
 import static java.lang.Math.*;
-
-//import common.mongo.DbDefine;
-//import com.sun.source.tree.Tree;
-
-//import common.mongo.MangoDBConnector;
-
-//import common.mongo.MangoDBConnector;
-
-//import common.mongo.MangoDBConnector;
 
 public class VisibilityCalculation {
     private static int TimeZone = -8;                     //北京时区到世界时-8
@@ -49,19 +41,21 @@ public class VisibilityCalculation {
 
     //载荷变量
     // 载荷安装 矩阵，格式：每行代表一个载荷，每行格式[光轴与本体系x轴夹角，光轴与本体系y轴夹角，光轴与本体系z轴夹角]，单位：弧度
-    private static int LoadNumber = 4;                    //载荷数量
-    private static double[][] LoadInstall = {{90 * Math.PI * 180.0, 86.3 * Math.PI * 180.0, 3.7 * Math.PI * 180.0},
-            {90 * Math.PI * 180.0, 93.7 * Math.PI * 180.0, 3.7 * Math.PI * 180.0},
-            {90 * Math.PI * 180.0, 85.6 * Math.PI * 180.0, 3.7 * Math.PI * 180.0},
-            {90 * Math.PI * 180.0, 94.4 * Math.PI * 180.0, 3.7 * Math.PI * 180.0}};
+    private static int LoadNumber = 5;                    //载荷数量
+    private static double[][] LoadInstall = {{90 * Math.PI / 180.0, 86.3 * Math.PI / 180.0, 3.7 * Math.PI / 180.0},
+            {90 * Math.PI / 180.0, 93.7 * Math.PI / 180.0, 3.7 * Math.PI / 180.0},
+            {90 * Math.PI / 180.0, 85.6 * Math.PI / 180.0, 3.7 * Math.PI / 180.0},
+            {90 * Math.PI / 180.0, 94.4 * Math.PI / 180.0, 3.7 * Math.PI / 180.0},
+            {90 * Math.PI / 180.0, 90 * Math.PI / 180.0, 0 * Math.PI / 180.0}};
     //载荷视场角，格式：每行代表一个载荷，每行格式[内视角，外视角，上视角，下视角]，单位：弧度
-    private static double[][] LoadViewAng = {{3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0},
-            {3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0},
-            {3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0},
-            {3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0, 3 * Math.PI * 180.0}};
+    private static double[][] LoadViewAng = {{3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0},
+            {3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0},
+            {3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 / Math.PI / 180.0},
+            {3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 / Math.PI / 180.0},
+            {0.1 * Math.PI / 180.0, 0.1 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 / Math.PI / 180.0}};
     //卫星变量
     //卫星最大机动能力，最大机动欧拉角，格式[绕x轴最大机动角度，绕y轴最大机动角度，绕z轴最大机动角度]，单位：弧度
-    public static double[] SatelliteManeuverEuler = {5 * Math.PI * 180.0, 5 * Math.PI * 180.0, 5 * Math.PI * 180.0};
+    public static double[] SatelliteManeuverEuler = {5 * Math.PI / 180.0, 5 * Math.PI / 180.0, 5 * Math.PI / 180.0};
 
     //地面站变量
     private static int StationNumber;                   //地面站数量
@@ -131,15 +125,15 @@ public class VisibilityCalculation {
                     ArrayList<double[]> MissionTargetArea_iList = new ArrayList<double[]>();
                     MissionTargetArea_iList = GetRegionPoint(target_region);
                     MissionTargetAreaList.add(MissionNumber, MissionTargetArea_iList);
-                    /*
                     //读取指定载荷
                     ArrayList<Document> expected_cam = (ArrayList<Document>) document.get("expected_cam");
-                    int[] MissionLoadType_iList = new int[4];
+                    int[] MissionLoadType_iList = new int[5];
                     if (expected_cam.size() == 0) {
-                        MissionLoadType_iList[0] = 1;
-                        MissionLoadType_iList[1] = 1;
-                        MissionLoadType_iList[2] = 1;
-                        MissionLoadType_iList[3] = 1;
+                        MissionLoadType_iList[0] = 0;
+                        MissionLoadType_iList[1] = 0;
+                        MissionLoadType_iList[2] = 0;
+                        MissionLoadType_iList[3] = 0;
+                        MissionLoadType_iList[4] = 0;
                     } else {
                         for (Document document1 : expected_cam) {
                             if (document1 != null) {
@@ -155,12 +149,18 @@ public class VisibilityCalculation {
                                         MissionLoadType_iList[3] = 1;
                                     }
                                 }
+                                if (sensors.size() > 1) {
+                                    MissionLoadType_iList[0] = 0;
+                                    MissionLoadType_iList[1] = 0;
+                                    MissionLoadType_iList[2] = 0;
+                                    MissionLoadType_iList[3] = 0;
+                                    MissionLoadType_iList[4] = 1;
+                                }
                             }
                         }
                     }
                     MissionLoadTypeList.add(MissionNumber, MissionLoadType_iList);
-                    */
-                    //读取指定载荷
+                    /*//读取指定载荷
                     int[] MissionLoadType_iList = new int[]{0,0,0,0};
                     Boolean MissionLoadTypeFlag=true;
                     if (document.containsKey("mission_params") && document.get("mission_params")!=null) {
@@ -205,7 +205,7 @@ public class VisibilityCalculation {
                             }
                         }
                     }
-                    MissionLoadTypeList.add(MissionNumber, MissionLoadType_iList);
+                    MissionLoadTypeList.add(MissionNumber, MissionLoadType_iList);*/
                     //读取任务期望时间
                     Date expected_start_time = document.getDate("expected_start_time");
                     double[] MissionStarTime_iList = new double[6];
@@ -1097,15 +1097,15 @@ public class VisibilityCalculation {
                     ArrayList<double[]> MissionTargetArea_iList = new ArrayList<double[]>();
                     MissionTargetArea_iList = GetRegionPoint(target_region);
                     MissionTargetAreaList.add(MissionNumber, MissionTargetArea_iList);
-                    /*
                     //读取指定载荷
                     ArrayList<Document> expected_cam = (ArrayList<Document>) document.get("expected_cam");
-                    int[] MissionLoadType_iList = new int[4];
+                    int[] MissionLoadType_iList = new int[5];
                     if (expected_cam.size() == 0) {
-                        MissionLoadType_iList[0] = 1;
-                        MissionLoadType_iList[1] = 1;
-                        MissionLoadType_iList[2] = 1;
-                        MissionLoadType_iList[3] = 1;
+                        MissionLoadType_iList[0] = 0;
+                        MissionLoadType_iList[1] = 0;
+                        MissionLoadType_iList[2] = 0;
+                        MissionLoadType_iList[3] = 0;
+                        MissionLoadType_iList[4] = 0;
                     } else {
                         for (Document document1 : expected_cam) {
                             if (document1 != null) {
@@ -1121,12 +1121,18 @@ public class VisibilityCalculation {
                                         MissionLoadType_iList[3] = 1;
                                     }
                                 }
+                                if (sensors.size() > 1) {
+                                    MissionLoadType_iList[0] = 0;
+                                    MissionLoadType_iList[1] = 0;
+                                    MissionLoadType_iList[2] = 0;
+                                    MissionLoadType_iList[3] = 0;
+                                    MissionLoadType_iList[4] = 1;
+                                }
                             }
                         }
                     }
                     MissionLoadTypeList.add(MissionNumber, MissionLoadType_iList);
-                    */
-                    //读取指定载荷
+                    /*//读取指定载荷
                     int[] MissionLoadType_iList = new int[]{0,0,0,0};
                     Boolean MissionLoadTypeFlag=true;
                     if (document.containsKey("mission_params") && document.get("mission_params")!=null) {
@@ -1171,7 +1177,7 @@ public class VisibilityCalculation {
                             }
                         }
                     }
-                    MissionLoadTypeList.add(MissionNumber, MissionLoadType_iList);
+                    MissionLoadTypeList.add(MissionNumber, MissionLoadType_iList);*/
                     //读取任务期望时间
                     Date expected_start_time = document.getDate("expected_start_time");
                     double[] MissionStarTime_iList = new double[6];
@@ -2058,8 +2064,10 @@ public class VisibilityCalculation {
             if (ViewAng_Min > ViewAngle[i])
                 ViewAng_Min = ViewAngle[i];
         }
-        double[] ViewTheta_xz = {OpticalTheta_xz - ViewAng_Min - Euler_Max[1], OpticalTheta_xz + ViewAng_Min + Euler_Max[1]};
-        double[] ViewTheta_yz = {OpticalTheta_yz - ViewAng_Min - Euler_Max[0], OpticalTheta_yz + ViewAng_Min + Euler_Max[0]};
+        double[] ViewTheta_xz = {OpticalTheta_xz - ViewAngle[2] - Euler_Max[1], OpticalTheta_xz + ViewAngle[2] + Euler_Max[1]};
+        double[] ViewTheta_yz = {OpticalTheta_yz - ViewAngle[0] - Euler_Max[0], OpticalTheta_yz + ViewAngle[0] + Euler_Max[0]};
+        //double[] ViewTheta_xz = {OpticalTheta_xz - ViewAng_Min - Euler_Max[1], OpticalTheta_xz + ViewAng_Min + Euler_Max[1]};
+        //double[] ViewTheta_yz = {OpticalTheta_yz - ViewAng_Min - Euler_Max[0], OpticalTheta_yz + ViewAng_Min + Euler_Max[0]};
         //double[] ViewTheta_xz = {OpticalTheta_xz-   Euler_Max[1], OpticalTheta_xz +  Euler_Max[1]};
         //double[] ViewTheta_yz = {OpticalTheta_yz-   Euler_Max[0], OpticalTheta_yz +  Euler_Max[0]};
 

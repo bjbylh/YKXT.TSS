@@ -60,6 +60,10 @@ public class OrderOverall {
         ArrayList<Object> ScanHeightOrbit = new ArrayList<>();
         ArrayList<Object> RollBias = new ArrayList<>();
 
+        ArrayList<Object> J2000x=new ArrayList<>();
+        ArrayList<Object> J2000y=new ArrayList<>();
+        ArrayList<Object> J2000z=new ArrayList<>();
+
         int OrderMissionNum = 0;
         for (Document document : ImageOrderjsonCopy) {
             ImageRegion.add(document.get("image_region"));
@@ -91,6 +95,10 @@ public class OrderOverall {
 
             ScanHeightOrbit.add(document.get("scan_height_orbit"));
             RollBias.add(document.get("scan_roll_bias"));
+
+            J2000x.add(document.get("j2000x"));
+            J2000y.add(document.get("j2000y"));
+            J2000z.add(document.get("j2000z"));
 
             OrderMissionNum = OrderMissionNum + 1;
         }
@@ -257,6 +265,8 @@ public class OrderOverall {
                     imageModelstr = "DB";
                 } else if (imageModelstr.equals("黑体定标")) {
                     imageModelstr = "HTDB";
+                }else if (imageModelstr.equals("指向切换")) {
+                    imageModelstr = "ZXQH";
                 }
                 String mission_number = "im_" + startTimestr + "_" + imageModelstr + "_" + Instant.now().toEpochMilli();
 
@@ -288,6 +298,9 @@ public class OrderOverall {
                 ImageMissionjson.append("scan_height_orbit", ScanHeightOrbit.get(i));
                 ImageMissionjson.append("scan_roll_bias", RollBias.get(i));
 
+                ImageMissionjson.append("j2000x", J2000x.get(i));
+                ImageMissionjson.append("j2000y", J2000y.get(i));
+                ImageMissionjson.append("j2000z", J2000z.get(i));
 
                 ArrayList<Object> OrderNumber_List = new ArrayList<>();
                 for (int j = 0; j < OverallResultList.get(i); j++) {

@@ -46,16 +46,18 @@ public class MissionPlanning {
     private static int TimeZone = -8;                     //北京时区到世界时-8
 
     //卫星资源参数
-    private static int LoadNumber = 4;                    //载荷数量
+    private static int LoadNumber = 5;                    //载荷数量
     private static double[][] LoadInstall = {{90 * Math.PI / 180.0, 86.3 * Math.PI / 180.0, 3.7 * Math.PI / 180.0},
             {90 * Math.PI / 180.0, 93.7 * Math.PI / 180.0, 3.7 * Math.PI / 180.0},
             {90 * Math.PI / 180.0, 85.6 * Math.PI / 180.0, 3.7 * Math.PI / 180.0},
-            {90 * Math.PI / 180.0, 94.4 * Math.PI / 180.0, 3.7 * Math.PI / 180.0}};
+            {90 * Math.PI / 180.0, 94.4 * Math.PI / 180.0, 3.7 * Math.PI / 180.0},
+            {90 * Math.PI / 180.0, 90 * Math.PI / 180.0, 0 * Math.PI / 180.0}};
     //载荷视场角，格式：每行代表一个载荷，每行格式[内视角，外视角，上视角，下视角]，单位：弧度
     private static double[][] LoadViewAng = {{3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0},
             {3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0},
             {3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0},
-            {3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0}};
+            {3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 * Math.PI / 180.0},
+            {0.1 * Math.PI / 180.0, 0.1 * Math.PI / 180.0, 3 * Math.PI / 180.0, 3 / Math.PI / 180.0}};
     //卫星变量
     //卫星最大机动能力，最大机动欧拉角，格式[绕x轴最大机动角度，绕y轴最大机动角度，绕z轴最大机动角度]，单位：弧度
     private static double[] SatelliteManeuverEuler = {5 * Math.PI / 180.0, 5 * Math.PI / 180.0, 5 * Math.PI / 180.0};
@@ -508,10 +510,11 @@ public class MissionPlanning {
                 }
                 ArrayList<Document> expected_cam = (ArrayList<Document>) document.get("expected_cam");
                 if (expected_cam.size() == 0) {
-                    MissionLoadType[MissionNumber][0] = 1;
-                    MissionLoadType[MissionNumber][1] = 1;
-                    MissionLoadType[MissionNumber][2] = 1;
-                    MissionLoadType[MissionNumber][3] = 1;
+                    MissionLoadType[MissionNumber][0] = 0;
+                    MissionLoadType[MissionNumber][1] = 0;
+                    MissionLoadType[MissionNumber][2] = 0;
+                    MissionLoadType[MissionNumber][3] = 0;
+                    MissionLoadType[MissionNumber][4] = 0;
                 } else {
                     try {
                         for (Document document1 : expected_cam) {
@@ -528,14 +531,18 @@ public class MissionPlanning {
                                         MissionLoadType[MissionNumber][3] = 1;
                                     }
                                 }
+                                if (sensors.size() > 1) {
+                                    MissionLoadType[MissionNumber][4] = 1;
+                                }
                             }
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
-                        MissionLoadType[MissionNumber][0] = 1;
-                        MissionLoadType[MissionNumber][1] = 1;
-                        MissionLoadType[MissionNumber][2] = 1;
-                        MissionLoadType[MissionNumber][3] = 1;
+                        MissionLoadType[MissionNumber][0] = 0;
+                        MissionLoadType[MissionNumber][1] = 0;
+                        MissionLoadType[MissionNumber][2] = 0;
+                        MissionLoadType[MissionNumber][3] =0;
+                        MissionLoadType[MissionNumber][4] =0;
                     }
                 }
                 ArrayList<Document> available_window = (ArrayList<Document>) document.get("available_window");
@@ -544,6 +551,7 @@ public class MissionPlanning {
                     TimePeriodNum[1][MissionNumber] = 0;
                     TimePeriodNum[2][MissionNumber] = 0;
                     TimePeriodNum[3][MissionNumber] = 0;
+                    TimePeriodNum[4][MissionNumber] = 0;
                 } else {
                     try {
                         for (Document document1 : available_window) {
@@ -583,7 +591,16 @@ public class MissionPlanning {
                                 }
                                 VisibilityDatePeriod[3][MissionNumber][2 * a] = document1.getDate("window_start_time");
                                 VisibilityDatePeriod[3][MissionNumber][2 * a + 1] = document1.getDate("window_end_time");
-                            } else {
+                            } else if (Integer.parseInt(document1.get("load_number").toString()) == 5) {
+                                TimePeriodNum[4][MissionNumber] = Integer.parseInt(document1.get("amount_window").toString());
+                                int a = Integer.parseInt(document1.get("window_number").toString()) - 1;
+                                if (a > 90 || TimePeriodNum[4][MissionNumber] > 90) {
+                                    a = 90;
+                                    TimePeriodNum[4][MissionNumber] = 90;
+                                }
+                                VisibilityDatePeriod[4][MissionNumber][2 * a] = document1.getDate("window_start_time");
+                                VisibilityDatePeriod[4][MissionNumber][2 * a + 1] = document1.getDate("window_end_time");
+                            }else {
                                 continue;
                             }
                         }
@@ -593,6 +610,7 @@ public class MissionPlanning {
                         TimePeriodNum[1][MissionNumber] = 0;
                         TimePeriodNum[2][MissionNumber] = 0;
                         TimePeriodNum[3][MissionNumber] = 0;
+                        TimePeriodNum[4][MissionNumber] = 0;
                     }
                 }
 
