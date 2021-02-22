@@ -116,7 +116,8 @@ public class SingleInsGeneration {
                     }
 
                     byte[] MainBuff = hexStringToBytes(total);
-                    int a = getCRC_0xFFFF(MainBuff, MainBuff.length);
+                    //int a = getCRC_0xFFFF(MainBuff, MainBuff.length);
+                    int a=CRC16_CCITT_FALSE(MainBuff);
                     String CRCCode = String.format("%04X", a).toUpperCase();
                     if (CRCCode.length() > 4) {
                         CRCCode = CRCCode.substring(CRCCode.length() - 4);
@@ -726,7 +727,7 @@ public class SingleInsGeneration {
             BaoXuLieIDStr = Integer.toHexString(Integer.parseInt(BaoXuLieIDStr, 2)).toUpperCase();
             Integer APIDint = Integer.valueOf(APID.trim(), 16);
 
-            String src = "1800";
+            String src = "1800";//0001100000000000
             Integer srcInt = Integer.valueOf(src.trim(), 16);
 
             int baoshibie = APIDint + srcInt;
@@ -1701,6 +1702,22 @@ public class SingleInsGeneration {
             }
         }
         return wCRCin ^= 0xffff;
+    }
+
+    private static int CRC16_CCITT_FALSE(byte[] buffer) {
+        int wCRCin = 0xffff;
+        int wCPoly = 0x1021;
+        for (byte b : buffer) {
+            for (int i = 0; i < 8; i++) {
+                boolean bit = ((b >> (7 - i) & 1) == 1);
+                boolean c15 = ((wCRCin >> 15 & 1) == 1);
+                wCRCin <<= 1;
+                if (c15 ^ bit)
+                    wCRCin ^= wCPoly;
+            }
+        }
+        wCRCin &= 0xffff;
+        return wCRCin ^= 0x0000;
     }
 
     //byte数据转化为Int型整型

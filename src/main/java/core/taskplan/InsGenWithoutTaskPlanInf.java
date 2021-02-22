@@ -1928,7 +1928,8 @@ public class InsGenWithoutTaskPlanInf {
                 }
 
                 byte[] MainBuff = hexStringToBytes(total);
-                int a = getCRC_0xFFFF(MainBuff, MainBuff.length);
+                //int a = getCRC_0xFFFF(MainBuff, MainBuff.length);
+                int a=CRC16_CCITT_FALSE(MainBuff);
                 String CRCCode = String.format("%04X", a).toUpperCase();
                 if (CRCCode.length() > 4) {
                     CRCCode = CRCCode.substring(CRCCode.length() - 4);
@@ -2968,7 +2969,8 @@ public class InsGenWithoutTaskPlanInf {
                 }
 
                 byte[] MainBuff = hexStringToBytes(total);
-                int a = getCRC_0xFFFF(MainBuff, MainBuff.length);
+                //int a = getCRC_0xFFFF(MainBuff, MainBuff.length);
+                int a=CRC16_CCITT_FALSE(MainBuff);
                 String CRCCode = String.format("%04X", a).toUpperCase();
                 if (CRCCode.length() > 4) {
                     CRCCode = CRCCode.substring(CRCCode.length() - 4);
@@ -3296,6 +3298,22 @@ public class InsGenWithoutTaskPlanInf {
             }
         }
         return wCRCin ^= 0xffff;
+    }
+
+    private static int CRC16_CCITT_FALSE(byte[] buffer) {
+        int wCRCin = 0xffff;
+        int wCPoly = 0x1021;
+        for (byte b : buffer) {
+            for (int i = 0; i < 8; i++) {
+                boolean bit = ((b >> (7 - i) & 1) == 1);
+                boolean c15 = ((wCRCin >> 15 & 1) == 1);
+                wCRCin <<= 1;
+                if (c15 ^ bit)
+                    wCRCin ^= wCPoly;
+            }
+        }
+        wCRCin &= 0xffff;
+        return wCRCin ^= 0x0000;
     }
 
     //byte数据转化为Int型整型

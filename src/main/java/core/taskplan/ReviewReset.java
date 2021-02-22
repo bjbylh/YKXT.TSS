@@ -2,6 +2,7 @@ package core.taskplan;
 
 //import com.company.MangoDBConnector;
 
+
 import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -341,8 +342,8 @@ public class ReviewReset {
                                 MissionStarEnd_Number[MissionNumber][0] = MissionStar_Number;
                                 MissionStarEnd_Number[MissionNumber][1] = MissionEnd_Number;
                                 int Load_numberTemp = 1;
-                                if (document1.containsKey("load_number") && document1.get("load_number") != null) {
-                                    Load_numberTemp = Integer.parseInt(document1.get("load_number").toString());
+                                if (document1.containsKey("load_number_int") && document1.get("load_number_int") != null) {
+                                    Load_numberTemp = Integer.parseInt(document1.get("load_number_int").toString());
                                 }
                                 ImageWindowLoad.add(Load_numberTemp);
                                 MissionChark_Number = MissionChark_Number + 1;
@@ -733,6 +734,7 @@ public class ReviewReset {
                     if (MissionFalseResuFlag.get(i) == 2) {
                         ArrayList<Document> ImageWindowjsonArry = new ArrayList<>();
                         Document ImageWindowjsonObject = new Document();
+                        ImageWindowjsonObject.append("load_number_int", "");
                         ImageWindowjsonObject.append("load_number", "");
                         ImageWindowjsonObject.append("start_time", "");
                         ImageWindowjsonObject.append("end_time", "");
@@ -748,6 +750,7 @@ public class ReviewReset {
                         ArrayList<Document> ImageWindowjsonArry = new ArrayList<>();
                         Document ImageWindowjsonObject = new Document();
                         ImageWindowjsonObject.append("load_number", "");
+                        ImageWindowjsonObject.append("load_number_int", "");
                         ImageWindowjsonObject.append("start_time", "");
                         ImageWindowjsonObject.append("end_time", "");
                         ImageWindowjsonArry.add(ImageWindowjsonObject);
@@ -762,6 +765,7 @@ public class ReviewReset {
                         ArrayList<Document> ImageWindowjsonArry = new ArrayList<>();
                         Document ImageWindowjsonObject = new Document();
                         ImageWindowjsonObject.append("load_number", "");
+                        ImageWindowjsonObject.append("load_number_int", "");
                         ImageWindowjsonObject.append("start_time", "");
                         ImageWindowjsonObject.append("end_time", "");
                         ImageWindowjsonArry.add(ImageWindowjsonObject);

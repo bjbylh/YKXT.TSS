@@ -67,7 +67,7 @@ public class XmlParser {
 
 
     public static void main(String[] args) throws DocumentException {
-        String xmlString = "\uFEFF<?xml version='1.0' encoding=\"gb2312\" ?>\n" +
+        String xmlString = "\uFEFF<?xml version=\"1.0\" encoding=\"gb2312\" ?>\n" +
                 "<ORBIT>\n" +
                 "    <J2000>\n" +
                 "        <OSCU>\n" +

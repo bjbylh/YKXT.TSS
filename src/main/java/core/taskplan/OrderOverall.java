@@ -2,6 +2,8 @@ package core.taskplan;
 
 //import com.company.MangoDBConnector;
 
+//import com.company.MangoDBConnector;
+
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -63,6 +65,9 @@ public class OrderOverall {
         ArrayList<Object> J2000x=new ArrayList<>();
         ArrayList<Object> J2000y=new ArrayList<>();
         ArrayList<Object> J2000z=new ArrayList<>();
+        ArrayList<Object> Min_stare_time_zxqh=new ArrayList<>();
+
+        ArrayList<Object> Image_time=new ArrayList<>();
 
         int OrderMissionNum = 0;
         for (Document document : ImageOrderjsonCopy) {
@@ -99,6 +104,10 @@ public class OrderOverall {
             J2000x.add(document.get("j2000x"));
             J2000y.add(document.get("j2000y"));
             J2000z.add(document.get("j2000z"));
+
+            Image_time.add(document.get("image_time"));
+
+            Min_stare_time_zxqh.add(document.get("min_stare_time_zxqh"));
 
             OrderMissionNum = OrderMissionNum + 1;
         }
@@ -302,6 +311,10 @@ public class OrderOverall {
                 ImageMissionjson.append("j2000y", J2000y.get(i));
                 ImageMissionjson.append("j2000z", J2000z.get(i));
 
+                ImageMissionjson.append("image_time",Image_time.get(i));
+
+                ImageMissionjson.append("min_stare_time_zxqh", Min_stare_time_zxqh.get(i));
+
                 ArrayList<Object> OrderNumber_List = new ArrayList<>();
                 for (int j = 0; j < OverallResultList.get(i); j++) {
                     if (ImageOrderjson.get(OverallMissionNumList.get(i).get(j)).containsKey("_id"))
@@ -321,7 +334,7 @@ public class OrderOverall {
                 missions.add(mission_number);
             }
         }
-
+        mongoClient.close();
         return missions;
     }
 

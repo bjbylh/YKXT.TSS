@@ -27,7 +27,12 @@ public class MeanToTrueAnomaly {
         double y = Math.sqrt(1 - Eccentricity * Eccentricity) * Math.sin(Es);
         double x = Math.cos(Es) - Eccentricity;
         TrueAnomaly = Math.atan2(y, x);
-        return TrueAnomaly * 180 / Math.PI;
+        double tempvalue =  TrueAnomaly * 180 / Math.PI;
+
+        if(tempvalue < 0)
+            return tempvalue + 360.0;
+        else
+            return tempvalue;
     }
 
     public static void main(String[] args) {

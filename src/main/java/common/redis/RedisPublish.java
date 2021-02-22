@@ -4,6 +4,7 @@ import common.def.Topic;
 import redis.clients.jedis.Jedis;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Map;
 
 /**
@@ -36,7 +37,7 @@ public class RedisPublish {
         jedis.close();
     }
 
-    public static void checkResult(String id, Map<Integer, Map<String, Boolean>> trueorfasle) {
+    public static void checkResult(String id, Map<Integer, Map<String, ArrayList<Date[]>>> trueorfasle) {
         Jedis jedis = RedisConnector.getJedis();
         String ret = RedisDataEntity.GenCheckResult(id, trueorfasle);
         System.out.println(ret);
@@ -58,9 +59,15 @@ public class RedisPublish {
         jedis.close();
     }
 
+    public static void guidanceTaskReturn(String details) {
+        Jedis jedis = RedisConnector.getJedis();
+        jedis.publish(Topic.CMD_RESP, details);
+        jedis.close();
+    }
+
     public static void main(String[] args) {
 
-//        Jedis jedis = RedisConnector.getJedis();
+        /* Jedis jedis = RedisConnector.getJedis(); */
         RedisPublish.newRTOrbitGorecastTask();
     }
 

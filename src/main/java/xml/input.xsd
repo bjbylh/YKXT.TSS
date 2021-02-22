@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="Constraints" type="ConstraintsType"/>
+  <xs:complexType name="Output_ParamsType">
+    <xs:sequence>
+      <xs:element type="Required_ParamsType" name="Required_Params"/>
+      <xs:element type="Optional_ParamsType" name="Optional_Params"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Optional_ParamsType" mixed="true">
+    <xs:sequence>
+      <xs:element type="ParamType" name="Param" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute type="xs:byte" name="count" use="optional"/>
+  </xs:complexType>
+  <xs:complexType name="Data_BlockType">
+    <xs:sequence>
+      <xs:element type="Input_ParamsType" name="Input_Params"/>
+      <xs:element type="Output_ParamsType" name="Output_Params"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ConstraintsType">
+    <xs:sequence>
+      <xs:element type="Fixed_HeaderType" name="Fixed_Header"/>
+      <xs:element type="Data_BlockType" name="Data_Block"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Input_ParamsType">
+    <xs:sequence>
+      <xs:element type="Required_ParamsType" name="Required_Params"/>
+      <xs:element type="Optional_ParamsType" name="Optional_Params"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Fixed_HeaderType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="Mod_Name"/>
+      <xs:element type="xs:string" name="Mod_Version"/>
+      <xs:element type="xs:string" name="Mod_Purpose"/>
+      <xs:element type="xs:string" name="Mod_Author"/>
+      <xs:element type="xs:string" name="Mod_Description"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ParamType">
+    <xs:sequence>
+      <xs:element name="Param_Name">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="Param_Type">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:enumeration value="DOUBLE"/>
+            <xs:enumeration value="INTEGER"/>
+            <xs:enumeration value="STRING"/>
+            <xs:enumeration value="LIST"/>
+            <xs:enumeration value="BYTE"/>
+            <xs:enumeration value="LONG"/>
+            <xs:enumeration value="BOOL"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="Param_Description">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Required_ParamsType">
+    <xs:sequence>
+      <xs:element type="ParamType" name="Param" maxOccurs="unbounded" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute type="xs:byte" name="count" use="optional"/>
+  </xs:complexType>
+</xs:schema>

@@ -196,11 +196,12 @@ public class RedisTaskSubscriber extends JedisPubSub {
     }
 
     private void proManualLoop(JsonObject json, String id) {
+        MongoClient mongoClient = null;
         try {
             String mission_num = json.get("content").getAsString();
 
             Document image_mission = null;
-            MongoClient mongoClient = MangoDBConnector.getClient();
+            mongoClient = MangoDBConnector.getClient();
             //获取名为"temp"的数据库
             MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
@@ -223,6 +224,8 @@ public class RedisTaskSubscriber extends JedisPubSub {
         } catch (Exception e) {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.MANUAL_LOOP_FINISHED);
+            if(mongoClient != null)
+                mongoClient.close();
         }
     }
 
@@ -277,11 +280,12 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
 
     private void procBlackCali(JsonObject json, String id) {
+        MongoClient mongoClient = null;
         try {
             String order_number = json.get("image_order_num").getAsString();
 
             Document image_order = null;
-            MongoClient mongoClient = MangoDBConnector.getClient();
+            mongoClient = MangoDBConnector.getClient();
             //获取名为"temp"的数据库
             MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
@@ -304,14 +308,17 @@ public class RedisTaskSubscriber extends JedisPubSub {
         } catch (Exception e) {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.BLACK_CALI_FINISHED);
+            if(mongoClient != null)
+                mongoClient.close();
         }
     }
 
     private void procFileClear(JsonObject json, String id) {
+        MongoClient mongoClient = null;
         try {
             String mission_number = json.get("content").getAsString();
 
-            MongoClient mongoClient = MangoDBConnector.getClient();
+            mongoClient = MangoDBConnector.getClient();
             //获取名为"temp"的数据库
             MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
@@ -332,17 +339,20 @@ public class RedisTaskSubscriber extends JedisPubSub {
         } catch (Exception e) {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.FILE_CLEAR_FINISHED);
+            if(mongoClient != null)
+                mongoClient.close();
         }
     }
 
     private void procInsGen(JsonObject json, String id) {
+        MongoClient mongoClient = null;
         try {
             String order_number = json.get("image_order_num").getAsString();
             String station_mission_num = json.get("station_mission_num").getAsString();
 
             Document image_order = null;
             Document station_mission = null;
-            MongoClient mongoClient = MangoDBConnector.getClient();
+            mongoClient = MangoDBConnector.getClient();
             //获取名为"temp"的数据库
             MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
@@ -433,10 +443,13 @@ public class RedisTaskSubscriber extends JedisPubSub {
         } catch (Exception e) {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.INS_GEN_FINISHED);
+            if(mongoClient != null)
+                mongoClient.close();
         }
     }
 
     private void procTransmissionExportCancel(JsonObject json, String id) {
+        MongoClient mongoClient = null;
         try {
             Instant createTime = Instant.now();
             LocalDateTime localDateTime = LocalDateTime.now();
@@ -458,7 +471,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
                 transmission_numbers.add(s);
             }
 
-            MongoClient mongoClient = MangoDBConnector.getClient();
+            mongoClient = MangoDBConnector.getClient();
             //获取名为"temp"的数据库
             MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
@@ -557,10 +570,14 @@ public class RedisTaskSubscriber extends JedisPubSub {
         } catch (Exception e) {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.TRANSMISSION_CANCEL_FINISHED);
+            if(mongoClient != null)
+                mongoClient.close();
         }
     }
 
     private void procTransmissionExport(JsonObject json, String id) {
+
+        MongoClient mongoClient = null;
         try {
             Instant createTime = Instant.now();
             LocalDateTime localDateTime = LocalDateTime.now();
@@ -582,7 +599,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
                 transmission_numbers.add(s);
             }
 
-            MongoClient mongoClient = MangoDBConnector.getClient();
+            mongoClient = MangoDBConnector.getClient();
             //获取名为"temp"的数据库
             MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
@@ -677,10 +694,13 @@ public class RedisTaskSubscriber extends JedisPubSub {
         } catch (Exception e) {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.TRANSMISSION_EXPORT_FINISHED);
+            if(mongoClient != null)
+                mongoClient.close();
         }
     }
 
     private void procOrbitDataExport(JsonObject json, String id) {
+        MongoClient mongoClient = null;
         try {
             Instant createTime = Instant.now();
             LocalDateTime localDateTime = LocalDateTime.now();
@@ -694,7 +714,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
             mulu.mkdir();
 
-            MongoClient mongoClient = MangoDBConnector.getClient();
+            mongoClient = MangoDBConnector.getClient();
             //获取名为"temp"的数据库
             MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
@@ -796,6 +816,8 @@ public class RedisTaskSubscriber extends JedisPubSub {
         } catch (Exception e) {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.ORBIT_DATA_EXPORT_FINISHED);
+            if(mongoClient != null)
+                mongoClient.close();
         }
     }
 
@@ -874,6 +896,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
     }
 
     private void procOrbitDataImport(JsonObject json, String id) {
+        MongoClient mongoClient = null;
         try {
             String xmlString = json.get("content").getAsString();
             xmlString = xmlString.replace("\r", "").replace("\n", "");
@@ -885,7 +908,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
                 return;
             }
 
-            MongoClient mongoClient = MangoDBConnector.getClient();
+            mongoClient = MangoDBConnector.getClient();
             //获取名为"temp"的数据库
             MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
@@ -939,10 +962,13 @@ public class RedisTaskSubscriber extends JedisPubSub {
         } catch (Exception e) {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.ORBIT_DATA_IMPORT_FINISHED);
+            if(mongoClient != null)
+                mongoClient.close();
         }
     }
 
     private void procNewTask(JsonObject json, String id) {
+
         try {
 
             if (json.get("tasktype").getAsString().equals(TaskType.CRONTAB.name()) && json.get("templet").getAsString().equals(TempletType.TASK_PLAN.name()))
@@ -1050,8 +1076,10 @@ public class RedisTaskSubscriber extends JedisPubSub {
         long count = Data_Orbitjson.count(Filters.and(queryBson));
 
         try {
-            Map<Integer, Map<String, Boolean>> integerMapMap = VisibilityCalculation.VisibilityCalculationEmergency(Satllitejson, D_orbitjson, count, GroundStationjson, Missionjson, StationMissionjson);
-            RedisPublish.checkResult(id, integerMapMap);
+//            Map<Integer, Map<String, Boolean>> integerMapMap = VisibilityCalculation.VisibilityCalculationEmergency(Satllitejson, D_orbitjson, count, GroundStationjson, Missionjson, StationMissionjson);
+            Map<Integer, Map<String, ArrayList<Date[]>>> integerMapMapII = VisibilityCalculation.VisibilityCalculationEmergencyII(Satllitejson, D_orbitjson, count, GroundStationjson, Missionjson, StationMissionjson);
+
+            RedisPublish.checkResult(id, integerMapMapII);
 
         } catch (ParseException e) {
             e.printStackTrace();

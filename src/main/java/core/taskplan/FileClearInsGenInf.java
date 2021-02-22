@@ -7,6 +7,7 @@ import com.mongodb.client.model.UpdateOptions;
 import common.FilePathUtil;
 import common.mongo.MangoDBConnector;
 import core.taskplan.InstructionSequenceTime.SequenceID;
+import core.taskplan.InstructionSequenceTime.TimeVariable;
 import org.bson.Document;
 
 import java.io.*;
@@ -35,6 +36,10 @@ public class FileClearInsGenInf {
         //将表中properties内容存入properties列表中
         ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
         Instant zerostart = ZeroTimeIns;
+        Boolean ESDStatus = true;
+        String AxisType = "";
+        TimeVariable timeVariable = new TimeVariable();
+        timeVariable.T4401 = 720;
 
         for (Document document : properties) {
             if (document.get("key").toString().equals("t0")) {
@@ -46,9 +51,13 @@ public class FileClearInsGenInf {
                 ZeroTime[3] = zerostart0.getHour();
                 ZeroTime[4] = zerostart0.getMinute();
                 ZeroTime[5] = zerostart0.getSecond();
-                break;
+            } else if (document.getString("key").equals("axis")) {
+                AxisType = document.getString("value");
             }
         }
+        if (AxisType.contains("轨道"))
+            ESDStatus = false;
+
         HashMap<String, String> FileClear = new HashMap<>();
         HashMap<String, Integer> FileSequenID = new HashMap<>();
         HashMap<String, Date> MissionInstructionTime = new HashMap<>();
@@ -205,6 +214,66 @@ public class FileClearInsGenInf {
             String APIDTCS297 = "0411";
             String strTCS297 = APIDTCS297 + LengtTCS297 + TCS297;
 
+            String K4401 = "100280210118";
+            K4401 = K4401 + "AA1800AA";
+            String LengtK4401 = "22";
+            String APIDK4401 = "0411";
+            K4401 = APIDK4401 + LengtK4401 + K4401;
+            float GDAtt = (float) 0.0;
+            float FYAtt = (float) 0.0;
+            if (ESDStatus) {
+                //东南系
+                GDAtt = (float) 4.0;
+                FYAtt = (float) 0.0;
+            } else {
+                //轨道系
+                GDAtt = (float) 0.0;
+                FYAtt = (float) 0.0;
+            }
+            float t_theta = (float) timeVariable.T4401;
+            float ddAng = (float) 0.08;
+            float dAng = (float) 0.12;
+            int it_theta = (new Float(t_theta)).intValue();
+            byte[] it_thetaByte = new byte[]{(byte) ((it_theta >> 8) & 0xFF), (byte) ((it_theta) & 0xFF)};
+            String st_thetaByte = bytesToHexString(it_thetaByte);
+            String strtempGD = Integer.toHexString(Float.floatToIntBits(GDAtt));
+            if (strtempGD.length() < 8) {
+                for (int j = strtempGD.length() + 1; j <= 8; j++) {
+                    strtempGD = "0" + strtempGD;
+                }
+            } else if (strtempGD.length() > 8) {
+                strtempGD = strtempGD.substring(strtempGD.length() - 8);
+            }
+            String strtempFY = Integer.toHexString(Float.floatToIntBits(FYAtt));
+            if (strtempFY.length() < 8) {
+                for (int j = strtempFY.length() + 1; j <= 8; j++) {
+                    strtempFY = "0" + strtempFY;
+                }
+            } else if (strtempFY.length() > 8) {
+                strtempFY = strtempFY.substring(strtempFY.length() - 8);
+            }
+            String strtempddAng = Integer.toHexString(Float.floatToIntBits(ddAng));
+            if (strtempddAng.length() < 8) {
+                for (int j = strtempddAng.length() + 1; j <= 8; j++) {
+                    strtempddAng = "0" + strtempddAng;
+                }
+            } else if (strtempddAng.length() > 8) {
+                strtempddAng = strtempddAng.substring(strtempddAng.length() - 8);
+            }
+            String strtempdAng = Integer.toHexString(Float.floatToIntBits(dAng));
+            if (strtempdAng.length() < 8) {
+                for (int j = strtempdAng.length() + 1; j <= 8; j++) {
+                    strtempdAng = "0" + strtempdAng;
+                }
+            } else if (strtempdAng.length() > 8) {
+                strtempdAng = strtempdAng.substring(strtempdAng.length() - 8);
+            }
+            K4401 = K4401 + st_thetaByte +
+                    strtempGD +
+                    strtempFY +
+                    strtempddAng +
+                    strtempdAng;
+
             String TCS205 = "100E812196";
             String LengtTCS205 = "05";
             String APIDTCS205 = "0412";
@@ -230,10 +299,10 @@ public class FileClearInsGenInf {
             String TCKG02;
             if (Mission.containsKey("transmission_power_off") && Mission.get("transmission_power_off") != null && Mission.get("transmission_power_off").equals("0")) {
                 ZhiLingGeShuString = "01";
-                TCKG02 = KaiShiShiJian + ZhiLingXuLieIDString + ZhiLingGeShuString + strTCS205;
+                TCKG02 = KaiShiShiJian + ZhiLingXuLieIDString + ZhiLingGeShuString + K4401 + strTCS205;
             } else {
                 ZhiLingGeShuString = "02";
-                TCKG02 = KaiShiShiJian + ZhiLingXuLieIDString + ZhiLingGeShuString + strTCS297 + strTCS205;
+                TCKG02 = KaiShiShiJian + ZhiLingXuLieIDString + ZhiLingGeShuString + strTCS297 + K4401 + strTCS205;
             }
             FileClear.put("TCKG02", TCKG02);
             int ZhiLingIDNumTCS205 = ZhiLingIDNum;
@@ -296,7 +365,8 @@ public class FileClearInsGenInf {
                 }
 
                 byte[] MainBuff = hexStringToBytes(total);
-                int a = getCRC_0xFFFF(MainBuff, MainBuff.length);
+                //int a = getCRC_0xFFFF(MainBuff, MainBuff.length);
+                int a=CRC16_CCITT_FALSE(MainBuff);
                 String CRCCode = String.format("%04X", a).toUpperCase();
                 if (CRCCode.length() > 4) {
                     CRCCode = CRCCode.substring(CRCCode.length() - 4);
@@ -607,6 +677,22 @@ public class FileClearInsGenInf {
             }
         }
         return wCRCin ^= 0xffff;
+    }
+
+    private static int CRC16_CCITT_FALSE(byte[] buffer) {
+        int wCRCin = 0xffff;
+        int wCPoly = 0x1021;
+        for (byte b : buffer) {
+            for (int i = 0; i < 8; i++) {
+                boolean bit = ((b >> (7 - i) & 1) == 1);
+                boolean c15 = ((wCRCin >> 15 & 1) == 1);
+                wCRCin <<= 1;
+                if (c15 ^ bit)
+                    wCRCin ^= wCPoly;
+            }
+        }
+        wCRCin &= 0xffff;
+        return wCRCin ^= 0x0000;
     }
 
     //byte数据转化为Int型整型

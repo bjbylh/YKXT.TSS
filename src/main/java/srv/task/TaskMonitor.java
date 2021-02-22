@@ -15,6 +15,7 @@ import common.def.TempletType;
 import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import core.orbit.OrbitCore;
+import core.orbit.OrbitCore502;
 import core.taskplan.TaskPlanCore;
 import org.bson.Document;
 
@@ -92,6 +93,7 @@ public class TaskMonitor {
                         String templet = document.getString("templet");
 
                         if (templet.equals(TempletType.ORBIT_FORECAST.name())) {
+//                            OrbitCore502 orbitCore = new OrbitCore502(document.get("_id").toString(), TaskType.REALTIME);
                             OrbitCore orbitCore = new OrbitCore(document.get("_id").toString(), TaskType.REALTIME);
                             orbitCore.startup();
                         } else if (templet.equals(TempletType.TASK_PLAN.name())) {
@@ -119,6 +121,7 @@ public class TaskMonitor {
                             String templet = document.getString("templet");
 
                             if (templet.equals(TempletType.ORBIT_FORECAST.name())) {
+//                                OrbitCore502 orbitCore = new OrbitCore502(document.get("_id").toString(), TaskType.CRONTAB);
                                 OrbitCore orbitCore = new OrbitCore(document.get("_id").toString(), TaskType.CRONTAB);
                                 orbitCore.startup();
                             } else if (templet.equals(TempletType.TASK_PLAN.name())) {
@@ -150,6 +153,7 @@ public class TaskMonitor {
                             String templet = document.getString("templet");
 
                             if (templet.equals(TempletType.ORBIT_FORECAST.name())) {
+//                                OrbitCore502 orbitCore = new OrbitCore502(document.get("_id").toString(), TaskType.CRONTAB);
                                 OrbitCore orbitCore = new OrbitCore(document.get("_id").toString(), TaskType.CRONTAB);
                                 orbitCore.startup();
                             } else if (templet.equals(TempletType.TASK_PLAN.name())) {

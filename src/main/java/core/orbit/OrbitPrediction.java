@@ -636,6 +636,7 @@ public class OrbitPrediction {
 
 
     //轨道外推
+    @Deprecated
     public static void OrbitPredictorII(Instant timeRaw, LocalDateTime start, LocalDateTime end, double step, double[] orbit0, JsonObject json) {
         MongoClient mongoClient = MangoDBConnector.getClient();
         MongoDatabase mongoDatabase = mongoClient.getDatabase("temp");

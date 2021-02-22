@@ -491,23 +491,38 @@ public class MissionPlanning {
         MissionNumber = 0;
 
         ArrayList<Date[]> MissionStarStopTimeList = new ArrayList<>();
+        ArrayList<ArrayList<Double>> MissionStareTimeZXQH=new ArrayList<>();
+        ArrayList<double[]> MissionPointHXGC=new ArrayList<>();
+
+        ArrayList<Integer> MissionWorkModeList = new ArrayList<>();
+        ArrayList<String> MissionTransferStationList=new ArrayList<>();
 
         for (Document document : ImageMissionjson) {
             if (document.get("mission_state").equals("被退回")) {
                 continue;
             } else {
+                ArrayList<Double> MissionStareTimeZXQHChild=new ArrayList<>();
                 Document target_region = (Document) document.get("image_region");
                 //读取目标区域
-                ArrayList<double[]> MissionTargetArea_iList = new ArrayList<double[]>();
-                MissionTargetArea_iList = GetRegionPoint(target_region);
-                MissionTargetNum[MissionNumber] = MissionTargetArea_iList.size();
-                if (MissionTargetNum[MissionNumber] > 90) {
-                    MissionTargetNum[MissionNumber] = 90;
+                if (document.getString("image_mode").equals("恒星定标") || document.getString("image_mode").equals("临边观测")) {
+                    double[] MissionTargetArea_iList = new double[3];
+                    MissionTargetArea_iList[0]=Double.parseDouble(document.get("j2000x").toString());
+                    MissionTargetArea_iList[1]=Double.parseDouble(document.get("j2000y").toString());
+                    MissionTargetArea_iList[2]=Double.parseDouble(document.get("j2000z").toString());
+                    MissionPointHXGC.add(MissionNumber, MissionTargetArea_iList);
+                }else {
+                    ArrayList<double[]> MissionTargetArea_iList = new ArrayList<double[]>();
+                    MissionTargetArea_iList = GetRegionPoint(target_region);
+                    MissionTargetNum[MissionNumber] = MissionTargetArea_iList.size();
+                    if (MissionTargetNum[MissionNumber] > 90) {
+                        MissionTargetNum[MissionNumber] = 90;
+                    }
+                    for (int i = 0; i < MissionTargetNum[MissionNumber]; i++) {
+                        MissionTargetArea[MissionNumber][2 * i] = MissionTargetArea_iList.get(i)[0];
+                        MissionTargetArea[MissionNumber][2 * i + 1] = MissionTargetArea_iList.get(i)[1];
+                    }
                 }
-                for (int i = 0; i < MissionTargetNum[MissionNumber]; i++) {
-                    MissionTargetArea[MissionNumber][2 * i] = MissionTargetArea_iList.get(i)[0];
-                    MissionTargetArea[MissionNumber][2 * i + 1] = MissionTargetArea_iList.get(i)[1];
-                }
+
                 ArrayList<Document> expected_cam = (ArrayList<Document>) document.get("expected_cam");
                 if (expected_cam.size() == 0) {
                     MissionLoadType[MissionNumber][0] = 0;
@@ -672,12 +687,41 @@ public class MissionPlanning {
                     //MissionStareTime[MissionNumber]=10;
                     MissionStareTime[MissionNumber] = (int) Duration.between(expected_start_time.toInstant(), expected_stop_time.toInstant()).getSeconds();
                     MissionPriority[MissionNumber] = 2 * MissionPriority[MissionNumber] - 1;
+                }else if (document.getString("image_mode").equals("指向切换")) {
+                    double sumtemp=0;
+                    ArrayList<String> minstare= (ArrayList<String>) document.get("min_stare_time_zxqh");
+                    for (String minstaretime:minstare) {
+                        sumtemp=sumtemp+Double.parseDouble(minstaretime)+100.0;
+                        MissionStareTimeZXQHChild.add(Double.parseDouble(minstaretime));
+                    }
+                    MissionImagingMode[MissionNumber] = 4;
+                    MissionStareTime[MissionNumber] = sumtemp;
+                    MissionPriority[MissionNumber] = 2 * MissionPriority[MissionNumber];
+                }else if (document.getString("image_mode").equals("恒星定标") || document.getString("image_mode").equals("临边观测")) {
+                    MissionImagingMode[MissionNumber] = 5;
+                    MissionStareTime[MissionNumber] = Double.parseDouble(document.getString("image_time"));
+                    MissionPriority[MissionNumber] = 2 * MissionPriority[MissionNumber];
                 }
                 if (document.getString("image_type").equals("Point")) {
                     MissionTargetType[MissionNumber] = 1;
                 } else if (document.getString("image_type").equals("Polygon")) {
                     MissionTargetType[MissionNumber] = 2;
                 }
+
+                MissionStareTimeZXQH.add(MissionNumber,MissionStareTimeZXQHChild);
+
+                //读取是否为实传模式
+                //读取所需地面站
+                String MissionTransferStation_iList=null;
+                int MissionWorkMode_iList = 1;
+                if (document.getString("work_mode").equals("记录")) {
+                    MissionWorkMode_iList = 0;
+                } else {
+                    MissionWorkMode_iList = 1;
+                    MissionTransferStation_iList=document.get("station_number").toString();
+                }
+                MissionWorkModeList.add(MissionNumber, MissionWorkMode_iList);
+                MissionTransferStationList.add(MissionNumber,MissionTransferStation_iList);
 
                 //读取订单编号
                 ArrayList<String> MissionForOrderNumbers_i = new ArrayList<>();
@@ -708,19 +752,24 @@ public class MissionPlanning {
             ArrayList<Boolean> VisibilityTimePointAllFlagArray_i = new ArrayList<>();
             //目标点位置经纬度，区域目标取中心点
             double[] TargetPosition_LLA = {0, 0, 0};
-            if (MissionTargetType[i] == 1) {
-                TargetPosition_LLA[0] = MissionTargetArea[i][0];
-                TargetPosition_LLA[1] = MissionTargetArea[i][1];
-            } else {
-                for (int j = 0; j < MissionTargetNum[i]; j++) {
-                    TargetPosition_LLA[0] = TargetPosition_LLA[0] + MissionTargetArea[i][2 * j];
-                    TargetPosition_LLA[1] = TargetPosition_LLA[1] + MissionTargetArea[i][2 * j + 1];
-                }
-                TargetPosition_LLA[0] = TargetPosition_LLA[0] / MissionTargetNum[i];
-                TargetPosition_LLA[1] = TargetPosition_LLA[1] / MissionTargetNum[i];
-            }
             double[] TargetPosition_ECEF = new double[3];
-            LLAToECEF(TargetPosition_LLA, TargetPosition_ECEF);
+            if (MissionImagingMode[i] == 5) {
+
+            }else {
+                if (MissionTargetType[i] == 1) {
+                    TargetPosition_LLA[0] = MissionTargetArea[i][0];
+                    TargetPosition_LLA[1] = MissionTargetArea[i][1];
+                } else {
+                    for (int j = 0; j < MissionTargetNum[i]; j++) {
+                        TargetPosition_LLA[0] = TargetPosition_LLA[0] + MissionTargetArea[i][2 * j];
+                        TargetPosition_LLA[1] = TargetPosition_LLA[1] + MissionTargetArea[i][2 * j + 1];
+                    }
+                    TargetPosition_LLA[0] = TargetPosition_LLA[0] / MissionTargetNum[i];
+                    TargetPosition_LLA[1] = TargetPosition_LLA[1] / MissionTargetNum[i];
+                }
+                LLAToECEF(TargetPosition_LLA, TargetPosition_ECEF);
+            }
+
             //将所有载荷的可见弧段存在一个数组中
             TimePeriodNumAll[i] = 0;
             for (int j = 0; j < LoadNumber; j++) {
@@ -751,7 +800,7 @@ public class MissionPlanning {
                         }
                         //判定该弧段是否满足凝视机动需求
                         double[] ViewInstall = LoadInstall[j];
-                        if (MissionImagingMode[i] == 2 || MissionImagingMode[i] == 3) {
+                        if (MissionImagingMode[i] == 2 || MissionImagingMode[i] == 3 || MissionImagingMode[i] == 4) {
                             int VisibilityStarPeriod = VisibilityTimePeriod[j][i][2 * k];
                             int VisibilityEndPeriod = VisibilityTimePeriod[j][i][2 * k + 1];
                             int VisibilityPeriod = VisibilityEndPeriod - VisibilityStarPeriod + 1;
@@ -811,7 +860,13 @@ public class MissionPlanning {
                                     Orbital_SatPositionLLA[VisibilityTimePeriodAll[i][2 * TimePeriodNumAll[i]]][2]};
                             double SatlliteTime_JD = JD(SatlliteTime);
                             double[] TargetPosition_GEI = new double[3];
-                            ECEFToICRS(SatlliteTime_JD, TargetPosition_ECEF, TargetPosition_GEI);
+                            if (MissionImagingMode[i] == 5){
+                                TargetPosition_GEI[0]=MissionPointHXGC.get(i)[0];
+                                TargetPosition_GEI[1]=MissionPointHXGC.get(i)[1];
+                                TargetPosition_GEI[2]=MissionPointHXGC.get(i)[2];
+                            }else {
+                                ECEFToICRS(SatlliteTime_JD, TargetPosition_ECEF, TargetPosition_GEI);
+                            }
                             double[] ErrorSatToTarget_GEI = {TargetPosition_GEI[0] - SatllitePosition_GEI[0],
                                     TargetPosition_GEI[1] - SatllitePosition_GEI[1],
                                     TargetPosition_GEI[2] - SatllitePosition_GEI[2]};
@@ -975,6 +1030,7 @@ public class MissionPlanning {
                     }
                 }
             }
+            mongoClient.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -1271,6 +1327,23 @@ public class MissionPlanning {
                 ImageMissionjson.get(i).append("mission_state", "待执行");
                 ImageMissionjson.get(i).append("image_window", ImageWindowjsonArry);
 
+                //指向切换
+                if (MissionImagingMode[i] == 4) {
+                    ArrayList<Document> ImageWindowjsonArryZXQH=new ArrayList<>();
+                    int timeadd=0;
+                    for (int j = 0; j < MissionStareTimeZXQH.get(i).size(); j++) {
+                        Document ImageWindowjsonArryZXQHObject=new Document();
+                        ImageWindowjsonArryZXQHObject.append("point_number",j+1);
+                        ImageWindowjsonArryZXQHObject.append("load_number", PlanningMissionLoad[i]);
+                        ImageWindowjsonArryZXQHObject.append("start_time", Time_Point[PlanningMissionTimePeriod[i][0]+timeadd]);
+                        timeadd= (int) (timeadd+MissionStareTimeZXQH.get(i).get(j));
+                        ImageWindowjsonArryZXQHObject.append("end_time", Time_Point[PlanningMissionTimePeriod[i][0]+timeadd]);
+                        timeadd=timeadd+100;
+                        ImageWindowjsonArryZXQH.add(ImageWindowjsonArryZXQHObject);
+                    }
+                    ImageMissionjson.get(i).append("image_window_zxqh", ImageWindowjsonArryZXQH);
+                }
+
 
                 //添加文件号
                 if (ImageMissionjson.get(i).containsKey("record_file_no") && ImageMissionjson.get(i).get("record_file_no").toString().equals("")) {
@@ -1283,6 +1356,85 @@ public class MissionPlanning {
                         ImageMissionjson.get(i).append("record_file_no", PoolFileCanUse.get(PoolFileNum).toString());
                         PoolFileNum++;
                     }
+                }
+
+                /*为实传任务添加传输任务*/
+                if (MissionWorkModeList.get(i) == 1) {
+                    MongoCollection<Document> transmission_misison = mongoDatabase.getCollection("transmission_mission");
+
+                    Document TransmissionForImage = new Document();
+                    /*新建传输任务编号*/
+                    SimpleDateFormat dateFormat=new SimpleDateFormat("yyyyMMddHHmmss");
+                    Date StationstartTimeDateForName=new Date();
+                    StationstartTimeDateForName=Time_Point[PlanningMissionTimePeriod[i][0]];
+                    Date startTimeDate= StationstartTimeDateForName;
+                    String startTimestr=dateFormat.format(startTimeDate);
+                    String imageModelstr="SC";
+                    String transmissionForImage_number = "tn_" + startTimestr+"_"+imageModelstr+"_"+ Instant.now().toEpochMilli();
+
+                    /*添加成像任务编号*/
+                    ArrayList<String> mission_numbers = new ArrayList<>();
+                    mission_numbers.add(MissionSerialNumber[i]);
+
+                    TransmissionForImage.append("transmission_number", transmissionForImage_number);
+                    TransmissionForImage.append("mission_numbers", mission_numbers);
+
+                    ArrayList<Document> stationInfos = new ArrayList<>();
+                    int WindowsNum = 0;
+
+                    for (int i1 = 0; i1 < 1; i1++) {
+                        Document stationInfo = new Document();
+                        stationInfo.append("station_name", MissionTransferStationList.get(i));
+
+                        ArrayList<Document> StationWindowjsonArray = new ArrayList<>();
+                        for (int j = 0; j < 1; j++) {
+                            Document StationWindowjsonObject = new Document();
+                            StationWindowjsonObject.append("amount_window", 1);
+                            StationWindowjsonObject.append("window_number", 1);
+                            StationWindowjsonObject.append("window_start_time", Time_Point[PlanningMissionTimePeriod[i][0]]);
+                            StationWindowjsonObject.append("window_end_time", Time_Point[PlanningMissionTimePeriod[i][1]]);
+                            ArrayList<String> StationMissionNumberArray = new ArrayList<>();
+                            //for (int k = 0; k < StationMissionNum; k++) {
+                            //    StationMissionNumberArray.add(k, StationMissionSerialNumberList.get(k));
+                            //}
+                            StationMissionNumberArray.add(MissionSerialNumber[i]);
+                            StationWindowjsonObject.append("mission_number", StationMissionNumberArray);
+                            StationWindowjsonArray.add(StationWindowjsonObject);
+                            WindowsNum = WindowsNum + 1;
+                        }
+                        stationInfo.append("available_window", StationWindowjsonArray);
+                        stationInfos.add(stationInfo);
+                    }
+
+                    TransmissionForImage.append("fail_reason", "");
+                    TransmissionForImage.append("station_info", stationInfos);
+
+                    /*文件号*/
+                    String record_file="";
+                    if (ImageMissionjson.get(i).containsKey("record_file_no") && ImageMissionjson.get(i).get("record_file_no").toString().equals("")) {
+                        record_file= String.valueOf(PoolFileNum-1);
+                    } else if (!ImageMissionjson.get(i).containsKey("record_file_no")) {
+                        record_file= String.valueOf(PoolFileNum-1);
+                    }else {
+                        record_file= ImageMissionjson.get(i).get("record_file_no").toString();
+                    }
+
+
+                    TransmissionForImage.append("mode", "file");
+                    TransmissionForImage.append("record_file_no", record_file);
+                    TransmissionForImage.append("auto_assign_record_file", false);
+
+                    ArrayList<Document> transmissionwindow = new ArrayList<>();
+                    for (int j = 0; j < 1; j++) {
+                        Document transmissionwindowObject=new Document();
+                        transmissionwindowObject.append("station_name", MissionTransferStationList.get(i));
+                        transmissionwindowObject.append("start_time",Time_Point[PlanningMissionTimePeriod[i][0]]);
+                        transmissionwindowObject.append("end_time", Time_Point[PlanningMissionTimePeriod[i][1]]);
+                        transmissionwindow.add(transmissionwindowObject);
+                    }
+                    TransmissionForImage.append("transmission_window",transmissionwindow);
+
+                    transmission_misison.insertOne(TransmissionForImage);
                 }
 
 
@@ -1638,7 +1790,7 @@ public class MissionPlanning {
             try {
                 if (document.containsKey("available_window")) {
                     ArrayList<Document> MissionwWindow = (ArrayList<Document>) document.get("available_window");
-                    int MissionIterval = (int) Double.parseDouble(document.get("mission_interval_min").toString());
+                    int MissionIterval = (int) Double.parseDouble(document.get("image_time").toString());
                     //读取订单编号
                     ArrayList<String> MissionForOrderNumbers_i = (ArrayList<String>) document.get("order_numbers");
                     boolean plannedFlag = false;
@@ -1648,6 +1800,7 @@ public class MissionPlanning {
                         double[] MissionStarTime_iList = DateToDouble(window_start_time);
                         Date window_stop_time = document1.getDate("window_end_time");
                         double[] MissionStopTime_iList = DateToDouble(window_stop_time);
+                        int loadnumbertemp=document1.getInteger("load_number");
                         int[] MissionWindow_int = new int[2];
                         MissionWindow_int[0] = (int) ((JD(MissionStarTime_iList) - JD(Orbital_Time[0])) * (24 * 60 * 60));
                         MissionWindow_int[1] = (int) ((JD(MissionStopTime_iList) - JD(Orbital_Time[0])) * (24 * 60 * 60));
@@ -1664,6 +1817,7 @@ public class MissionPlanning {
 
                             ArrayList<Document> ImageWindowjsonArry = new ArrayList<>();
                             Document ImageWindowjsonObject = new Document();
+                            ImageWindowjsonObject.append("load_number", loadnumbertemp);
                             ImageWindowjsonObject.append("start_time", Time_Point[MissionWindow_int[0]]);
                             ImageWindowjsonObject.append("end_time", Time_Point[MissionWindow_int[1]]);
                             ImageWindowjsonArry.add(ImageWindowjsonObject);

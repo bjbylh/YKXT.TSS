@@ -61,6 +61,8 @@ public class TimeMap {
         timemap.put("TCDGG03", tcdgg03);
         TCDZG02 tcdzg02 = new TCDZG02();
         timemap.put("TCDZG02", tcdzg02);
+        TCA305 tca305=new TCA305();
+        timemap.put("TCA305",tca305);
         TCA305_01 tca305_01 = new TCA305_01();
         timemap.put("TCA305_01", tca305_01);
         TCA305_02 tca305_02 = new TCA305_02();
@@ -82,6 +84,8 @@ public class TimeMap {
         timemap.put("TCDGG06", tcdgg06);
 
         //任务恢复
+        TCS656 tcs656=new TCS656();
+        timemap.put("TCS656",tcs656);
         TCGFG07 tcgfg07 = new TCGFG07();
         timemap.put("TCGFG07", tcgfg07);
 
@@ -97,6 +101,14 @@ public class TimeMap {
         TCDGG07 tcdgg07 = new TCDGG07();
         timemap.put("TCDGG07", tcdgg07);
 
+        TCS657 tcs657=new TCS657();
+        timemap.put("TCS657",tcs657);
+        TCS658 tcs658=new TCS658();
+        timemap.put("TCS658",tcs658);
+        NTCY132 ntcy132=new NTCY132();
+        timemap.put("NTCY132",ntcy132);
+
+
         //回放任务
         TCAG04 tcag04 = new TCAG04();
         timemap.put("TCAG04", tcag04);
@@ -108,6 +120,20 @@ public class TimeMap {
         timemap.put("TCAG06", tcag06);
         TCA303 tca303 = new TCA303();
         timemap.put("TCA303", tca303);
+
+        //相机加热去污任务
+        TCGFG05 tcgfg05=new TCGFG05();
+        timemap.put("TCGFG05",tcgfg05);
+        TCDGG05 tcdgg05=new TCDGG05();
+        timemap.put("TCDGG05",tcdgg05);
+
+        //任务删除
+        TCS291 tcs291=new TCS291();
+        timemap.put("TCS291",tcs291);
+        TCS292 tcs292=new TCS292();
+        timemap.put("TCS292",tcs292);
+        TCS296 tcs296=new TCS296();
+        timemap.put("TCS296",tcs296);
 
         //定标任务
         TCGFG04 tcgfg04 = new TCGFG04();

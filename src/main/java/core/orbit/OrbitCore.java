@@ -13,6 +13,7 @@ import common.mongo.CommUtils;
 import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import common.redis.RedisPublish;
+import core.taskplan.MeanToTrueAnomaly;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
@@ -78,13 +79,15 @@ public class OrbitCore {
                     orbits[3] = Double.parseDouble(document.getString("value"));
                 } else if (document.getString("key").equals("perigee_angle")) {
                     orbits[4] = Double.parseDouble(document.getString("value"));
-                } else if (document.getString("key").equals("true_anomaly")) {
+                } else if (document.getString("key").equals("mean_anomaly")) {
                     orbits[5] = Double.parseDouble(document.getString("value"));
                 } else {
                 }
             }
 
-            Instant end = start.plusMillis(1000 * 60 * 60 * 24 * 7L);//7 days
+            orbits[5] = MeanToTrueAnomaly.MeanToTrueAnomalyII(orbits[0],orbits[1],orbits[2],orbits[3],orbits[4],orbits[5]);
+
+            Instant end = start.plusMillis(1000 * 60 * 60 * 24 * 1L);//7 days
 
             JsonParser parse = new JsonParser();  //创建json解析器
             JsonObject json = (JsonObject) parse.parse(first.toJson());
@@ -95,7 +98,7 @@ public class OrbitCore {
             Bson queryBson = Filters.and(Filters.gte("time_point", Date.from(start)), Filters.lte("time_point", Date.from(end)));
             orbit_attitude.deleteMany(queryBson);
             orbit_attitude_sample.deleteMany(queryBson);
-
+//start
             OrbitPrediction.OrbitPredictorII(start, OrbitPrediction.dateConvertToLocalDateTime(Date.from(start)), OrbitPrediction.dateConvertToLocalDateTime(Date.from(end)), 1, orbits, json);
 
 
@@ -108,7 +111,7 @@ public class OrbitCore {
 
             AvoidSunshine.AvoidSunshineII(D_orbitjson, count, start);
 
-
+//end
             MongoCollection<Document> tasks = mongoDatabase.getCollection("main_task");
             Instant instant_ft = Instant.now();
             Date nt_str = Date.from(instant_ft);

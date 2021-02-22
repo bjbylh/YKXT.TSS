@@ -29,9 +29,9 @@ public class ConfigManager {
         return bundle.getString("MONGODB_IP");
     }
 
-    public int fetchMongoDBPort() {
+    public String fetchMongoDBPort() {
 
-        return Integer.parseInt(bundle.getString("MONGODB_PORT"));
+        return bundle.getString("MONGODB_PORT");
     }
 
     public String fetchRedisAddress() {
@@ -70,6 +70,7 @@ public class ConfigManager {
     }
 
     public String fetch502FilePath() {
-        return "";
+        //return "";
+        return bundle.getString("502_PATH");
     }
 }

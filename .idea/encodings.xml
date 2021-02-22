@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Encoding" defaultCharsetForPropertiesFiles="UTF-8">
-    <file url="file://$PROJECT_DIR$/src/main/java/com/cast/wss/client/DtplanType.java" charset="GBK" />
-    <file url="file://$PROJECT_DIR$/src/main/java/com/cast/wss/client/HeadType.java" charset="GBK" />
-    <file url="file://$PROJECT_DIR$/src/main/java/com/cast/wss/client/MissionType.java" charset="GBK" />
-    <file url="file://$PROJECT_DIR$/src/main/java/com/cast/wss/client/ObjectFactory.java" charset="GBK" />
     <file url="file://$PROJECT_DIR$/src/main/java/common/redis/subscribe/RedisTaskSubscriber.java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/java/core/taskplan/TaskPlanCore.java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/java/srv/task/TaskInit.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/java/xml/FileHeaderType.java" charset="GBK" />
     <file url="PROJECT" charset="UTF-8" />
   </component>
 </project>

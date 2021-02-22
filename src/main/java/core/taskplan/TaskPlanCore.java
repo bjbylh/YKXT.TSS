@@ -282,7 +282,7 @@ public class TaskPlanCore {
                     FindIterable<Document> D_Missionjson = Data_Missionjson.find();
 
                     for (Document document : D_Missionjson) {
-                        if (document.getString("mission_state").equals("待执行") || document.getString("mission_state").equals("已执行")) {
+                        if (document.getString("mission_state").equals("待执行") || document.getString("mission_state").equals("已执行")|| document.getString("mission_state").equals("已上注")) {
                             if (!document.containsKey("work_mode")) continue;
 
                             if (document.containsKey("work_mode") && document.getString("work_mode").contains("擦除"))
@@ -362,7 +362,7 @@ public class TaskPlanCore {
                     FindIterable<Document> D_Missionjson = Data_Missionjson.find();
 
                     for (Document document : D_Missionjson) {
-                        if (document.getString("mission_state").equals("待执行") || document.getString("mission_state").equals("已执行")) {
+                        if (document.getString("mission_state").equals("待执行") || document.getString("mission_state").equals("已执行")|| document.getString("mission_state").equals("已上注")) {
 
                             if (document.getString("work_mode").contains("擦除")) continue;
 

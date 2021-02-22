@@ -9,6 +9,14 @@ public class TCA303 implements SequenceTime {
             int i_time= (int) Math.ceil(time);
 
             return Integer.toHexString(i_time);
+        }
+
+        if (TaskName == "TASK05") {
+            double time=timeVariable.T;
+//            float f_time=(float) time;
+            int i_time= (int) Math.ceil(time);
+
+            return Integer.toHexString(i_time);
         }else {
             return null;
         }

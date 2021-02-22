@@ -121,7 +121,7 @@ public class EnergyCalc {
         FindIterable<Document> image_missions = image_mission.find();
 
         for (Document document : image_missions) {
-            if (document.getString("mission_state").equals("待执行") || document.getString("mission_state").equals("已执行")) {
+            if (document.getString("mission_state").equals("待执行") || document.getString("mission_state").equals("已执行")|| document.getString("mission_state").equals("已上注")) {
 
                 if (!document.containsKey("work_mode")) continue;
 

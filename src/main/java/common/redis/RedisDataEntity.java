@@ -6,8 +6,10 @@ import common.def.InsType;
 import common.def.TaskType;
 import common.def.TempletType;
 
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Map;
 
 /**
@@ -64,42 +66,93 @@ public class RedisDataEntity {
         return ret.toString();
     }
 
-    public static String GenCheckResult(String id, Map<Integer, Map<String, Boolean>> trueorfalse) {
+    public static String GenCheckResult(String id, Map<Integer, Map<String, ArrayList<Date[]>>> trueorfalse) {
         JsonObject ret = new JsonObject();
         JsonObject head = GenHead(MsgType.CHECK_RESULT, "TSS", "MAG", id);
         JsonObject data = new JsonObject();
 
         JsonArray jsonArray = new JsonArray();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
 
         if (trueorfalse.size() == 2) {
             for (String mission_number : trueorfalse.get(0).keySet()) {
                 JsonObject jsonObject = new JsonObject();
                 jsonObject.addProperty("order_number", mission_number);
-                jsonObject.addProperty("return", trueorfalse.get(0).get(mission_number).toString());
+
+                JsonArray jsonArray1 = new JsonArray();
+                for (Date[] d : trueorfalse.get(0).get(mission_number)) {
+                    JsonObject jsonObject1 = new JsonObject();
+                    jsonObject1.addProperty("start", sdf.format(d[0].getTime()));
+                    jsonObject1.addProperty("end", sdf.format(d[1].getTime()));
+                    jsonArray1.add(jsonObject1);
+                }
+                jsonObject.add("windows", jsonArray1);
+
+                if (trueorfalse.get(0).get(mission_number).size() > 0)
+                    jsonObject.addProperty("return", "true");
+                else
+                    jsonObject.addProperty("return", "false");
+
                 jsonArray.add(jsonObject);
             }
+
             for (String mission_number : trueorfalse.get(1).keySet()) {
                 JsonObject jsonObject = new JsonObject();
                 jsonObject.addProperty("mission_number", mission_number);
-                jsonObject.addProperty("return", trueorfalse.get(1).get(mission_number).toString());
+//                jsonObject.addProperty("return", trueorfalse.get(1).get(mission_number).toString());
+
+                JsonArray jsonArray1 = new JsonArray();
+                for (Date[] d : trueorfalse.get(1).get(mission_number)) {
+                    JsonObject jsonObject1 = new JsonObject();
+                    jsonObject1.addProperty("start", sdf.format(d[0].getTime()));
+                    jsonObject1.addProperty("end", sdf.format(d[1].getTime()));
+                    jsonArray1.add(jsonObject1);
+                }
+                jsonObject.add("windows", jsonArray1);
+
+                if (trueorfalse.get(1).get(mission_number).size() > 0)
+                    jsonObject.addProperty("return", "true");
+                else
+                    jsonObject.addProperty("return", "false");
+
+
                 jsonArray.add(jsonObject);
             }
         } else if (trueorfalse.size() == 1) {
             for (String mission_number : trueorfalse.get(0).keySet()) {
                 JsonObject jsonObject = new JsonObject();
                 jsonObject.addProperty("order_number", mission_number);
-                jsonObject.addProperty("return", trueorfalse.get(0).get(mission_number).toString());
+//                jsonObject.addProperty("return", trueorfalse.get(0).get(mission_number).toString());
+
+                JsonArray jsonArray1 = new JsonArray();
+                for (Date[] d : trueorfalse.get(0).get(mission_number)) {
+                    JsonObject jsonObject1 = new JsonObject();
+                    jsonObject1.addProperty("start", sdf.format(d[0].getTime()));
+                    jsonObject1.addProperty("end", sdf.format(d[1].getTime()));
+                    jsonArray1.add(jsonObject1);
+                }
+                jsonObject.add("windows", jsonArray1);
+
+                if (trueorfalse.get(0).get(mission_number).size() > 0)
+                    jsonObject.addProperty("return", "true");
+                else
+                    jsonObject.addProperty("return", "false");
+
                 jsonArray.add(jsonObject);
             }
         } else {
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("order_number", "");
             jsonObject.addProperty("return", "");
+            JsonArray jsonArray1 = new JsonArray();
+            jsonObject.add("windows", jsonArray1);
             jsonArray.add(jsonObject);
         }
         data.addProperty("content", jsonArray.toString());
         ret.add("Head", head);
         ret.add("Data", data);
+
         return ret.toString();
     }
 

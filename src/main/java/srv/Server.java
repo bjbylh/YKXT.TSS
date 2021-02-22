@@ -2,6 +2,7 @@ package srv;
 
 import common.def.Topic;
 import common.redis.TaskBuilderService;
+import common.redis.subscribe.GuidanceTaskSubscriber;
 import common.redis.subscribe.RedisTaskSubscriber;
 import srv.task.FileOccupancyStatus;
 import srv.task.InitHistoryInstruction;
@@ -24,17 +25,22 @@ public class Server {
         TaskBuilderService newTaskBuilderService = new TaskBuilderService(newTaskSubscriber, Topic.CMD_RECV);
         newTaskBuilderService.startup();
 
-        //启动控制监视线程
-//        TaskStatusSubscriber taskStatusSubscriber = new TaskStatusSubscriber();
-//        TaskBuilderService taskStatusBuilderService = new TaskBuilderService(taskStatusSubscriber, Topic.CMD);
-//        taskStatusBuilderService.startup();
-
-        //心跳服务
-        //HeartBeatService.getInstance().startup();
+        //引导信息任务
+        GuidanceTaskSubscriber guidanceTaskSubscriber = new GuidanceTaskSubscriber();
+        TaskBuilderService newTaskBuilderService2 = new TaskBuilderService(guidanceTaskSubscriber, Topic.CMD);
+        newTaskBuilderService2.startup();
 
         //指令状态及内存占用计算线程
         InsAndFlashMontor.getInstance().startup();
 
         FileOccupancyStatus.getInstance().startup();
+
+        //启动控制线程
+        //TaskStatusSubscriber taskStatusSubscriber = new TaskStatusSubscriber();
+        //TaskBuilderService taskStatusBuilderService = new TaskBuilderService(taskStatusSubscriber, Topic.CMD);
+        //taskStatusBuilderService.startup();
+
+        //心跳服务
+        //HeartBeatService.getInstance().startup();
     }
 }

@@ -4,8 +4,6 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import common.mongo.CommUtils;
-import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import org.bson.Document;
 
@@ -23,7 +21,8 @@ public class InstructionManager {
 
     public InstructionManager() {
         mongoClient = MangoDBConnector.getClient();
-        mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+        //mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
+        mongoDatabase = mongoClient.getDatabase("temp");
     }
 
     public void addInstrctionInfo(ArrayList<Document> instruction_info, String mission_number,String mission_name) {
@@ -53,8 +52,9 @@ public class InstructionManager {
 
             ArrayList<Document> instruction_info = (ArrayList<Document>) document.get("instruction_info");
 
-            if (!CommUtils.checkInstructionInfo(instruction_info))
-                continue;
+            //缺少函数
+            //if (!CommUtils.checkInstructionInfo(instruction_info))
+                //continue;
 
             if (instruction_info.size() > 0) {
                 addInstrctionInfo(instruction_info, document.getString("mission_number"),document.getString("name"));
@@ -71,8 +71,9 @@ public class InstructionManager {
 
             ArrayList<Document> instruction_info = (ArrayList<Document>) document.get("instruction_info");
 
-            if (!CommUtils.checkInstructionInfo(instruction_info))
-                continue;
+            //缺少函数
+            //if (!CommUtils.checkInstructionInfo(instruction_info))
+             //   continue;
 
             if (instruction_info != null && instruction_info.size() > 0) {
                 addInstrctionInfo(instruction_info, document.getString("transmission_number"),"数传任务");
