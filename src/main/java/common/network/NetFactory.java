@@ -9,7 +9,7 @@ import java.net.SocketException;
  * Created by colonel on 2014/5/15.
  */
 class NetFactory {
-    static final int TIMEOUT_MILLIS = 25000;
+    static final int TIMEOUT_MILLIS = 0;
 
     /**
      * 初始化用于接收的网络套接字

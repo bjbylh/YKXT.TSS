@@ -12,7 +12,6 @@ import core.taskplan.MeanToTrueAnomaly;
 import org.bson.Document;
 
 import java.io.IOException;
-import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -56,9 +55,10 @@ public class OrbitCalcTaskLisener {
 
         @Override
         public void run() {
+            MongoClient mongoClient = null;
             while (true) {
                 try {
-                    MongoClient mongoClient = MangoDBConnector.getClient();
+                    mongoClient = MangoDBConnector.getClient();
                     //获取名为"temp"的数据库
                     MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
@@ -105,10 +105,12 @@ public class OrbitCalcTaskLisener {
                     mongoClient.close();
 
                     TaskInit.initRTTaskForOrbitForecast("新建任务调度任务指令");
-                } catch (SocketTimeoutException e) {
-                    e.printStackTrace();
                 } catch (IOException e) {
                     e.printStackTrace();
+                    if(mongoClient != null){
+                        mongoClient.close();
+                    }
+
                 }
             }
 
