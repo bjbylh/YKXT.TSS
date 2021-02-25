@@ -15,7 +15,6 @@ import common.def.TempletType;
 import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
 import core.orbit.OrbitCore;
-import core.orbit.OrbitCore502;
 import core.taskplan.TaskPlanCore;
 import org.bson.Document;
 
@@ -48,6 +47,7 @@ public class TaskMonitor {
 
 
     class DoWork extends Thread {
+        @Override
         public void run() {
             while (true) {
                 try {

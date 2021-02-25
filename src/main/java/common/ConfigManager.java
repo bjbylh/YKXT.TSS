@@ -34,6 +34,18 @@ public class ConfigManager {
         return bundle.getString("MONGODB_PORT");
     }
 
+    public String fetchRecvIP(){
+        return bundle.getString("RECV_IP");
+    }
+
+    public String fetchLocalIP(){
+        return bundle.getString("LOCAL_IP");
+    }
+
+    public int fetchRecvPort() {
+        return Integer.parseInt(bundle.getString("RECV_PORT"));
+    }
+
     public String fetchRedisAddress() {
         return bundle.getString("REDIS_IP");
     }

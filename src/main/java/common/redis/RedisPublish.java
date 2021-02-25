@@ -59,9 +59,9 @@ public class RedisPublish {
         jedis.close();
     }
 
-    public static void guidanceTaskReturn(String details) {
+    public static void guidanceTaskReturn(String details,String topic) {
         Jedis jedis = RedisConnector.getJedis();
-        jedis.publish(Topic.CMD_RESP, details);
+        jedis.publish(topic, details);
         jedis.close();
     }
 

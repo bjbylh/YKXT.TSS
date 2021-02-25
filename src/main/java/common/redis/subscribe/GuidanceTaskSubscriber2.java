@@ -29,13 +29,13 @@ import java.util.Map;
  * @author lihan
  * @date 2021/1/18
  */
-public class GuidanceTaskSubscriber extends JedisPubSub {
+public class GuidanceTaskSubscriber2 extends JedisPubSub {
 
 
     private DateTimeFormatter sf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
 
-    public GuidanceTaskSubscriber() {
+    public GuidanceTaskSubscriber2() {
 
     }
 
@@ -54,20 +54,12 @@ public class GuidanceTaskSubscriber extends JedisPubSub {
 
             String reqid = msg.get("reqid").getAsString();
             String t = msg.get("t").getAsString();
-            String x = msg.get("x").getAsString();
-            String y = msg.get("y").getAsString();
-            String z = msg.get("z").getAsString();
-            String vx = msg.get("vx").getAsString();
-            String vy = msg.get("vy").getAsString();
-            String vz = msg.get("vz").getAsString();
+            String ew = msg.get("ew").getAsString();
+            String ns = msg.get("ns").getAsString();
 
             ArrayList<Double> inputDatas = new ArrayList<>();
-            inputDatas.add(Double.parseDouble(x));
-            inputDatas.add(Double.parseDouble(y));
-            inputDatas.add(Double.parseDouble(z));
-            inputDatas.add(Double.parseDouble(vx));
-            inputDatas.add(Double.parseDouble(vy));
-            inputDatas.add(Double.parseDouble(vz));
+            inputDatas.add(Double.parseDouble(ns));
+            inputDatas.add(Double.parseDouble(ew));
 
             MongoCollection<Document> orbit_attitude = mongoDatabase.getCollection("orbit_attitude");
 
@@ -83,7 +75,7 @@ public class GuidanceTaskSubscriber extends JedisPubSub {
 
             GuidePlanning guidePlanning = new GuidePlanning();
 
-            Map<Integer, String> integerStringMap = guidePlanning.GuidePlanningII(orbits, 0, inputDatas);
+            Map<Integer, String> integerStringMap = guidePlanning.GuidePlanningII(orbits, 1, inputDatas);
 
             String visible;
             String maneuvering;
@@ -117,7 +109,7 @@ public class GuidanceTaskSubscriber extends JedisPubSub {
             ret.addProperty("maneuvering", maneuvering);
             ret.add("inslist", inslist);
 
-            RedisPublish.guidanceTaskReturn(ret.toString(), Topic.CMD_RESP);
+            RedisPublish.guidanceTaskReturn(ret.toString(), Topic.CMD2_RESP);
 
             mongoClient.close();
         } catch (Exception e) {
