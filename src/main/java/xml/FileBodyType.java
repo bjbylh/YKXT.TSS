@@ -19,18 +19,13 @@ import javax.xml.bind.annotation.XmlType;
  *       &lt;sequence>
  *         &lt;element name="trPlanID" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *         &lt;element name="satellite" type="{http://www.w3.org/2001/XMLSchema}string"/>
- *         &lt;element name="tmType" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *         &lt;element name="sensorType" type="{http://www.w3.org/2001/XMLSchema}string"/>
- *         &lt;element name="downlinkChannel" type="{http://www.w3.org/2001/XMLSchema}string"/>
- *         &lt;element name="receptionType" type="{http://www.w3.org/2001/XMLSchema}string"/>
- *         &lt;element name="orbitID" type="{http://www.w3.org/2001/XMLSchema}string"/>
- *         &lt;element name="isQuickView" type="{http://www.w3.org/2001/XMLSchema}string"/>
- *         &lt;element name="isCloud" type="{http://www.w3.org/2001/XMLSchema}string"/>
+ *         &lt;element name="receptionType1" type="{http://www.w3.org/2001/XMLSchema}string"/>
+ *         &lt;element name="receptionType2" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *         &lt;element name="receiveStartTime" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *         &lt;element name="receiveStopTime" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *         &lt;element name="satelliteCaptureStartTime" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *         &lt;element name="satelliteCaptureStopTime" type="{http://www.w3.org/2001/XMLSchema}string"/>
- *         &lt;element name="taskCount" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *       &lt;/sequence>
  *     &lt;/restriction>
  *   &lt;/complexContent>
@@ -43,18 +38,13 @@ import javax.xml.bind.annotation.XmlType;
 @XmlType(name = "FileBodyType", propOrder = {
     "trPlanID",
     "satellite",
-    "tmType",
     "sensorType",
-    "downlinkChannel",
-    "receptionType",
-    "orbitID",
-    "isQuickView",
-    "isCloud",
+    "receptionType1",
+    "receptionType2",
     "receiveStartTime",
     "receiveStopTime",
     "satelliteCaptureStartTime",
-    "satelliteCaptureStopTime",
-    "taskCount"
+    "satelliteCaptureStopTime"
 })
 public class FileBodyType {
 
@@ -63,19 +53,11 @@ public class FileBodyType {
     @XmlElement(required = true)
     protected String satellite;
     @XmlElement(required = true)
-    protected String tmType;
-    @XmlElement(required = true)
     protected String sensorType;
     @XmlElement(required = true)
-    protected String downlinkChannel;
+    protected String receptionType1;
     @XmlElement(required = true)
-    protected String receptionType;
-    @XmlElement(required = true)
-    protected String orbitID;
-    @XmlElement(required = true)
-    protected String isQuickView;
-    @XmlElement(required = true)
-    protected String isCloud;
+    protected String receptionType2;
     @XmlElement(required = true)
     protected String receiveStartTime;
     @XmlElement(required = true)
@@ -84,8 +66,6 @@ public class FileBodyType {
     protected String satelliteCaptureStartTime;
     @XmlElement(required = true)
     protected String satelliteCaptureStopTime;
-    @XmlElement(required = true)
-    protected String taskCount;
 
     /**
      * 获取trPlanID属性的值。
@@ -136,30 +116,6 @@ public class FileBodyType {
     }
 
     /**
-     * 获取tmType属性的值。
-     * 
-     * @return
-     *     possible object is
-     *     {@link String }
-     *     
-     */
-    public String getTmType() {
-        return tmType;
-    }
-
-    /**
-     * 设置tmType属性的值。
-     * 
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *     
-     */
-    public void setTmType(String value) {
-        this.tmType = value;
-    }
-
-    /**
      * 获取sensorType属性的值。
      * 
      * @return
@@ -184,123 +140,51 @@ public class FileBodyType {
     }
 
     /**
-     * 获取downlinkChannel属性的值。
+     * 获取receptionType1属性的值。
      * 
      * @return
      *     possible object is
      *     {@link String }
      *     
      */
-    public String getDownlinkChannel() {
-        return downlinkChannel;
+    public String getReceptionType1() {
+        return receptionType1;
     }
 
     /**
-     * 设置downlinkChannel属性的值。
+     * 设置receptionType1属性的值。
      * 
      * @param value
      *     allowed object is
      *     {@link String }
      *     
      */
-    public void setDownlinkChannel(String value) {
-        this.downlinkChannel = value;
+    public void setReceptionType1(String value) {
+        this.receptionType1 = value;
     }
 
     /**
-     * 获取receptionType属性的值。
+     * 获取receptionType2属性的值。
      * 
      * @return
      *     possible object is
      *     {@link String }
      *     
      */
-    public String getReceptionType() {
-        return receptionType;
+    public String getReceptionType2() {
+        return receptionType2;
     }
 
     /**
-     * 设置receptionType属性的值。
+     * 设置receptionType2属性的值。
      * 
      * @param value
      *     allowed object is
      *     {@link String }
      *     
      */
-    public void setReceptionType(String value) {
-        this.receptionType = value;
-    }
-
-    /**
-     * 获取orbitID属性的值。
-     * 
-     * @return
-     *     possible object is
-     *     {@link String }
-     *     
-     */
-    public String getOrbitID() {
-        return orbitID;
-    }
-
-    /**
-     * 设置orbitID属性的值。
-     * 
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *     
-     */
-    public void setOrbitID(String value) {
-        this.orbitID = value;
-    }
-
-    /**
-     * 获取isQuickView属性的值。
-     * 
-     * @return
-     *     possible object is
-     *     {@link String }
-     *     
-     */
-    public String getIsQuickView() {
-        return isQuickView;
-    }
-
-    /**
-     * 设置isQuickView属性的值。
-     * 
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *     
-     */
-    public void setIsQuickView(String value) {
-        this.isQuickView = value;
-    }
-
-    /**
-     * 获取isCloud属性的值。
-     * 
-     * @return
-     *     possible object is
-     *     {@link String }
-     *     
-     */
-    public String getIsCloud() {
-        return isCloud;
-    }
-
-    /**
-     * 设置isCloud属性的值。
-     * 
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *     
-     */
-    public void setIsCloud(String value) {
-        this.isCloud = value;
+    public void setReceptionType2(String value) {
+        this.receptionType2 = value;
     }
 
     /**
@@ -397,30 +281,6 @@ public class FileBodyType {
      */
     public void setSatelliteCaptureStopTime(String value) {
         this.satelliteCaptureStopTime = value;
-    }
-
-    /**
-     * 获取taskCount属性的值。
-     * 
-     * @return
-     *     possible object is
-     *     {@link String }
-     *     
-     */
-    public String getTaskCount() {
-        return taskCount;
-    }
-
-    /**
-     * 设置taskCount属性的值。
-     * 
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *     
-     */
-    public void setTaskCount(String value) {
-        this.taskCount = value;
     }
 
 }

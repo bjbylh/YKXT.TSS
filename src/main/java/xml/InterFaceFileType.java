@@ -1,3 +1,4 @@
+
 package xml;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -7,10 +8,10 @@ import javax.xml.bind.annotation.XmlType;
 
 
 /**
- * <p>InterFaceFileType complex typeï¿½ï¿½ Java ï¿½à¡£
- * <p>
- * <p>ï¿½ï¿½ï¿½ï¿½Ä£Ê½Æ¬ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ï¿½ï¿½Ðµï¿½Ô¤ï¿½ï¿½ï¿½ï¿½ï¿½Ý¡ï¿½
- * <p>
+ * <p>InterFaceFileType complex typeµÄ Java Àà¡£
+ * 
+ * <p>ÒÔÏÂÄ£Ê½Æ¬¶ÎÖ¸¶¨°üº¬ÔÚ´ËÀàÖÐµÄÔ¤ÆÚÄÚÈÝ¡£
+ * 
  * <pre>
  * &lt;complexType name="InterFaceFileType">
  *   &lt;complexContent>
@@ -23,11 +24,13 @@ import javax.xml.bind.annotation.XmlType;
  *   &lt;/complexContent>
  * &lt;/complexType>
  * </pre>
+ * 
+ * 
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "InterFaceFileType", propOrder = {
-        "fileHeader",
-        "fileBody"
+    "fileHeader",
+    "fileBody"
 })
 public class InterFaceFileType {
 
@@ -37,82 +40,51 @@ public class InterFaceFileType {
     protected FileBodyType fileBody;
 
     /**
-     * ï¿½ï¿½È¡fileHeaderï¿½ï¿½ï¿½Ôµï¿½Öµï¿½ï¿½
-     *
-     * @return possible object is
-     * {@link FileHeaderType }
+     * »ñÈ¡fileHeaderÊôÐÔµÄÖµ¡£
+     * 
+     * @return
+     *     possible object is
+     *     {@link FileHeaderType }
+     *     
      */
     public FileHeaderType getFileHeader() {
         return fileHeader;
     }
 
     /**
-     * ï¿½ï¿½ï¿½ï¿½fileHeaderï¿½ï¿½ï¿½Ôµï¿½Öµï¿½ï¿½
-     *
-     * @param value allowed object is
-     *              {@link FileHeaderType }
+     * ÉèÖÃfileHeaderÊôÐÔµÄÖµ¡£
+     * 
+     * @param value
+     *     allowed object is
+     *     {@link FileHeaderType }
+     *     
      */
     public void setFileHeader(FileHeaderType value) {
         this.fileHeader = value;
     }
 
     /**
-     * ï¿½ï¿½È¡fileBodyï¿½ï¿½ï¿½Ôµï¿½Öµï¿½ï¿½
-     *
-     * @return possible object is
-     * {@link FileBodyType }
+     * »ñÈ¡fileBodyÊôÐÔµÄÖµ¡£
+     * 
+     * @return
+     *     possible object is
+     *     {@link FileBodyType }
+     *     
      */
     public FileBodyType getFileBody() {
         return fileBody;
     }
 
     /**
-     * ï¿½ï¿½ï¿½ï¿½fileBodyï¿½ï¿½ï¿½Ôµï¿½Öµï¿½ï¿½
-     *
-     * @param value allowed object is
-     *              {@link FileBodyType }
+     * ÉèÖÃfileBodyÊôÐÔµÄÖµ¡£
+     * 
+     * @param value
+     *     allowed object is
+     *     {@link FileBodyType }
+     *     
      */
     public void setFileBody(FileBodyType value) {
         this.fileBody = value;
-    }
-
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        sb.append("<InterFaceFile>");
-
-        sb.append("<FileHeader>");
-
-        sb.append("<messageType>").append(fileHeader.getMessageType()).append("</messageType>");
-        sb.append("<messageID>").append(fileHeader.getMessageID()).append("</messageID>");
-        sb.append("<originatorAddress>").append(fileHeader.getOriginatorAddress()).append("</originatorAddress>");
-        sb.append("<recipientAddress>").append(fileHeader.getRecipientAddress()).append("</recipientAddress>");
-        sb.append("<creationTime>").append(fileHeader.getCreationTime()).append("</creationTime>");
-
-        sb.append("</FileHeader>");
-
-        sb.append("<FileBody>");
-
-        sb.append("<trPlanID>").append(fileBody.getTrPlanID()).append("</trPlanID>");
-        sb.append("<satellite>").append(fileBody.getSatellite()).append("</satellite>");
-//        sb.append("<tmType>").append(fileBody.getTmType()).append("</tmType>");
-//        sb.append("<sensorType>").append(fileBody.getSensorType()).append("</sensorType>");
-//        sb.append("<downlinkChannel>").append(fileBody.getDownlinkChannel()).append("</downlinkChannel>");
-//        sb.append("<receptionType>").append(fileBody.getReceptionType()).append("</receptionType>");
-//        sb.append("<orbitID>").append(fileBody.getOrbitID()).append("</orbitID>");
-//        sb.append("<isQuickView>").append(fileBody.getIsQuickView()).append("</isQuickView>");
-//        sb.append("<isCloud>").append(fileBody.getIsCloud()).append("</isCloud>");
-        sb.append("<receiveStartTime>").append(fileBody.getReceiveStartTime()).append("</receiveStartTime>");
-        sb.append("<receiveStopTime>").append(fileBody.getReceiveStopTime()).append("</receiveStopTime>");
-        sb.append("<satelliteCaptureStartTime>").append(fileBody.getSatelliteCaptureStartTime()).append("</satelliteCaptureStartTime>");
-        sb.append("<satelliteCaptureStopTime>").append(fileBody.getSatelliteCaptureStopTime()).append("</satelliteCaptureStopTime>");
-//        sb.append("<taskCount>").append(fileBody.getTaskCount()).append("</taskCount>");
-
-        sb.append("</FileBody>");
-
-        sb.append("</InterFaceFile>");
-
-        return sb.toString();
     }
 
 }

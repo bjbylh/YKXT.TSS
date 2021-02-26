@@ -1,5 +1,6 @@
 package common.redis.subscribe;
 
+import com.google.common.collect.Maps;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mongodb.BasicDBList;
@@ -224,7 +225,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
         } catch (Exception e) {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.MANUAL_LOOP_FINISHED);
-            if(mongoClient != null)
+            if (mongoClient != null)
                 mongoClient.close();
         }
     }
@@ -308,7 +309,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
         } catch (Exception e) {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.BLACK_CALI_FINISHED);
-            if(mongoClient != null)
+            if (mongoClient != null)
                 mongoClient.close();
         }
     }
@@ -339,7 +340,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
         } catch (Exception e) {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.FILE_CLEAR_FINISHED);
-            if(mongoClient != null)
+            if (mongoClient != null)
                 mongoClient.close();
         }
     }
@@ -443,7 +444,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
         } catch (Exception e) {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.INS_GEN_FINISHED);
-            if(mongoClient != null)
+            if (mongoClient != null)
                 mongoClient.close();
         }
     }
@@ -570,7 +571,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
         } catch (Exception e) {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.TRANSMISSION_CANCEL_FINISHED);
-            if(mongoClient != null)
+            if (mongoClient != null)
                 mongoClient.close();
         }
     }
@@ -591,12 +592,31 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
             mulu.mkdir();
 
+            Map<String, Map<String, String>> infos = Maps.newHashMap();
+
             String ids = json.get("content").getAsString();
             String[] transmission_numbers_array = ids.split(",");
 
+            String[] sensorTypes = json.get("sensorType").getAsString().split(";");
+
+            String[] receptionType1s = json.get("receptionType1").getAsString().split(";");
+
+            String[] receptionType2s = json.get("receptionType2").getAsString().split(";");
+
             ArrayList<String> transmission_numbers = new ArrayList<>();
-            for (String s : transmission_numbers_array) {
-                transmission_numbers.add(s);
+//            for (String s : transmission_numbers_array) {
+//                transmission_numbers.add(s);
+//            }
+
+            for (int i = 0; i < transmission_numbers_array.length; i++) {
+                transmission_numbers.add(transmission_numbers_array[i]);
+
+                Map<String, String> item = Maps.newHashMap();
+                item.put("sensorType", sensorTypes[i]);
+                item.put("receptionType1", receptionType1s[i]);
+                item.put("receptionType2", receptionType2s[i]);
+
+                infos.put(transmission_numbers_array[i], item);
             }
 
             mongoClient = MangoDBConnector.getClient();
@@ -605,23 +625,24 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
             MongoCollection<Document> sate_res = mongoDatabase.getCollection("satellite_resource");
 
-            Document first = sate_res.find().first();
-
-            String sat_code = "XY-6";
-
-            ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
-            for (Document document : properties) {
-                if (document.getString("key").equals("sat_name")) {
-                    sat_code = document.getString("value");
-                    break;
-                }
-            }
+//            Document first = sate_res.find().first();
+//
+//            String sat_code = "XY-6";
+//
+//            ArrayList<Document> properties = (ArrayList<Document>) first.get("properties");
+//            for (Document document : properties) {
+//                if (document.getString("key").equals("sat_name")) {
+//                    sat_code = document.getString("value");
+//                    break;
+//                }
+//            }
             //卫星资源表
             FindIterable<Document> transmission_missions = mongoDatabase.getCollection("transmission_mission").find();
 
 
             for (Document transmission_mission : transmission_missions) {
-                if (transmission_numbers.contains(transmission_mission.getString("transmission_number"))) {
+                String tn = transmission_mission.getString("transmission_number");
+                if (transmission_numbers.contains(tn)) {
 
                     if (transmission_mission.containsKey("transmission_window")) {
                         ArrayList<Document> transmission_window = (ArrayList<Document>) transmission_mission.get("transmission_window");
@@ -634,14 +655,14 @@ public class RedisTaskSubscriber extends JedisPubSub {
                             fileHeaderType.setMessageType("TRTASK");
                             fileHeaderType.setMessageID(String.format("%06d", message_ser));
                             fileHeaderType.setOriginatorAddress("MPSS");
-                            fileHeaderType.setRecipientAddress("YGJD-01");
+                            fileHeaderType.setRecipientAddress("CZ503");
                             fileHeaderType.setCreationTime(localDateTime.toString());
 
                             interFaceFileType.setFileHeader(fileHeaderType);
 
                             FileBodyType fileBodyType = objectFactory.createFileBodyType();
                             fileBodyType.setTrPlanID(String.format("%09d", message_ser));
-                            fileBodyType.setSatellite(sat_code);
+                            fileBodyType.setSatellite("KS0101");
                             String start_time = window.getDate("start_time").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().toString();
                             String end_time = window.getDate("end_time").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().toString();
 
@@ -651,6 +672,9 @@ public class RedisTaskSubscriber extends JedisPubSub {
                             if (end_time.length() == 16)
                                 end_time += ":00";
 
+                            fileBodyType.setSensorType(infos.get(tn).get("sensorType"));
+                            fileBodyType.setReceptionType1(infos.get(tn).get("receptionType1"));
+                            fileBodyType.setReceptionType1(infos.get(tn).get("receptionType2"));
                             fileBodyType.setReceiveStartTime(start_time);
                             fileBodyType.setSatelliteCaptureStartTime(start_time);
                             fileBodyType.setReceiveStopTime(end_time);
@@ -659,7 +683,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
                             interFaceFileType.setFileBody(fileBodyType);
 
                             String date = String.valueOf(localDateTime.getYear()) + String.format("%02d", localDateTime.getMonth().getValue()) + String.format("%02d", localDateTime.getDayOfMonth());
-                            String filename = "MPSS_YGJD-01_" + sat_code + "_" + date + "_" + String.format("%06d", message_ser) + ".TRTASK";
+                            String filename = "MPSS_YGJD-01_" + "KS0101" + "_" + date + "_" + String.format("%06d", message_ser) + ".TRTASK";
 
                             File file = new File(FilePathUtil.getRealFilePath(f + "//" + filename));
 
@@ -694,7 +718,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
         } catch (Exception e) {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.TRANSMISSION_EXPORT_FINISHED);
-            if(mongoClient != null)
+            if (mongoClient != null)
                 mongoClient.close();
         }
     }
@@ -816,7 +840,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
         } catch (Exception e) {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.ORBIT_DATA_EXPORT_FINISHED);
-            if(mongoClient != null)
+            if (mongoClient != null)
                 mongoClient.close();
         }
     }
@@ -857,13 +881,9 @@ public class RedisTaskSubscriber extends JedisPubSub {
                     FileBodyType fileBodyType = objectFactory.createFileBodyType();
                     fileBodyType.setTrPlanID(String.format("%09d", message_ser));
                     fileBodyType.setSatellite(sat_code);
-                    fileBodyType.setTmType("2");
+
                     fileBodyType.setSensorType("GF/DGP");
-                    fileBodyType.setDownlinkChannel("7");
-                    fileBodyType.setReceptionType("LIVERECEPTION");
-                    fileBodyType.setOrbitID("0");
-                    fileBodyType.setIsQuickView("FALSE");
-                    fileBodyType.setIsCloud("FALSE");
+
 
                     String start_time = window.getDate("start_time").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().toString();
                     String end_time = window.getDate("end_time").toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().toString();
@@ -878,7 +898,6 @@ public class RedisTaskSubscriber extends JedisPubSub {
                     fileBodyType.setSatelliteCaptureStartTime(start_time);
                     fileBodyType.setReceiveStopTime(end_time);
                     fileBodyType.setSatelliteCaptureStopTime(end_time);
-                    fileBodyType.setTaskCount("1");
 
                     interFaceFileType.setFileBody(fileBodyType);
 
@@ -962,7 +981,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
         } catch (Exception e) {
             String message = e.getMessage();
             RedisPublish.CommonReturn(id, false, message, MsgType.ORBIT_DATA_IMPORT_FINISHED);
-            if(mongoClient != null)
+            if (mongoClient != null)
                 mongoClient.close();
         }
     }

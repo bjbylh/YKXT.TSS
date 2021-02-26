@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="InterFaceFile" type="InterFaceFileType"/>
+  <xs:complexType name="InterFaceFileType">
+    <xs:sequence>
+      <xs:element type="FileHeaderType" name="FileHeader"/>
+      <xs:element type="FileBodyType" name="FileBody"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="FileBodyType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="trPlanID"/>
+      <xs:element type="xs:string" name="satellite"/>
+      <xs:element type="xs:string" name="sensorType"/>
+      <xs:element type="xs:string" name="receptionType1"/>
+      <xs:element type="xs:string" name="receptionType2"/>
+      <xs:element type="xs:string" name="receiveStartTime"/>
+      <xs:element type="xs:string" name="receiveStopTime"/>
+      <xs:element type="xs:string" name="satelliteCaptureStartTime"/>
+      <xs:element type="xs:string" name="satelliteCaptureStopTime"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="FileHeaderType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="messageType"/>
+      <xs:element type="xs:string" name="messageID"/>
+      <xs:element type="xs:string" name="originatorAddress"/>
+      <xs:element type="xs:string" name="recipientAddress"/>
+      <xs:element type="xs:string" name="creationTime"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>
