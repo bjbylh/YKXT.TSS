@@ -148,7 +148,7 @@ public class EnergyCalc {
                     Date execTimeLast = CommUtils.getExecTimeLast(document);
                     Date execTimeFirst = CommUtils.getExecTimeFirst(document);
 
-                    if (execTimeFirst.before(Date.from(start)))
+                    if (execTimeLast.before(Date.from(start)))
                         continue;
 
                     if (execTimeFirst.after(Date.from(end)))
@@ -190,7 +190,7 @@ public class EnergyCalc {
                     Date execTimeLast = CommUtils.getExecTimeLast(document);
                     Date execTimeFirst = CommUtils.getExecTimeFirst(document);
 
-                    if (execTimeFirst.before(Date.from(start)))
+                    if (execTimeLast.before(Date.from(start)))
                         continue;
 
                     if (execTimeFirst.after(Date.from(end)))

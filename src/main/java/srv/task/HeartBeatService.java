@@ -16,7 +16,7 @@ public class HeartBeatService {
     }
 
     public void startup() throws InterruptedException {
-        HeartBeatService.DoWork doWork = new HeartBeatService.DoWork();
+        DoWork doWork = new DoWork();
         doWork.start();
     }
 

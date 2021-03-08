@@ -1,6 +1,9 @@
 package test;
 
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 /**
  * Created by lihan on 2018/11/19.
  */
@@ -29,6 +32,12 @@ public class taskInitTest {
 //                CRC16_XMODEM(data2));
 //        System.out.println(
 //                CRC16_X25(data2));
+        Integer b = 0x00010100;
+
+        ByteBuffer bb = ByteBuffer.allocate(4);
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+        bb.putInt(b);
+        System.out.println(bb.getInt());
 
     }
 

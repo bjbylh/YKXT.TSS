@@ -597,11 +597,11 @@ public class RedisTaskSubscriber extends JedisPubSub {
             String ids = json.get("content").getAsString();
             String[] transmission_numbers_array = ids.split(",");
 
-            String[] sensorTypes = json.get("sensorType").getAsString().split(";");
+            String[] sensorTypes = json.get("sensorType").getAsString().split("%");
 
-            String[] receptionType1s = json.get("receptionType1").getAsString().split(";");
+            String[] receptionType1s = json.get("receptionType1").getAsString().split("%");
 
-            String[] receptionType2s = json.get("receptionType2").getAsString().split(";");
+            String[] receptionType2s = json.get("receptionType2").getAsString().split("%");
 
             ArrayList<String> transmission_numbers = new ArrayList<>();
 //            for (String s : transmission_numbers_array) {
@@ -683,7 +683,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
                             interFaceFileType.setFileBody(fileBodyType);
 
                             String date = String.valueOf(localDateTime.getYear()) + String.format("%02d", localDateTime.getMonth().getValue()) + String.format("%02d", localDateTime.getDayOfMonth());
-                            String filename = "MPSS_YGJD-01_" + "KS0101" + "_" + date + "_" + String.format("%06d", message_ser) + ".TRTASK";
+                            String filename = "MPSS_CZ503_" + "KS0101" + "_" + date + "_" + String.format("%06d", message_ser) + ".TRTASK";
 
                             File file = new File(FilePathUtil.getRealFilePath(f + "//" + filename));
 

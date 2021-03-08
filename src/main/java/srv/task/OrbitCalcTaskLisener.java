@@ -14,6 +14,7 @@ import org.bson.Document;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
@@ -63,7 +64,7 @@ public class OrbitCalcTaskLisener {
                     MongoDatabase mongoDatabase = mongoClient.getDatabase(DbDefine.DB_NAME);
 
                     ByteBuffer byteBuffer = udpReceiver.receiveFrame();
-
+                    byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
                     long t = byteBuffer.getLong();
                     double a = byteBuffer.getDouble();
                     double e = byteBuffer.getDouble();
@@ -78,33 +79,35 @@ public class OrbitCalcTaskLisener {
 
                     double trueAnomaly = MeanToTrueAnomaly.MeanToTrueAnomalyII(a, e, i, w, o, m);
 
-                    ArrayList<Document> properties = (ArrayList<Document>) newSateInfo.get("properties");
-                    for (Document d : properties) {
-                        if (d.getString("group").equals("轨道参数")) {
-                            if (d.getString("key").equals("update_time")) {
-                                d.append("value", Date.from(Instant.ofEpochMilli(t)));
-                            } else if (d.getString("key").equals("a")) {
-                                d.append("value", String.valueOf(a / 1000.0));
-                            } else if (d.getString("key").equals("e")) {
-                                d.append("value", String.valueOf(e));
-                            } else if (d.getString("key").equals("i")) {
-                                d.append("value", String.valueOf(i));
-                            } else if (d.getString("key").equals("RAAN")) {
-                                d.append("value", String.valueOf(o));
-                            } else if (d.getString("key").equals("perigee_angle")) {
-                                d.append("value", String.valueOf(w));
-                            } else if (d.getString("key").equals("true_anomaly")) {//todo
-                                d.append("value", String.valueOf(trueAnomaly));
-                            } else if (d.getString("key").equals("mean_anomaly")) {//todo
-                                d.append("value", String.valueOf(m));
-                            } else continue;
-                        }
-                    }
-                    Data_Satllitejson.updateOne(Filters.eq("_id", Satllitejson.getObjectId("_id")), new Document("$set", newSateInfo));
+                    Date from = Date.from(Instant.ofEpochMilli(t));
+                    System.out.println(from.toString());
+
+//                    ArrayList<Document> properties = (ArrayList<Document>) newSateInfo.get("properties");
+//                    for (Document d : properties) {
+//                        if (d.getString("group").equals("轨道参数")) {
+//                            if (d.getString("key").equals("update_time")) {
+//                                d.append("value", Date.from(Instant.ofEpochMilli(t)));
+//                            } else if (d.getString("key").equals("a")) {
+//                                d.append("value", String.valueOf(a / 1000.0));
+//                            } else if (d.getString("key").equals("e")) {
+//                                d.append("value", String.valueOf(e));
+//                            } else if (d.getString("key").equals("i")) {
+//                                d.append("value", String.valueOf(i));
+//                            } else if (d.getString("key").equals("RAAN")) {
+//                                d.append("value", String.valueOf(o));
+//                            } else if (d.getString("key").equals("perigee_angle")) {
+//                                d.append("value", String.valueOf(w));
+//                            } else if (d.getString("key").equals("true_anomaly")) {//todo
+//                                d.append("value", String.valueOf(trueAnomaly));
+//                            } else if (d.getString("key").equals("mean_anomaly")) {//todo
+//                                d.append("value", String.valueOf(m));
+//                            } else continue;
+//                        }
+//                    }
+//                    Data_Satllitejson.updateOne(Filters.eq("_id", Satllitejson.getObjectId("_id")), new Document("$set", newSateInfo));
+//                    TaskInit.initRTTaskForOrbitForecast("新建任务调度任务指令");
 
                     mongoClient.close();
-
-                    TaskInit.initRTTaskForOrbitForecast("新建任务调度任务指令");
                 } catch (IOException e) {
                     e.printStackTrace();
                     if(mongoClient != null){

@@ -40,7 +40,7 @@ public class FileOccupancyStatus {
     }
 
     public void startup() throws IOException, InterruptedException {
-        FileOccupancyStatus.DoWork doWork = new FileOccupancyStatus.DoWork();
+        DoWork doWork = new DoWork();
         doWork.start();
     }
 

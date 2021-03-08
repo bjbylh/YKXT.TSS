@@ -36,5 +36,10 @@ public class MangoDBConnector {
 
         return rst;
     }
-//}
+
+    //}
+    public static void main(String[] args) {
+        MongoClient mongoClient = MangoDBConnector.getClient();
+        mongoClient.close();
+    }
 }
