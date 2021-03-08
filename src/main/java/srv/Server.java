@@ -8,12 +8,17 @@ import common.redis.subscribe.RedisTaskSubscriber;
 import srv.task.*;
 
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Created by lihan on 2018/10/24.
  */
 public class Server {
+    static Logger mongoLogger = Logger.getLogger( "org.mongodb.driver" );
+
     public static void main(String[] args) throws InterruptedException, IOException {
+        mongoLogger.setLevel(Level.WARNING);
         InitHistoryInstruction.getInstance().init();
         //启动任务监视线程
         TaskMonitor.getInstance().startup();
