@@ -3,7 +3,6 @@ package srv.task;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Filters;
 import common.ConfigManager;
 import common.mongo.DbDefine;
 import common.mongo.MangoDBConnector;
@@ -16,11 +15,11 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Date;
 
 /**
- * Created by lihan on 2018/11/13.
+ * @author lihan
+ * @date 2018/11/13
  */
 public class OrbitCalcTaskLisener {
     private static OrbitCalcTaskLisener ourInstance;
@@ -66,6 +65,8 @@ public class OrbitCalcTaskLisener {
                     ByteBuffer byteBuffer = udpReceiver.receiveFrame();
                     byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
                     long t = byteBuffer.getLong();
+                    t -= 1000L * 3600 * 8;
+
                     double a = byteBuffer.getDouble();
                     double e = byteBuffer.getDouble();
                     double i = byteBuffer.getDouble();
@@ -110,13 +111,11 @@ public class OrbitCalcTaskLisener {
                     mongoClient.close();
                 } catch (IOException e) {
                     e.printStackTrace();
-                    if(mongoClient != null){
+                    if (mongoClient != null) {
                         mongoClient.close();
                     }
-
                 }
             }
-
         }
     }
 }

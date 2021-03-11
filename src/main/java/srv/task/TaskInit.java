@@ -21,7 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by lihan on 2018/10/24.
+ *
+ * @author lihan
+ * @date 2018/10/24
  */
 public class TaskInit {
     private static String[] subtaskname = new String[]{

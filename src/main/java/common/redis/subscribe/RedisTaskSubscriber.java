@@ -1,6 +1,7 @@
 package common.redis.subscribe;
 
 import com.google.common.collect.Maps;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mongodb.BasicDBList;
@@ -144,6 +145,8 @@ public class RedisTaskSubscriber extends JedisPubSub {
             String[] content = null;
             int isTimeSpan = json.get("type").getAsInt();
 
+            JsonArray mission_params = json.get("mission_params").getAsJsonArray();
+
             if (isTimeSpan != 2)
                 content = json.get("content").getAsString().split(",");
 
@@ -186,7 +189,7 @@ public class RedisTaskSubscriber extends JedisPubSub {
 
             }
 
-            String rst = InsClearInsGenInf.InsClearInsGenInfII(isTimeSpan, type, Instant.now(), start_i, end_i, insnos, ConfigManager.getInstance().fetchInsFilePath());
+            String rst = InsClearInsGenInf.InsClearInsGenInfII(mission_params, isTimeSpan, type, Instant.now(), start_i, end_i, insnos, ConfigManager.getInstance().fetchInsFilePath());
 
             RedisPublish.CommonReturn(id, true, rst, MsgType.INS_CLEAR_FINISHED);
 

@@ -12,7 +12,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Created by lihan on 2018/10/24.
+ *
+ * @author lihan
+ * @date 2018/10/24
  */
 public class Server {
     static Logger mongoLogger = Logger.getLogger( "org.mongodb.driver" );

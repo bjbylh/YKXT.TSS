@@ -1,5 +1,6 @@
 package core.taskplan;
 
+import com.google.gson.JsonArray;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -18,6 +19,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 
 //指令删除
 public class InsClearInsGenInf {
@@ -25,7 +27,7 @@ public class InsClearInsGenInf {
     private static double[] ZeroTime = {2018, 1, 1, 0, 0, 0};//参考时间
     private static Instant ZeroTimeIns = Instant.parse("2018-01-01T00:00:00.00Z");
 
-    public static String InsClearInsGenInfII(int isTimeSpan, int type, Instant exetime, Instant start, Instant end, HashSet<Integer> insno, String FilePath) {
+    public static String InsClearInsGenInfII(JsonArray missson_params, int isTimeSpan, int type, Instant exetime, Instant start, Instant end, HashSet<Integer> insno, String FilePath) {
         //连接数据库
         String mission_number = String.valueOf(Instant.now().toEpochMilli());
 
@@ -166,7 +168,7 @@ public class InsClearInsGenInf {
 
         byte[] MainBuff = hexStringToBytes(total);
         //int a = getCRC_0xFFFF(MainBuff, MainBuff.length);
-        int a=CRC16_CCITT_FALSE(MainBuff);
+        int a = CRC16_CCITT_FALSE(MainBuff);
         String CRCCode = String.format("%04X", a).toUpperCase();
         if (CRCCode.length() > 4) {
             CRCCode = CRCCode.substring(CRCCode.length() - 4);
@@ -214,6 +216,10 @@ public class InsClearInsGenInf {
         String realPath = FilePathUtil.getRealFilePath(FileName);
         bytesTotxt(bytes, realPath);
 
+        List<Document> misssonParamsList = new ArrayList<>();
+
+        missson_params.forEach(mp->misssonParamsList.add(Document.parse(mp.toString())));
+
         Document doc = new Document();
         doc
                 .append("name", "指令删除")
@@ -222,7 +228,8 @@ public class InsClearInsGenInf {
                 .append("expected_end_time", Date.from(Instant.now().plusSeconds(30)))
                 .append("mission_state", "待执行")
                 .append("mission_number", mission_number)
-                .append("instruction_info", InstructionInfojsonArry);
+                .append("instruction_info", InstructionInfojsonArry)
+                .append("mission_params", misssonParamsList);
 
         MongoCollection<Document> image_mission = mongoDatabase.getCollection("image_mission");
         image_mission.insertOne(doc);
@@ -230,7 +237,7 @@ public class InsClearInsGenInf {
         mongoClient.close();
 
         InstructionManager instructionManager = new InstructionManager();
-        instructionManager.addInstrctionInfo(InstructionInfojsonArry, mission_number,"指令删除");
+        instructionManager.addInstrctionInfo(InstructionInfojsonArry, mission_number, "指令删除");
         instructionManager.close();
         //返回加文件名的路径
         return FileFolder;
